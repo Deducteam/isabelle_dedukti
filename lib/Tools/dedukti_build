@@ -8,6 +8,7 @@ set -e
 ## sources
 
 declare -a SOURCES=(
+  src/dkterm.scala
   src/dedukti.scala
   src/tools.scala
 )
