@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+#
+# DESCRIPTION: fresh build of jar for Isabelle/Dedukti
+
+set -e
+
+
+## sources
+
+declare -a SOURCES=(
+  src/dedukti.scala
+  src/tools.scala
+)
+
+
+## main
+
+# Isabelle Scala/Java components
+isabelle_admin_build jars
+
+# compile sources
+cd "$ISABELLE_DEDUKTI_HOME"
+
+TARGET_DIR="lib/classes"
+rm -rf "$TARGET_DIR" && mkdir -p "$TARGET_DIR"
+
+SCALAC_OPTIONS="$ISABELLE_SCALAC_OPTIONS -d $TARGET_DIR"
+export CLASSPATH="$(platform_path "$ISABELLE_CLASSPATH")"
+isabelle_scala scalac $SCALAC_OPTIONS "${SOURCES[@]}"
+
+# make jar
+cd "$TARGET_DIR"
+isabelle_jdk jar cf dedukti.jar isabelle/dedukti/*.class
+
+rm -rf isabelle
