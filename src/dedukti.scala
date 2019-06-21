@@ -16,6 +16,19 @@ object Dedukti
     output_dir: Path = default_output_dir,
     selection: Sessions.Selection = Sessions.Selection.empty)
   {
+    val logic = Thy_Header.PURE
+    val store = Sessions.store(options)
+    val cache = Term.make_cache()
+
+
+    /* build Isabelle/Pure */
+
+    Build.build_logic(options, logic, build_heap = true, progress = progress,
+      dirs = dirs ::: select_dirs, strict = true)
+
+
+    /* options and resources */
+
     val dump_options: Options = Dump.make_options(options, Dump.known_aspects)
 
     val session_deps =
@@ -23,18 +36,40 @@ object Dedukti
         dirs = dirs, select_dirs = select_dirs, selection = selection)
 
     val resources: Headless.Resources =
-      Headless.Resources.make(dump_options, Thy_Header.PURE, progress = progress,
+      Headless.Resources.make(dump_options, logic, progress = progress,
         session_dirs = dirs ::: select_dirs,
         include_sessions = session_deps.sessions_structure.imports_topological_order)
 
+
+    /* import theory */
+
+    def import_theory(theory: Export_Theory.Theory)
+    {
+      // FIXME
+      progress.echo("Importing theory " + theory.name)
+    }
+
+
+    /* import session (headless PIDE) */
+
     val import_theories = resources.used_theories(session_deps, progress = progress)
 
-    if (session_deps.is_empty) {
+    if (import_theories.isEmpty) {
       progress.echo_warning("Nothing to import")
     }
     else {
-      progress.echo("Theories to import:")
-      for (node_name <- import_theories) progress.echo("  " + node_name.toString)
+      import_theory(Export_Theory.read_pure_theory(store, cache = Some(cache)))
+
+      Dump.session(session_deps, resources,
+        progress = progress,
+        process_theory = (args: Dump.Args) =>
+          {
+            val snapshot = args.snapshot
+            val theory =
+              Export_Theory.read_theory(Export.Provider.snapshot(snapshot),
+                Sessions.DRAFT, snapshot.node_name.theory, cache = Some(cache))
+            import_theory(theory)
+          })
     }
   }
 
