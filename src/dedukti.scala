@@ -47,6 +47,9 @@ object Dedukti
     {
       // FIXME
       progress.echo("Importing theory " + theory.name)
+      for (a <- theory.types) progress.echo("  " + a.entity.toString)
+      for (a <- theory.consts) progress.echo("  " + a.entity.toString)
+      for (fact <- theory.facts; a <- fact.split) progress.echo("  " + a.entity.toString)
     }
 
 
