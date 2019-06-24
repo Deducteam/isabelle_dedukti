@@ -14,10 +14,10 @@ Isabelle component for dedukti.
 
 Init Isabelle/Dedukti component in `$ISABELLE_HOME_USER/etc/settings` like this:
 ```
-init_component ".../Dedukti"
+init_component ".../isabelle_dedukti"
 ```
 
-where `.../Dedukti` is a local working directory of this repository and `ISABELLE_HOME_USER` the location reported by `isabelle getenv ISABELLE_HOME_USER` (e.g. `$HOME/.isabelle` on Unix).
+where `.../isabelle_dedukti` is a local working directory of this repository and `ISABELLE_HOME_USER` the location reported by `isabelle getenv ISABELLE_HOME_USER` (e.g. `$HOME/.isabelle` on Unix).
 
 
 ### Build
