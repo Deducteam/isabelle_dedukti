@@ -31,4 +31,5 @@ isabelle dedukti_build
 
 ```
 isabelle dedukti_import FOL-ex
+isabelle dedukti_import -o record_proofs=2 -D.
 ```
