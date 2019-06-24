@@ -9,7 +9,7 @@ set -e
 
 declare -a SOURCES=(
   src/dkterm.scala
-  src/dedukti.scala
+  src/importer.scala
   src/tools.scala
 )
 

@@ -2,7 +2,7 @@ package isabelle.dedukti
 
 import isabelle._
 
-object Dedukti
+object Importer
 {
   /* importer */
 
