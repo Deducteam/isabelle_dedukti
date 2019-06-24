@@ -5,3 +5,4 @@ session Dedukti_Examples = Pure +
   theories
     "HOL-Isar_Examples.First_Order_Logic"
     "HOL-Isar_Examples.Higher_Order_Logic"
+    "Ex/Ex_HOL"
