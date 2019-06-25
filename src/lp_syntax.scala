@@ -83,6 +83,7 @@ object LP_Syntax
     /* delimiters */
   
     def space(): Unit = char(' ')
+    def nl(): Unit = char('\n')
   
     def parens(body: Output => Unit, bg: String = "(", en: String = ")")
     {
@@ -92,15 +93,61 @@ object LP_Syntax
     }
 
 
+    /* types and terms */
+
+    def typ(ty: Term.Typ, atomic: Boolean = false)
+    {
+      ty match {
+        case Term.TFree(a, _) => name(a)
+        case Term.Type(c, Nil) => name(c)
+        case Term.Type(c, args) =>
+          if (atomic) string("(")
+          name(c)
+          for (arg <- args) {
+            space()
+            typ(arg, atomic = true)
+          }
+          if (atomic) string(")")
+        case Term.TVar(xi, _) => error("Illegal schematic type variable " + xi.toString)
+      }
+    }
+
+
+    /* concrete syntax */
+
+    def Type(): Unit = string("Type")
+    def colon(): Unit = string(" : ")
+    def to(): Unit = string(" \u21d2 ")
+    def dfn(): Unit = string(" \u2254 ")
+
+
     /* declarations */
 
-    def type_decl(a: String, args: Int)
+    def type_decl(c: String, args: Int)
     {
       string("symbol const ")
-      name(a)
-      string(" : ")
-      for (_ <- 0 until args) string("TYPE \u21d2 ")
-      string("TYPE\n")
+      name(c)
+      colon()
+      for (_ <- 0 until args) { Type(); to() }
+      Type()
+      nl()
     }
+
+    def type_abbrev(c: String, args: List[String], rhs: Term.Typ)
+    {
+      string("definition ")
+      name(c)
+      for (a <- args) { space(); name(a) }
+      colon()
+      Type()
+      dfn()
+      typ(rhs)
+      nl()
+    }
+
+
+    /* prelude */
+
+    string("symbol const "); Type(); string(" : TYPE\n\n")
   }
 }
