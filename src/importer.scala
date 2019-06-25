@@ -53,7 +53,7 @@ object Importer
       // FIXME
       progress.echo("Importing theory " + theory.name)
       for (a <- theory.types) {
-        output.type_decl(a.entity.name)
+        output.type_decl(a.entity.name, a.args.length)
 
         val dka = Dkterm.Symb(name = a.entity.name,
           sym_type = Dkterm.Type(),

@@ -4,6 +4,7 @@
 
 package isabelle.dedukti
 
+
 import isabelle._
 
 
@@ -90,14 +91,16 @@ object LP_Syntax
       string(en)
     }
 
-  
+
     /* declarations */
 
-    def type_decl(a: String)
+    def type_decl(a: String, args: Int)
     {
       string("symbol const ")
       name(a)
-      string(" : TYPE\n")
+      string(" : ")
+      for (_ <- 0 until args) string("TYPE \u21d2 ")
+      string("TYPE\n")
     }
   }
 }
