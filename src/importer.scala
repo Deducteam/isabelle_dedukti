@@ -87,6 +87,7 @@ object Importer
           })
     }
 
+    progress.echo("Output " + output_file)
     output.write(output_file)
   }
 
