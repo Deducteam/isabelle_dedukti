@@ -1,2 +1,4 @@
 - prelude: proper treatment as reserved names;
 
+- lib/Tools/dedukti_test: shell script for basic integrity test;
+
