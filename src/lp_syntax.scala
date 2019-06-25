@@ -63,7 +63,7 @@ object LP_Syntax
     else "{|" + name + "|}"
 
 
-  /* output buffer (unsynchronized) */
+  /* buffered output (unsynchronized) */
 
   class Output
   {
@@ -74,23 +74,16 @@ object LP_Syntax
     def string(s: String): Unit = buffer ++= s
 
 
+    /* white space */
+
+    def space: Unit = char(' ')
+    def nl: Unit = char('\n')
+
+
     /* names */
-    
+
     def name(a: String): Unit =
       string(if (reserved(a) || !is_regular_identifier(a)) make_escaped_identifier(a) else a)
-
-
-    /* delimiters */
-  
-    def space(): Unit = char(' ')
-    def nl(): Unit = char('\n')
-  
-    def parens(body: Output => Unit, bg: String = "(", en: String = ")")
-    {
-      string(bg)
-      body(this)
-      string(en)
-    }
 
 
     /* types and terms */
@@ -104,7 +97,7 @@ object LP_Syntax
           if (atomic) string("(")
           name(c)
           for (arg <- args) {
-            space()
+            space
             typ(arg, atomic = true)
           }
           if (atomic) string(")")
@@ -113,41 +106,40 @@ object LP_Syntax
     }
 
 
-    /* concrete syntax */
+    /* concrete syntax and special names */
 
-    def Type(): Unit = string("Type")
-    def colon(): Unit = string(" : ")
-    def to(): Unit = string(" \u21d2 ")
-    def dfn(): Unit = string(" \u2254 ")
+    def symbol_const: Unit = string("symbol const ")
+    def definition: Unit = string("definition ")
+    def TYPE: Unit = string("TYPE")
+    def Type: Unit = string("Type")
+    def eta: Unit = string("eta")
+    def colon: Unit = string(" : ")
+    def to: Unit = string(" \u21d2 ")
+    def dfn: Unit = string(" \u2254 ")
 
 
-    /* declarations */
+    /* type declarations */
 
     def type_decl(c: String, args: Int)
     {
-      string("symbol const ")
-      name(c)
-      colon()
-      for (_ <- 0 until args) { Type(); to() }
-      Type()
-      nl()
+      symbol_const; name(c); colon
+      for (_ <- 0 until args) { Type; to }; Type
+      nl
     }
 
     def type_abbrev(c: String, args: List[String], rhs: Term.Typ)
     {
-      string("definition ")
-      name(c)
-      for (a <- args) { space(); name(a) }
-      colon()
-      Type()
-      dfn()
-      typ(rhs)
-      nl()
+      definition; name(c);
+      for (a <- args) { space; name(a) }
+      colon; Type; dfn; typ(rhs)
+      nl
     }
 
 
     /* prelude */
 
-    string("symbol const "); Type(); string(" : TYPE\n\n")
+    symbol_const; Type; colon; TYPE; nl
+    symbol_const; eta; colon; Type; to; TYPE; nl
+    nl
   }
 }
