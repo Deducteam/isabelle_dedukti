@@ -10,6 +10,7 @@ set -e
 declare -a SOURCES=(
   src/dkterm.scala
   src/importer.scala
+  src/lp_syntax.scala
   src/tools.scala
 )
 

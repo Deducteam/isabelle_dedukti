@@ -1,3 +1,6 @@
+/** Isabelle/Dedukti importer (lp syntax) **/
+
+
 package isabelle.dedukti
 
 import isabelle._
@@ -6,19 +9,21 @@ object Importer
 {
   /* importer */
 
-  val default_output_dir: Path = Path.explode("dedukti")
+  val default_output_file: Path = Path.explode("output.lp")
 
   def importer(
     options: Options,
     progress: Progress = No_Progress,
     dirs: List[Path] = Nil,
     select_dirs: List[Path] = Nil,
-    output_dir: Path = default_output_dir,
+    output_file: Path = default_output_file,
     selection: Sessions.Selection = Sessions.Selection.empty)
   {
     val logic = Thy_Header.PURE
     val store = Sessions.store(options)
     val cache = Term.make_cache()
+
+    val output = new LP_Syntax.Output
 
 
     /* build Isabelle/Pure */
@@ -48,6 +53,8 @@ object Importer
       // FIXME
       progress.echo("Importing theory " + theory.name)
       for (a <- theory.types) {
+        output.type_decl(a.entity.name)
+
         val dka = Dkterm.Symb(name = a.entity.name,
           sym_type = Dkterm.Type(),
           sym_def=None)
@@ -79,6 +86,8 @@ object Importer
             import_theory(theory)
           })
     }
+
+    output.write(output_file)
   }
 
 
@@ -89,7 +98,7 @@ object Importer
     {
       var base_sessions: List[String] = Nil
       var select_dirs: List[Path] = Nil
-      var output_dir = default_output_dir
+      var output_file = default_output_file
       var requirements = false
       var exclude_session_groups: List[String] = Nil
       var all_sessions = false
@@ -105,7 +114,7 @@ Usage: isabelle dedukti_import [OPTIONS] [SESSIONS ...]
   Options are:
     -B NAME      include session NAME and all descendants
     -D DIR       include session directory and select its sessions
-    -O DIR       output directory for Dedukti files (default: """ + default_output_dir + """)
+    -O FILE      output file for Dedukti theory in lp syntax (default: """ + default_output_file + """)
     -R           operate on requirements of selected sessions
     -X NAME      exclude sessions from group NAME and all descendants
     -a           select all sessions
@@ -120,7 +129,7 @@ Usage: isabelle dedukti_import [OPTIONS] [SESSIONS ...]
       "B:" -> (arg => base_sessions = base_sessions ::: List(arg)),
       "D:" -> (arg => { select_dirs = select_dirs ::: List(Path.explode(arg)) }),
       "R" -> (_ => requirements = true),
-      "O:" -> (arg => output_dir = Path.explode(arg)),
+      "O:" -> (arg => output_file = Path.explode(arg)),
       "X:" -> (arg => exclude_session_groups = exclude_session_groups ::: List(arg)),
       "a" -> (_ => all_sessions = true),
       "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
@@ -157,7 +166,7 @@ Usage: isabelle dedukti_import [OPTIONS] [SESSIONS ...]
             dirs = dirs,
             select_dirs = select_dirs,
             selection = selection,
-            output_dir = output_dir)
+            output_file = output_file)
         }
         finally {
           val end_date = Date.now()
