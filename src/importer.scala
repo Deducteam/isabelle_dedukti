@@ -17,7 +17,8 @@ object Importer
     dirs: List[Path] = Nil,
     select_dirs: List[Path] = Nil,
     output_file: Path = default_output_file,
-    selection: Sessions.Selection = Sessions.Selection.empty)
+    selection: Sessions.Selection = Sessions.Selection.empty,
+    verbose: Boolean = false)
   {
     val logic = Thy_Header.PURE
     val store = Sessions.store(options)
@@ -53,7 +54,7 @@ object Importer
       progress.echo("Importing theory " + theory.name)
 
       for (a <- theory.types) {
-        progress.echo("  " + a.entity.toString)
+        if (verbose) progress.echo("  " + a.entity.toString)
 
         a.abbrev match {
           case None => output.type_decl(a.entity.name, a.args.length)
@@ -65,7 +66,7 @@ object Importer
       }
 
       for (a <- theory.consts) {
-        progress.echo("  " + a.entity.toString)
+        if (verbose) progress.echo("  " + a.entity.toString)
 
         /* FIXME
         if (a.entity.name == Pure_Thy.ALL) output.prelude_all
@@ -74,7 +75,7 @@ object Importer
       }
 
       for (fact <- theory.facts; a <- fact.split) {
-        progress.echo("  " + a.entity.toString)
+        if (verbose) progress.echo("  " + a.entity.toString)
       }
     }
 
@@ -182,7 +183,8 @@ Usage: isabelle dedukti_import [OPTIONS] [SESSIONS ...]
             dirs = dirs,
             select_dirs = select_dirs,
             selection = selection,
-            output_file = output_file)
+            output_file = output_file,
+            verbose = verbose)
         }
         finally {
           val end_date = Date.now()
