@@ -11,3 +11,5 @@ then
 else
   echo "### Missing $ISABELLE_DEDUKTI_HOME/lib/classes/dedukti.jar"
 fi
+
+ISABELLE_LAMBDAPI="lambdapi"

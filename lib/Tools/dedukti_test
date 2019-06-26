@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+#
+# DESCRIPTION: standard test for Isabelle/Dedukti
+
+set -e
+
+OUTPUT="${1:-output.lp}"
+
+isabelle dedukti_import -o record_proofs=2 -D.
+
+"$ISABELLE_LAMBDAPI" "$OUTPUT"
