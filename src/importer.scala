@@ -70,7 +70,10 @@ object Importer
       for (a <- theory.consts) {
         if (verbose) progress.echo("  " + a.entity.toString)
 
-        output.const_decl(a.entity.name, a.typargs, a.typ)  // FIXME handle a.abbrev
+        a.abbrev match {
+          case None => output.const_decl(a.entity.name, a.typargs, a.typ)
+          case Some(rhs) => output.const_abbrev(a.entity.name, a.typargs, a.typ, rhs)
+        }
 
         if (a.entity.name == Pure_Thy.ALL) output.prelude_all
         if (a.entity.name == Pure_Thy.IMP) output.prelude_imp

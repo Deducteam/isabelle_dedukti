@@ -184,6 +184,11 @@ object LP_Syntax
       }
     }
 
+    def eta_typ(ty: Term.Typ, atomic: Boolean = false)
+    {
+      block_if(atomic) { eta; space; typ(ty, atomic = true) }
+    }
+
     def term(tm: Term.Term, bounds: List[String] = Nil, atomic: Boolean = false)
     {
       tm match {
@@ -205,7 +210,7 @@ object LP_Syntax
           name(x)
         case Term.Abs(x, ty, b) =>
           block_if(atomic) {
-            lambda; block { name(x); colon; typ(ty) }; comma
+            lambda; block { name(x); colon; eta_typ(ty) }; comma
             term(b, bounds = x :: bounds)
           }
         case Term.App(a, b) =>
@@ -230,7 +235,7 @@ object LP_Syntax
     def type_abbrev(c: String, args: List[String], rhs: Term.Typ)
     {
       definition; name(c);
-      for (a <- args) { space; name(a) }
+      for (a <- args) { space; name(a); colon; Type }
       colon; Type; dfn; typ(rhs)
       nl
     }
@@ -249,16 +254,15 @@ object LP_Syntax
     def const_decl(c: String, typargs: List[String], ty: Term.Typ)
     {
       declare_type_scheme(c, typargs, ty)
-      symbol_const; name(c); colon;
-      polymorphic(typargs); eta; block { typ(ty) }
+      symbol_const; name(c); colon; polymorphic(typargs); eta_typ(ty)
       nl
     }
 
     def const_abbrev(c: String, typargs: List[String], ty: Term.Typ, rhs: Term.Term)
     {
       definition; name(c)
-      for (a <- typargs) { space; name(a) }
-      colon; eta; block { typ(ty) }; dfn; term(rhs)
+      for (a <- typargs) { space; block { name(a); colon; Type } }
+      colon; eta_typ(ty); dfn; term(rhs)
       nl
     }
 
