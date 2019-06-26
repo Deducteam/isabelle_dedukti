@@ -70,10 +70,10 @@ object Importer
       for (a <- theory.consts) {
         if (verbose) progress.echo("  " + a.entity.toString)
 
-        /* FIXME
+        output.const_decl(a.entity.name, a.typargs, a.typ)  // FIXME handle a.abbrev
+
         if (a.entity.name == Pure_Thy.ALL) output.prelude_all
         if (a.entity.name == Pure_Thy.IMP) output.prelude_imp
-        */
       }
 
       for (fact <- theory.facts; a <- fact.split) {

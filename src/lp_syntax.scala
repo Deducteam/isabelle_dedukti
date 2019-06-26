@@ -125,7 +125,7 @@ object LP_Syntax
     def all { string("\u2200 ") }
 
 
-    /* type declarations */
+    /* types */
 
     def type_decl(c: String, args: Int)
     {
@@ -139,6 +139,19 @@ object LP_Syntax
       definition; name(c);
       for (a <- args) { space; name(a) }
       colon; Type; dfn; typ(rhs)
+      nl
+    }
+
+
+    /* consts */
+
+    def const_decl(c: String, typargs: List[String], ty: Term.Typ)
+    {
+      symbol_const; name(c); colon;
+      if (typargs.nonEmpty) {
+        all; for (a <- typargs) { bg; name(a); colon; Type; en; space; }; comma
+      }
+      eta; bg; typ(ty); en
       nl
     }
 
