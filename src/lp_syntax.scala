@@ -150,7 +150,6 @@ object LP_Syntax
     {
       symbol_const; Type; colon; TYPE; nl
       symbol; eta; colon; Type; to; TYPE; nl
-      nl
     }
 
     def prelude_fun

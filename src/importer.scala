@@ -53,6 +53,8 @@ object Importer
     {
       progress.echo("Importing theory " + theory.name)
 
+      output.string("\n\n// theory " + theory.name + "\n\n")
+
       for (a <- theory.types) {
         if (verbose) progress.echo("  " + a.entity.toString)
 
