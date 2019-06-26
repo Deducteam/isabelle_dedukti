@@ -46,25 +46,36 @@ object Importer
         include_sessions = session_deps.sessions_structure.imports_topological_order)
 
 
-    /* import theory */
+    /* import theory content */
 
     def import_theory(theory: Export_Theory.Theory)
     {
-      // FIXME
       progress.echo("Importing theory " + theory.name)
+
       for (a <- theory.types) {
+        progress.echo("  " + a.entity.toString)
+
         a.abbrev match {
           case None => output.type_decl(a.entity.name, a.args.length)
           case Some(rhs) => output.type_abbrev(a.entity.name, a.args, rhs)
         }
 
-        val dka = Dkterm.Symb(name = a.entity.name,
-          sym_type = Dkterm.Type(),
-          sym_def=None)
+        if (a.entity.name == Pure_Thy.FUN) output.prelude_fun
+        if (a.entity.name == Pure_Thy.PROP) output.prelude_prop
       }
-      for (a <- theory.types) progress.echo("  " + a.entity.toString)
-      for (a <- theory.consts) progress.echo("  " + a.entity.toString)
-      for (fact <- theory.facts; a <- fact.split) progress.echo("  " + a.entity.toString)
+
+      for (a <- theory.consts) {
+        progress.echo("  " + a.entity.toString)
+
+        /* FIXME
+        if (a.entity.name == Pure_Thy.ALL) output.prelude_all
+        if (a.entity.name == Pure_Thy.IMP) output.prelude_imp
+        */
+      }
+
+      for (fact <- theory.facts; a <- fact.split) {
+        progress.echo("  " + a.entity.toString)
+      }
     }
 
 
@@ -76,6 +87,7 @@ object Importer
       progress.echo_warning("Nothing to import")
     }
     else {
+      output.prelude_type
       import_theory(Export_Theory.read_pure_theory(store, cache = Some(cache)))
 
       Dump.session(session_deps, resources,
