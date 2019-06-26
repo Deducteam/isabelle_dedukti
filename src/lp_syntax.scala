@@ -79,6 +79,28 @@ object LP_Syntax
     def nl: Unit = char('\n')
 
 
+    /* concrete syntax and special names */
+
+    def bg { string("(") }
+    def en { string(")") }
+    def block(body: => Unit) { bg; body; en }
+
+    def comma { string(", ") }
+    def symbol_const { string("symbol const ") }
+    def symbol { string("symbol ") }
+    def definition { string("definition ") }
+    def rule { string("rule ") }
+    def TYPE { string("TYPE") }
+    def Type { string("Type") }
+    def eta { string("eta") }
+    def eps { string("eps") }
+    def colon { string(" : ") }
+    def to { string(" \u21d2 ") }
+    def dfn { string(" \u2254 ") }
+    def rew { string(" \u2192 ") }
+    def all { string("\u2200 ") }
+
+
     /* names */
 
     def name(a: String): Unit =
@@ -105,26 +127,6 @@ object LP_Syntax
     }
 
 
-    /* concrete syntax and special names */
-
-    def bg { string("(") }
-    def en { string(")") }
-    def comma { string(", ") }
-    def symbol_const { string("symbol const ") }
-    def symbol { string("symbol ") }
-    def definition { string("definition ") }
-    def rule { string("rule ") }
-    def TYPE { string("TYPE") }
-    def Type { string("Type") }
-    def eta { string("eta") }
-    def eps { string("eps") }
-    def colon { string(" : ") }
-    def to { string(" \u21d2 ") }
-    def dfn { string(" \u2254 ") }
-    def rew { string(" \u2192 ") }
-    def all { string("\u2200 ") }
-
-
     /* types */
 
     def type_decl(c: String, args: Int)
@@ -142,16 +144,20 @@ object LP_Syntax
       nl
     }
 
+    def polymorphic(typargs: List[String])
+    {
+      if (typargs.nonEmpty) {
+        all; for (a <- typargs) { block { name(a); colon; Type }; space }; comma
+      }
+    }
+
 
     /* consts */
 
     def const_decl(c: String, typargs: List[String], ty: Term.Typ)
     {
       symbol_const; name(c); colon;
-      if (typargs.nonEmpty) {
-        all; for (a <- typargs) { bg; name(a); colon; Type; en; space; }; comma
-      }
-      eta; bg; typ(ty); en
+      polymorphic(typargs); eta; block { typ(ty) }
       nl
     }
 
@@ -167,7 +173,7 @@ object LP_Syntax
 
     def prelude_fun
     {
-      rule; eta; space; bg; name(Pure_Thy.FUN); string(" &a &b"); en; rew;
+      rule; eta; space; block { name(Pure_Thy.FUN); string(" &a &b") }; rew;
         eta; string(" &a"); to; eta; string(" &b"); nl
     }
 
@@ -178,13 +184,13 @@ object LP_Syntax
 
     def prelude_all
     {
-      rule; eps; space; bg; name(Pure_Thy.ALL); string(" &a &b"); en; rew;
-        all; bg; string("x"); colon; eta; string(" &a"); en; comma; eps; string(" (&b x)"); nl
+      rule; eps; space; block { name(Pure_Thy.ALL); string(" &a &b") }; rew;
+        all; block { string("x"); colon; eta; string(" &a") }; comma; eps; string(" (&b x)"); nl
     }
 
     def prelude_imp
     {
-      rule; eps; space; bg; name(Pure_Thy.IMP); string(" &a &b"); en; rew;
+      rule; eps; space; block { name(Pure_Thy.IMP); string(" &a &b") }; rew;
         eps; string(" &a"); to; eps; string(" &b"); nl
     }
   }
