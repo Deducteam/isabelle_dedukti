@@ -62,10 +62,57 @@ object LP_Syntax
     else "{|" + name + "|}"
 
 
-  /* buffered output (unsynchronized) */
+  /* buffered output depending on context (unsynchronized) */
+
+  sealed case class Type_Scheme(typargs: List[String], template: Term.Typ)
+  {
+    // FIXME avoid clone wrt. Isabelle/MMT (!?)
+    def match_typargs(c: String, typ: Term.Typ): List[Term.Typ] =
+    {
+      var subst = Map.empty[String, Term.Typ]
+      def bad_match(): Nothing = error("Bad type arguments for " + c + ": " + typ)
+      def raw_match(arg: (Term.Typ, Term.Typ))
+      {
+        arg match {
+          case (Term.TFree(a, _), ty) =>
+            subst.get(a) match {
+              case None => subst += (a -> ty)
+              case Some(ty1) => if (ty != ty1) bad_match()
+            }
+          case (Term.Type(c1, args1), Term.Type(c2, args2)) if c1 == c2 =>
+            (args1 zip args2).foreach(raw_match)
+          case _ => bad_match()
+        }
+      }
+
+      raw_match(template, typ)
+      typargs.map(subst)
+    }
+  }
 
   class Output
   {
+    /* logical context */
+
+    var consts_type_scheme: Map[String, Type_Scheme] = Map.empty
+
+    def match_typargs(c: String, typ: Term.Typ): List[Term.Typ] =
+    {
+      consts_type_scheme.getOrElse(c, error("Undefined type_scheme for " + quote(c)))
+        .match_typargs(c, typ)
+    }
+
+    def declare_type_scheme(c: String, typargs: List[String], template: Term.Typ)
+    {
+      if (consts_type_scheme.isDefinedAt(c)) {
+        error("Duplicate declaration of type scheme for " + quote(c))
+      }
+      else consts_type_scheme += (c -> Type_Scheme(typargs, template))
+    }
+
+
+    /* text buffer */
+
     val buffer = new StringBuilder
     def write(path: Path) = File.write(path, buffer.toString)
 
@@ -79,11 +126,21 @@ object LP_Syntax
     def nl: Unit = char('\n')
 
 
-    /* concrete syntax and special names */
+    /* blocks (parentheses) */
 
     def bg { string("(") }
     def en { string(")") }
+
     def block(body: => Unit) { bg; body; en }
+    def block_if(atomic: Boolean)(body: => Unit)
+    {
+      if (atomic) bg
+      body
+      if (atomic) en
+    }
+
+
+    /* concrete syntax and special names */
 
     def comma { string(", ") }
     def symbol_const { string("symbol const ") }
@@ -99,6 +156,7 @@ object LP_Syntax
     def dfn { string(" \u2254 ") }
     def rew { string(" \u2192 ") }
     def all { string("\u2200 ") }
+    def lambda { string("\u03bb ") }
 
 
     /* names */
@@ -115,14 +173,47 @@ object LP_Syntax
         case Term.TFree(a, _) => name(a)
         case Term.Type(c, Nil) => name(c)
         case Term.Type(c, args) =>
-          if (atomic) bg
-          name(c)
-          for (arg <- args) {
-            space
-            typ(arg, atomic = true)
+          block_if(atomic) {
+            name(c)
+            for (arg <- args) {
+              space
+              typ(arg, atomic = true)
+            }
           }
-          if (atomic) en
         case Term.TVar(xi, _) => error("Illegal schematic type variable " + xi.toString)
+      }
+    }
+
+    def term(tm: Term.Term, bounds: List[String] = Nil, atomic: Boolean = false)
+    {
+      tm match {
+        case Term.Const(c, ty) =>
+          val types = match_typargs(c, ty)
+          block_if(atomic && types.nonEmpty) {
+            name(c)
+            for (t <- types) { space; typ(t, atomic = true) }
+          }
+        case Term.Free(x, _) => name(x)
+        case Term.Var(xi, _) => error("Illegal schematic variable " + xi.toString)
+        case Term.Bound(i) =>
+          val x =
+            try { bounds(i) }
+            catch {
+              case _: IndexOutOfBoundsException =>
+                isabelle.error("Loose de-Bruijn index " + i)
+            }
+          name(x)
+        case Term.Abs(x, ty, b) =>
+          block_if(atomic) {
+            lambda; block { name(x); colon; typ(ty) }; comma
+            term(b, bounds = x :: bounds)
+          }
+        case Term.App(a, b) =>
+          block_if(atomic) {
+            term(a, bounds = bounds, atomic = true)
+            space
+            term(b, bounds = bounds, atomic = true)
+          }
       }
     }
 
@@ -144,6 +235,7 @@ object LP_Syntax
       nl
     }
 
+
     def polymorphic(typargs: List[String])
     {
       if (typargs.nonEmpty) {
@@ -156,8 +248,17 @@ object LP_Syntax
 
     def const_decl(c: String, typargs: List[String], ty: Term.Typ)
     {
+      declare_type_scheme(c, typargs, ty)
       symbol_const; name(c); colon;
       polymorphic(typargs); eta; block { typ(ty) }
+      nl
+    }
+
+    def const_abbrev(c: String, typargs: List[String], ty: Term.Typ, rhs: Term.Term)
+    {
+      definition; name(c)
+      for (a <- typargs) { space; name(a) }
+      colon; eta; block { typ(ty) }; dfn; term(rhs)
       nl
     }
 
