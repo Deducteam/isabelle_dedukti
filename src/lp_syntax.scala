@@ -270,6 +270,7 @@ object LP_Syntax
 
     def const_abbrev(c: String, typargs: List[String], ty: Term.Typ, rhs: Term.Term)
     {
+      declare_type_scheme(kind_const(c), typargs, ty)
       definition; name(kind_const(c))
       for (a <- typargs) { space; block { name(a); colon; Type } }
       colon; eta_typ(ty); dfn; term(rhs)
