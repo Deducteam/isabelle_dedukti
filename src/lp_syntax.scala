@@ -232,6 +232,11 @@ object LP_Syntax
       }
     }
 
+    def eps_term(t: Term.Term, atomic: Boolean = false)
+    {
+      block_if(atomic) { eps; space; term(t, atomic = true) }
+    }
+
 
     /* types */
 
@@ -274,6 +279,21 @@ object LP_Syntax
       definition; name(kind_const(c))
       for (a <- typargs) { space; block { name(a); colon; Type } }
       colon; eta_typ(ty); dfn; term(rhs)
+      nl
+    }
+
+
+    /* facts */
+
+    def fact_decl(c: String, prop: Export_Theory.Prop)
+    {
+      symbol_const; name(kind_fact(c)); colon
+      polymorphic(prop.typargs.map(_._1))
+      // FIXME sort constraints from prop.typargs
+      if (prop.args.nonEmpty) {
+        all; for ((x, ty) <- prop.args) { block { name(x); colon; eta_typ(ty) }; space }; comma
+      }
+      eps_term(prop.term)
       nl
     }
 

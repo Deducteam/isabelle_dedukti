@@ -81,6 +81,8 @@ object Importer
 
       for (fact <- theory.facts; a <- fact.split) {
         if (verbose) progress.echo("  " + a.entity.toString)
+
+        output.fact_decl(a.entity.name, a.prop)
       }
     }
 
