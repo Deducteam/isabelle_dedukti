@@ -62,6 +62,16 @@ object LP_Syntax
     else "{|" + name + "|}"
 
 
+  /* kinds */
+
+  def append_kind(a: String, kind: String): String =
+    if (kind.isEmpty) a else a + "|" + kind
+
+  def kind_type(a: String): String = append_kind(a, Export_Theory.Kind.TYPE.toString)
+  def kind_const(a: String): String = append_kind(a, Export_Theory.Kind.CONST.toString)
+  def kind_fact(a: String): String = append_kind(a, Export_Theory.Kind.FACT.toString)
+
+
   /* buffered output depending on context (unsynchronized) */
 
   sealed case class Type_Scheme(typargs: List[String], template: Term.Typ)
@@ -94,20 +104,20 @@ object LP_Syntax
   {
     /* logical context */
 
-    var consts_type_scheme: Map[String, Type_Scheme] = Map.empty
+    var context_type_scheme: Map[String, Type_Scheme] = Map.empty
 
     def match_typargs(c: String, typ: Term.Typ): List[Term.Typ] =
     {
-      consts_type_scheme.getOrElse(c, error("Undefined type_scheme for " + quote(c)))
+      context_type_scheme.getOrElse(c, error("Undefined type_scheme for " + quote(c)))
         .match_typargs(c, typ)
     }
 
     def declare_type_scheme(c: String, typargs: List[String], template: Term.Typ)
     {
-      if (consts_type_scheme.isDefinedAt(c)) {
+      if (context_type_scheme.isDefinedAt(c)) {
         error("Duplicate declaration of type scheme for " + quote(c))
       }
-      else consts_type_scheme += (c -> Type_Scheme(typargs, template))
+      else context_type_scheme += (c -> Type_Scheme(typargs, template))
     }
 
 
@@ -171,10 +181,10 @@ object LP_Syntax
     {
       ty match {
         case Term.TFree(a, _) => name(a)
-        case Term.Type(c, Nil) => name(c)
+        case Term.Type(c, Nil) => name(kind_type(c))
         case Term.Type(c, args) =>
           block_if(atomic) {
-            name(c)
+            name(kind_type(c))
             for (arg <- args) {
               space
               typ(arg, atomic = true)
@@ -193,9 +203,9 @@ object LP_Syntax
     {
       tm match {
         case Term.Const(c, ty) =>
-          val types = match_typargs(c, ty)
+          val types = match_typargs(kind_const(c), ty)
           block_if(atomic && types.nonEmpty) {
-            name(c)
+            name(kind_const(c))
             for (t <- types) { space; typ(t, atomic = true) }
           }
         case Term.Free(x, _) => name(x)
@@ -227,14 +237,14 @@ object LP_Syntax
 
     def type_decl(c: String, args: Int)
     {
-      symbol_const; name(c); colon
+      symbol_const; name(kind_type(c)); colon
       for (_ <- 0 until args) { Type; to }; Type
       nl
     }
 
     def type_abbrev(c: String, args: List[String], rhs: Term.Typ)
     {
-      definition; name(c);
+      definition; name(kind_type(c))
       for (a <- args) { space; name(a); colon; Type }
       colon; Type; dfn; typ(rhs)
       nl
@@ -253,14 +263,14 @@ object LP_Syntax
 
     def const_decl(c: String, typargs: List[String], ty: Term.Typ)
     {
-      declare_type_scheme(c, typargs, ty)
-      symbol_const; name(c); colon; polymorphic(typargs); eta_typ(ty)
+      declare_type_scheme(kind_const(c), typargs, ty)
+      symbol_const; name(kind_const(c)); colon; polymorphic(typargs); eta_typ(ty)
       nl
     }
 
     def const_abbrev(c: String, typargs: List[String], ty: Term.Typ, rhs: Term.Term)
     {
-      definition; name(c)
+      definition; name(kind_const(c))
       for (a <- typargs) { space; block { name(a); colon; Type } }
       colon; eta_typ(ty); dfn; term(rhs)
       nl
@@ -278,24 +288,24 @@ object LP_Syntax
 
     def prelude_fun
     {
-      rule; eta; space; block { name(Pure_Thy.FUN); string(" &a &b") }; rew;
+      rule; eta; space; block { name(kind_type(Pure_Thy.FUN)); string(" &a &b") }; rew;
         eta; string(" &a"); to; eta; string(" &b"); nl
     }
 
     def prelude_prop
     {
-      symbol; eps; colon; eta; space; name(Pure_Thy.PROP); to; TYPE; nl
+      symbol; eps; colon; eta; space; name(kind_type(Pure_Thy.PROP)); to; TYPE; nl
     }
 
     def prelude_all
     {
-      rule; eps; space; block { name(Pure_Thy.ALL); string(" &a &b") }; rew;
+      rule; eps; space; block { name(kind_const(Pure_Thy.ALL)); string(" &a &b") }; rew;
         all; block { string("x"); colon; eta; string(" &a") }; comma; eps; string(" (&b x)"); nl
     }
 
     def prelude_imp
     {
-      rule; eps; space; block { name(Pure_Thy.IMP); string(" &a &b") }; rew;
+      rule; eps; space; block { name(kind_const(Pure_Thy.IMP)); string(" &a &b") }; rew;
         eps; string(" &a"); to; eps; string(" &b"); nl
     }
   }
