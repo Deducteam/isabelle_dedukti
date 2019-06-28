@@ -376,7 +376,7 @@ object LP_Syntax
       classrel_count += 1
 
       val t = Logic.mk_classrel(c1, c2)
-      val typargs = Logic.add_tfrees(t, Nil)
+      val typargs = Logic.add_tfrees(t, Nil).reverse
       fact_decl("classrel_" + classrel_count, Export_Theory.Prop(typargs, Nil, t))
     }
 
@@ -385,7 +385,7 @@ object LP_Syntax
       arity_count += 1
 
       val t = Logic.mk_arity(a, sorts, c)
-      val typargs = Logic.add_tfrees(t, Nil)
+      val typargs = Logic.add_tfrees(t, Nil).reverse
       fact_decl("arity_" + arity_count, Export_Theory.Prop(typargs, Nil, t))
     }
     
