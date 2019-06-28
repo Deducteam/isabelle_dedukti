@@ -316,7 +316,7 @@ object LP_Syntax
     def type_abbrev(c: String, args: List[String], rhs: Term.Typ)
     {
       definition; name(kind_type(c))
-      for (a <- args) { space; name(a); colon; Type }
+      for (a <- args) { space; block { name(a); colon; Type } }
       colon; Type; dfn; typ(rhs)
       nl
     }
