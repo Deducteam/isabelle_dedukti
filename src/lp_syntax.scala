@@ -9,6 +9,72 @@ import isabelle._
 
 object LP_Syntax
 {
+  // FIXME move to term.scala / logic.scala in Isabelle (!?)
+  object Logic
+  {
+    /* types */
+
+    def aT(s: Term.Sort): Term.Typ = Term.TFree("'a", s)
+    def itselfT(ty: Term.Typ): Term.Typ = Term.Type(Pure_Thy.ITSELF, List(ty))
+    val propT: Term.Typ = Term.Type(Pure_Thy.PROP, Nil)
+    def funT(ty1: Term.Typ, ty2: Term.Typ): Term.Typ = Term.Type(Pure_Thy.FUN, List(ty1, ty2))
+
+    def add_tfreesT(ty: Term.Typ, res: List[(String, Term.Sort)]): List[(String, Term.Sort)] =
+    {
+      ty match {
+        case Term.Type(_, tys) => (res /: tys) { case (r, t) => add_tfreesT(t, r) }
+        case Term.TFree(a, s) => Library.insert((a, s))(res)
+        case _ => res
+      }
+    }
+
+    def add_tfrees(tm: Term.Term, res: List[(String, Term.Sort)]): List[(String, Term.Sort)] =
+    {
+      tm match {
+        case Term.Const(_, ty) => add_tfreesT(ty, res)
+        case Term.Free(_, ty) => add_tfreesT(ty, res)
+        case Term.Var(_, ty) => add_tfreesT(ty, res)
+        case Term.Bound(_) => res
+        case Term.Abs(_, ty, b) => add_tfrees(b, add_tfreesT(ty, res))
+        case Term.App(a, b) => add_tfrees(b, add_tfrees(a, res))
+      }
+    }
+
+
+    /* type as term (polymorphic unit) */
+
+    def mk_type(ty: Term.Typ): Term.Term = Term.Const("Pure.type", itselfT(ty))
+
+
+    /* type classes (within the logic) */
+
+    def const_of_class(c: String): String = c + "_class"
+
+    def mk_of_class(ty: Term.Typ, c: String): Term.Term =
+      Term.App(Term.Const(const_of_class(c), funT(itselfT(ty), propT)), mk_type(ty))
+
+    def mk_of_sort(ty: Term.Typ, s: Term.Sort): List[Term.Term] =
+      s.map(c => mk_of_class(ty, c))
+
+    def mk_classrel(c1: String, c2: String): Term.Term =
+      mk_of_class(aT(List(c1)), c2)
+
+    def mk_arity(a: String, sorts: List[Term.Sort], c: String): Term.Term =
+    {
+      val names =
+        sorts.length match {
+          case 0 => Nil
+          case 1 => List("'a")
+          case 2 => List("'a", "'b")
+          case 3 => List("'a", "'b", "'c")
+          case n => (1 to n).toList.map(i => "'a" + i)
+        }
+      val ty = Term.Type(a, for ((name, sort) <- names zip sorts) yield Term.TFree(name, sort))
+      mk_of_class(ty, c)
+    }
+  }
+
+
   /* reserved */
 
   val reserved =
@@ -289,7 +355,9 @@ object LP_Syntax
     {
       symbol_const; name(kind_fact(c)); colon
       polymorphic(prop.typargs.map(_._1))
-      // FIXME sort constraints from prop.typargs
+      for ((a, s) <- prop.typargs; of_class <- Logic.mk_of_sort(Term.TFree(a, Nil), s)) {
+        eps_term(of_class); to
+      }
       if (prop.args.nonEmpty) {
         all; for ((x, ty) <- prop.args) { block { name(x); colon; eta_typ(ty) }; space }; comma
       }
@@ -297,6 +365,30 @@ object LP_Syntax
       nl
     }
 
+
+    /* sort algebra */
+
+    var classrel_count = 0
+    var arity_count = 0
+
+    def classrel(c1: String, c2: String)
+    {
+      classrel_count += 1
+
+      val t = Logic.mk_classrel(c1, c2)
+      val typargs = Logic.add_tfrees(t, Nil)
+      fact_decl("classrel_" + classrel_count, Export_Theory.Prop(typargs, Nil, t))
+    }
+
+    def arity(a: String, sorts: List[Term.Sort], c: String)
+    {
+      arity_count += 1
+
+      val t = Logic.mk_arity(a, sorts, c)
+      val typargs = Logic.add_tfrees(t, Nil)
+      fact_decl("arity_" + arity_count, Export_Theory.Prop(typargs, Nil, t))
+    }
+    
 
     /* preludes for minimal Higher-order Logic (Isabelle/Pure) */
     // see https://raw.githubusercontent.com/Deducteam/Libraries/master/theories/stt.dk

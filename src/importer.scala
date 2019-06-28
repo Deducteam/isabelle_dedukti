@@ -84,6 +84,14 @@ object Importer
 
         output.fact_decl(a.entity.name, a.prop)
       }
+
+      for (rel <- theory.classrel; c1 = rel.class_name; c2 <- rel.super_names) {
+        output.classrel(c1, c2)
+      }
+
+      for (ar <- theory.arities) {
+        output.arity(ar.type_name, ar.domain, ar.codomain)
+      }
     }
 
 
