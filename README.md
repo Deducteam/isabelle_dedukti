@@ -7,7 +7,14 @@ Isabelle component for dedukti.
 
   * Standard OS platform: Linux, macOS, Windows (e.g. with Cygwin terminal)
 
-  * Suitable Isabelle version (repository clone), see also https://bitbucket.org/makarius/isabelle-cachan/src/tip/README_REPOSITORY
+  * Suitable Isabelle repository clone (see also https://isabelle.in.tum.de/repos/isabelle/file/tip/README_REPOSITORY):
+
+        hg clone https://isabelle.in.tum.de/repos/isabelle
+        hg up -r 470d4f145e4c
+
+        isabelle/bin/isabelle components -I
+        isabelle/bin/isabelle components -a
+        isabelle/bin/isabelle jedit -b
 
 
 ## Settings
