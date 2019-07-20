@@ -9,33 +9,6 @@ import isabelle._
 
 object LP_Syntax
 {
-  // FIXME move to term.scala / logic.scala in Isabelle (!?)
-  object Logic
-  {
-    /* types */
-
-    def itselfT(ty: Term.Typ): Term.Typ = Term.Type(Pure_Thy.ITSELF, List(ty))
-    val propT: Term.Typ = Term.Type(Pure_Thy.PROP, Nil)
-    def funT(ty1: Term.Typ, ty2: Term.Typ): Term.Typ = Term.Type(Pure_Thy.FUN, List(ty1, ty2))
-
-
-    /* type as term (polymorphic unit) */
-
-    def mk_type(ty: Term.Typ): Term.Term = Term.Const("Pure.type", itselfT(ty))
-
-
-    /* type classes (within the logic) */
-
-    def const_of_class(c: String): String = c + "_class"
-
-    def mk_of_class(ty: Term.Typ, c: String): Term.Term =
-      Term.App(Term.Const(const_of_class(c), funT(itselfT(ty), propT)), mk_type(ty))
-
-    def mk_of_sort(ty: Term.Typ, s: Term.Sort): List[Term.Term] =
-      s.map(c => mk_of_class(ty, c))
-  }
-
-
   /* reserved */
 
   val reserved =
@@ -296,7 +269,7 @@ object LP_Syntax
     {
       symbol_const; name(kind_fact(c)); colon
       polymorphic(prop.typargs.map(_._1))
-      for ((a, s) <- prop.typargs; of_class <- Logic.mk_of_sort(Term.TFree(a, Nil), s)) {
+      for ((a, s) <- prop.typargs; of_class <- Term.mk_of_sort(Term.TFree(a, Nil), s)) {
         eps_term(of_class); to
       }
       if (prop.args.nonEmpty) {
