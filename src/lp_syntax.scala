@@ -142,28 +142,8 @@ object LP_Syntax
 
   sealed case class Type_Scheme(typargs: List[String], template: Term.Typ)
   {
-    // FIXME avoid clone wrt. Isabelle/MMT (!?)
     def match_typargs(c: String, typ: Term.Typ): List[Term.Typ] =
-    {
-      var subst = Map.empty[String, Term.Typ]
-      def bad_match(): Nothing = error("Bad type arguments for " + c + ": " + typ)
-      def raw_match(arg: (Term.Typ, Term.Typ))
-      {
-        arg match {
-          case (Term.TFree(a, _), ty) =>
-            subst.get(a) match {
-              case None => subst += (a -> ty)
-              case Some(ty1) => if (ty != ty1) bad_match()
-            }
-          case (Term.Type(c1, args1), Term.Type(c2, args2)) if c1 == c2 =>
-            (args1 zip args2).foreach(raw_match)
-          case _ => bad_match()
-        }
-      }
-
-      raw_match(template, typ)
-      typargs.map(subst)
-    }
+      Term.const_typargs(c, typ, typargs, template)
   }
 
   class Output
