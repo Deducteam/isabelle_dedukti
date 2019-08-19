@@ -280,17 +280,6 @@ object LP_Syntax
     }
 
 
-    /* sort algebra */
-
-    var sort_algebra_count = 0
-
-    def sort_algebra(prop: Export_Theory.Prop)
-    {
-      sort_algebra_count += 1
-      thm_decl("sort_algebra_" + sort_algebra_count, prop)
-    }
-    
-
     /* preludes for minimal Higher-order Logic (Isabelle/Pure) */
     // see https://raw.githubusercontent.com/Deducteam/Libraries/master/theories/stt.dk
 

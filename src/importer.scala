@@ -84,9 +84,6 @@ object Importer
 
         output.thm_decl(thm.entity.name, thm.prop)
       }
-
-      for (rel <- theory.classrel) output.sort_algebra(rel.prop)
-      for (ar <- theory.arities) output.sort_algebra(ar.prop)
     }
 
 
