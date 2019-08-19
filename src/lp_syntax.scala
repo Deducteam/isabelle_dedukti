@@ -69,7 +69,7 @@ object LP_Syntax
 
   def kind_type(a: String): String = append_kind(a, Export_Theory.Kind.TYPE.toString)
   def kind_const(a: String): String = append_kind(a, Export_Theory.Kind.CONST.toString)
-  def kind_fact(a: String): String = append_kind(a, Export_Theory.Kind.FACT.toString)
+  def kind_thm(a: String): String = append_kind(a, Export_Theory.Kind.THM.toString)
 
 
   /* buffered output depending on context (unsynchronized) */
@@ -263,11 +263,11 @@ object LP_Syntax
     }
 
 
-    /* facts */
+    /* theorems */
 
-    def fact_decl(c: String, prop: Export_Theory.Prop)
+    def thm_decl(c: String, prop: Export_Theory.Prop)
     {
-      symbol_const; name(kind_fact(c)); colon
+      symbol_const; name(kind_thm(c)); colon
       polymorphic(prop.typargs.map(_._1))
       for ((a, s) <- prop.typargs; of_class <- Term.mk_of_sort(Term.TFree(a, Nil), s)) {
         eps_term(of_class); to
@@ -287,7 +287,7 @@ object LP_Syntax
     def sort_algebra(prop: Export_Theory.Prop)
     {
       sort_algebra_count += 1
-      fact_decl("sort_algebra_" + sort_algebra_count, prop)
+      thm_decl("sort_algebra_" + sort_algebra_count, prop)
     }
     
 

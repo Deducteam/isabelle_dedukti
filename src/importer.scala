@@ -79,10 +79,10 @@ object Importer
         if (a.entity.name == Pure_Thy.IMP) output.prelude_imp
       }
 
-      for (fact <- theory.facts; a <- fact.split) {
-        if (verbose) progress.echo("  " + a.entity.toString)
+      for (thm <- theory.thms) {
+        if (verbose) progress.echo("  " + thm.entity.toString)
 
-        output.fact_decl(a.entity.name, a.prop)
+        output.thm_decl(thm.entity.name, thm.prop)
       }
 
       for (rel <- theory.classrel) output.sort_algebra(rel.prop)
