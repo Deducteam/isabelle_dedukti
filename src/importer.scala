@@ -20,31 +20,14 @@ object Importer
     selection: Sessions.Selection = Sessions.Selection.empty,
     verbose: Boolean = false)
   {
-    val logic = Thy_Header.PURE
     val store = Sessions.store(options)
     val cache = Term.make_cache()
 
     val output = new LP_Syntax.Output
 
-
-    /* build Isabelle/Pure */
-
-    Build.build_logic(options, logic, build_heap = true, progress = progress,
-      dirs = dirs ::: select_dirs, strict = true)
-
-
-    /* options and resources */
-
-    val dump_options: Options = Dump.make_options(options, Dump.known_aspects)
-
-    val session_deps =
-      Dump.dependencies(dump_options, progress = progress,
-        dirs = dirs, select_dirs = select_dirs, selection = selection)
-
-    val resources: Headless.Resources =
-      Headless.Resources.make(dump_options, logic, progress = progress,
-        session_dirs = dirs ::: select_dirs,
-        include_sessions = session_deps.sessions_structure.imports_topological_order)
+    val session =
+      Dump.Session(options, Thy_Header.PURE, aspects = Dump.known_aspects,
+        progress = progress, dirs = dirs, select_dirs = select_dirs, selection = selection)
 
 
     /* import theory content */
@@ -89,25 +72,21 @@ object Importer
 
     /* import session (headless PIDE) */
 
-    val import_theories = resources.used_theories(session_deps, progress = progress)
-
-    if (import_theories.isEmpty) {
+    if (session.used_theories.isEmpty) {
       progress.echo_warning("Nothing to import")
     }
     else {
       output.prelude_type
       import_theory(Export_Theory.read_pure_theory(store, cache = Some(cache)))
 
-      Dump.session(session_deps, resources,
-        progress = progress,
-        process_theory = (args: Dump.Args) =>
-          {
-            val snapshot = args.snapshot
-            val theory =
-              Export_Theory.read_theory(Export.Provider.snapshot(snapshot),
-                Sessions.DRAFT, snapshot.node_name.theory, cache = Some(cache))
-            import_theory(theory)
-          })
+      session.run((args: Dump.Args) =>
+        {
+          val snapshot = args.snapshot
+          val theory =
+            Export_Theory.read_theory(Export.Provider.snapshot(snapshot),
+              Sessions.DRAFT, snapshot.node_name.theory, cache = Some(cache))
+          import_theory(theory)
+        })
     }
 
     progress.echo("Output " + output_file)
