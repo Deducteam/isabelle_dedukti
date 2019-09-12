@@ -6,6 +6,8 @@ package isabelle.dedukti
 
 import isabelle._
 
+import java.io.{FileOutputStream, OutputStreamWriter, BufferedWriter}
+
 
 object LP_Syntax
 {
@@ -80,8 +82,25 @@ object LP_Syntax
       Term.const_typargs(c, typ, typargs, template)
   }
 
-  class Output
+  class Output(file: Path) extends AutoCloseable
   {
+    /* manage output file */
+
+    private val file_part = file.ext("part")
+
+    private val writer =
+      new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file_part.file), UTF8.charset))
+
+    def char(c: Char): Unit = writer.write(c)
+    def string(s: String): Unit = writer.write(s)
+
+    def close()
+    {
+      writer.close
+      File.move(file_part, file)
+    }
+
+
     /* logical context */
 
     var context_type_scheme: Map[String, Type_Scheme] = Map.empty
@@ -99,15 +118,6 @@ object LP_Syntax
       }
       else context_type_scheme += (c -> Type_Scheme(typargs, template))
     }
-
-
-    /* text buffer */
-
-    val buffer = new StringBuilder
-    def write(path: Path) = File.write(path, buffer.toString)
-
-    def char(c: Char): Unit = buffer += c
-    def string(s: String): Unit = buffer ++= s
 
 
     /* white space */

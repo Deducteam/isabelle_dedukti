@@ -23,74 +23,73 @@ object Importer
     val store = Sessions.store(options)
     val cache = Term.make_cache()
 
-    val output = new LP_Syntax.Output
-
     val session =
       Dump.Session(options, Thy_Header.PURE, aspects = Dump.known_aspects,
         progress = progress, dirs = dirs, select_dirs = select_dirs, selection = selection)
 
-
-    /* import theory content */
-
-    def import_theory(theory: Export_Theory.Theory)
+    using(new LP_Syntax.Output(output_file))(output =>
     {
-      progress.echo("Importing theory " + theory.name)
+      /* import theory content */
 
-      output.string("\n\n// theory " + theory.name + "\n\n")
+      def import_theory(theory: Export_Theory.Theory)
+      {
+        progress.echo("Importing theory " + theory.name)
 
-      for (a <- theory.types) {
-        if (verbose) progress.echo("  " + a.entity.toString)
+        output.string("\n\n// theory " + theory.name + "\n\n")
 
-        a.abbrev match {
-          case None => output.type_decl(a.entity.name, a.args.length)
-          case Some(rhs) => output.type_abbrev(a.entity.name, a.args, rhs)
+        for (a <- theory.types) {
+          if (verbose) progress.echo("  " + a.entity.toString)
+
+          a.abbrev match {
+            case None => output.type_decl(a.entity.name, a.args.length)
+            case Some(rhs) => output.type_abbrev(a.entity.name, a.args, rhs)
+          }
+
+          if (a.entity.name == Pure_Thy.FUN) output.prelude_fun
+          if (a.entity.name == Pure_Thy.PROP) output.prelude_prop
         }
 
-        if (a.entity.name == Pure_Thy.FUN) output.prelude_fun
-        if (a.entity.name == Pure_Thy.PROP) output.prelude_prop
-      }
+        for (a <- theory.consts) {
+          if (verbose) progress.echo("  " + a.entity.toString)
 
-      for (a <- theory.consts) {
-        if (verbose) progress.echo("  " + a.entity.toString)
+          a.abbrev match {
+            case None => output.const_decl(a.entity.name, a.typargs, a.typ)
+            case Some(rhs) => output.const_abbrev(a.entity.name, a.typargs, a.typ, rhs)
+          }
 
-        a.abbrev match {
-          case None => output.const_decl(a.entity.name, a.typargs, a.typ)
-          case Some(rhs) => output.const_abbrev(a.entity.name, a.typargs, a.typ, rhs)
+          if (a.entity.name == Pure_Thy.ALL) output.prelude_all
+          if (a.entity.name == Pure_Thy.IMP) output.prelude_imp
         }
 
-        if (a.entity.name == Pure_Thy.ALL) output.prelude_all
-        if (a.entity.name == Pure_Thy.IMP) output.prelude_imp
+        for (thm <- theory.thms) {
+          if (verbose) progress.echo("  " + thm.entity.toString)
+
+          output.thm_decl(thm.entity.name, thm.prop)
+        }
       }
 
-      for (thm <- theory.thms) {
-        if (verbose) progress.echo("  " + thm.entity.toString)
 
-        output.thm_decl(thm.entity.name, thm.prop)
+      /* import session (headless PIDE) */
+
+      if (session.used_theories.isEmpty) {
+        progress.echo_warning("Nothing to import")
       }
-    }
+      else {
+        output.prelude_type
+        import_theory(Export_Theory.read_pure_theory(store, cache = Some(cache)))
 
-
-    /* import session (headless PIDE) */
-
-    if (session.used_theories.isEmpty) {
-      progress.echo_warning("Nothing to import")
-    }
-    else {
-      output.prelude_type
-      import_theory(Export_Theory.read_pure_theory(store, cache = Some(cache)))
-
-      session.run((args: Dump.Args) =>
-        {
-          val snapshot = args.snapshot
-          val theory =
-            Export_Theory.read_theory(Export.Provider.snapshot(snapshot),
-              Sessions.DRAFT, snapshot.node_name.theory, cache = Some(cache))
-          import_theory(theory)
-        })
-    }
+        session.run((args: Dump.Args) =>
+          {
+            val snapshot = args.snapshot
+            val theory =
+              Export_Theory.read_theory(Export.Provider.snapshot(snapshot),
+                Sessions.DRAFT, snapshot.node_name.theory, cache = Some(cache))
+            import_theory(theory)
+          })
+      }
+    })
 
     progress.echo("Output " + output_file)
-    output.write(output_file)
   }
 
 
