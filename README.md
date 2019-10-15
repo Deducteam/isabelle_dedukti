@@ -39,7 +39,7 @@ isabelle dedukti_build && isabelle dedukti_test
 ### Batch mode
 ```
 isabelle dedukti_import FOL-ex
-isabelle dedukti_import -o record_proofs=2 -D.
+isabelle dedukti_import -D.
 ```
 
 
