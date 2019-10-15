@@ -183,6 +183,10 @@ object LP_Syntax
             lambda; block { name(x); colon; eta_typ(ty) }; comma
             term(b, bounds = x :: bounds)
           }
+        case Term.OFCLASS(t, c) =>
+          block_if(atomic) {
+            name(kind_class(c)); space; typ(t, atomic = true)
+          }
         case Term.App(a, b) =>
           block_if(atomic) {
             term(a, bounds = bounds, atomic = true)
@@ -257,8 +261,8 @@ object LP_Syntax
     {
       symbol_const; name(kind_thm(c)); colon
       polymorphic(prop.typargs.map(_._1))
-      for ((a, s) <- prop.typargs; of_class <- Term.OFCLASS(Term.TFree(a, Nil), s)) {
-        eps_term(of_class); to
+      for ((a, s) <- prop.typargs; c <- s) {
+        eps; space; block { name(kind_class(c)); space; name(a) }; to
       }
       if (prop.args.nonEmpty) {
         all; for ((x, ty) <- prop.args) { block { name(x); colon; eta_typ(ty) }; space }; comma
