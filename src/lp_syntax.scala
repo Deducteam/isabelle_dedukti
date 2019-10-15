@@ -76,12 +76,6 @@ object LP_Syntax
 
   /* buffered output depending on context (unsynchronized) */
 
-  sealed case class Type_Scheme(typargs: List[String], template: Term.Typ)
-  {
-    def match_typargs(c: String, typ: Term.Typ): List[Term.Typ] =
-      Term.const_typargs(c, typ, typargs, template)
-  }
-
   class Output(file: Path) extends AutoCloseable
   {
     /* manage output file */
@@ -98,25 +92,6 @@ object LP_Syntax
     {
       writer.close
       File.move(file_part, file)
-    }
-
-
-    /* logical context */
-
-    var context_type_scheme: Map[String, Type_Scheme] = Map.empty
-
-    def match_typargs(c: String, typ: Term.Typ): List[Term.Typ] =
-    {
-      context_type_scheme.getOrElse(c, error("Undefined type_scheme for " + quote(c)))
-        .match_typargs(c, typ)
-    }
-
-    def declare_type_scheme(c: String, typargs: List[String], template: Term.Typ)
-    {
-      if (context_type_scheme.isDefinedAt(c)) {
-        error("Duplicate declaration of type scheme for " + quote(c))
-      }
-      else context_type_scheme += (c -> Type_Scheme(typargs, template))
     }
 
 
@@ -192,11 +167,10 @@ object LP_Syntax
     def term(tm: Term.Term, bounds: List[String] = Nil, atomic: Boolean = false)
     {
       tm match {
-        case Term.Const(c, ty) =>
-          val types = match_typargs(kind_const(c), ty)
-          block_if(atomic && types.nonEmpty) {
+        case Term.Const(c, typargs) =>
+          block_if(atomic && typargs.nonEmpty) {
             name(kind_const(c))
-            for (t <- types) { space; typ(t, atomic = true) }
+            for (t <- typargs) { space; typ(t, atomic = true) }
           }
         case Term.Free(x, _) => name(x)
         case Term.Var(xi, _) => error("Illegal schematic variable " + xi.toString)
@@ -258,14 +232,12 @@ object LP_Syntax
 
     def const_decl(c: String, typargs: List[String], ty: Term.Typ)
     {
-      declare_type_scheme(kind_const(c), typargs, ty)
       symbol_const; name(kind_const(c)); colon; polymorphic(typargs); eta_typ(ty)
       nl
     }
 
     def const_abbrev(c: String, typargs: List[String], ty: Term.Typ, rhs: Term.Term)
     {
-      declare_type_scheme(kind_const(c), typargs, ty)
       definition; name(kind_const(c))
       for (a <- typargs) { space; block { name(a); colon; Type } }
       colon; eta_typ(ty); dfn; term(rhs)
@@ -279,7 +251,7 @@ object LP_Syntax
     {
       symbol_const; name(kind_thm(c)); colon
       polymorphic(prop.typargs.map(_._1))
-      for ((a, s) <- prop.typargs; of_class <- Term.mk_of_sort(Term.TFree(a, Nil), s)) {
+      for ((a, s) <- prop.typargs; of_class <- Term.OFCLASS(Term.TFree(a, Nil), s)) {
         eps_term(of_class); to
       }
       if (prop.args.nonEmpty) {

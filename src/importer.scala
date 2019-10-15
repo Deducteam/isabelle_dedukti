@@ -23,9 +23,13 @@ object Importer
     val store = Sessions.store(options)
     val cache = Term.make_cache()
 
-    val session =
-      Dump.Session(options, Thy_Header.PURE, aspects = Dump.known_aspects,
-        progress = progress, dirs = dirs, select_dirs = select_dirs, selection = selection)
+    val logic = Thy_Header.PURE
+
+    val context =
+      Dump.Context(options, aspects = Dump.known_aspects, progress = progress,
+        dirs = dirs, select_dirs = select_dirs, selection = selection)
+
+    context.build_logic(logic)
 
     using(new LP_Syntax.Output(output_file))(output =>
     {
@@ -71,22 +75,26 @@ object Importer
 
       /* import session (headless PIDE) */
 
-      if (session.used_theories.isEmpty) {
+      val sessions = context.sessions(logic)
+
+      if (sessions.isEmpty) {
         progress.echo_warning("Nothing to import")
       }
       else {
         output.prelude_type
         import_theory(Export_Theory.read_pure_theory(store, cache = Some(cache)))
 
-        session.run((args: Dump.Args) =>
+        sessions.foreach(_.process((args: Dump.Args) =>
           {
             val snapshot = args.snapshot
             val theory =
               Export_Theory.read_theory(Export.Provider.snapshot(snapshot),
                 Sessions.DRAFT, snapshot.node_name.theory, cache = Some(cache))
             import_theory(theory)
-          })
+          }))
       }
+
+      context.check_errors
     })
 
     progress.echo("Output " + output_file)
