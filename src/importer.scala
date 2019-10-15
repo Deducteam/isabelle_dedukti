@@ -26,7 +26,8 @@ object Importer
     val logic = Thy_Header.PURE
 
     val context =
-      Dump.Context(options, aspects = Dump.known_aspects, progress = progress,
+      Dump.Context(options + "record_proofs=2" + "export_proofs" + "prune_proofs",
+        aspects = Dump.known_aspects, progress = progress,
         dirs = dirs, select_dirs = select_dirs, selection = selection)
 
     context.build_logic(logic)
