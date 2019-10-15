@@ -175,13 +175,8 @@ object LP_Syntax
         case Term.Free(x, _) => name(x)
         case Term.Var(xi, _) => error("Illegal schematic variable " + xi.toString)
         case Term.Bound(i) =>
-          val x =
-            try { bounds(i) }
-            catch {
-              case _: IndexOutOfBoundsException =>
-                isabelle.error("Loose de-Bruijn index " + i)
-            }
-          name(x)
+          try { name(bounds(i)) }
+          catch { case _: IndexOutOfBoundsException => isabelle.error("Loose bound variable " + i) }
         case Term.Abs(x, ty, b) =>
           block_if(atomic) {
             lambda; block { name(x); colon; eta_typ(ty) }; comma
