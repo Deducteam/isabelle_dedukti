@@ -73,6 +73,7 @@ object LP_Syntax
   def kind_type(a: String): String = append_kind(a, Export_Theory.Kind.TYPE.toString)
   def kind_const(a: String): String = append_kind(a, Export_Theory.Kind.CONST.toString)
   def kind_thm(a: String): String = append_kind(a, Export_Theory.Kind.THM.toString)
+  def kind_proof(a: String): String = append_kind(a, Export_Theory.Kind.PROOF.toString)
 
 
   /* buffered output depending on context (unsynchronized) */
@@ -255,11 +256,11 @@ object LP_Syntax
     }
 
 
-    /* theorems */
+    /* theorems and proof terms */
 
-    def thm_decl(c: String, prop: Export_Theory.Prop)
+    def stmt_decl(c: String, prop: Export_Theory.Prop, is_proof: Boolean)
     {
-      symbol_const; name(kind_thm(c)); colon
+      symbol_const; if (is_proof) name(kind_proof(c)) else name(kind_thm(c)); colon
       polymorphic(prop.typargs.map(_._1))
       for ((a, s) <- prop.typargs; c <- s) {
         eps; space; block { name(kind_class(c)); space; name(a) }; to
@@ -269,6 +270,24 @@ object LP_Syntax
       }
       eps_term(prop.term)
       nl
+    }
+
+    private var exported_proofs = Set.empty[Long]
+
+    def proof_decl(
+      read_proof: Export_Theory.Thm_Id => Export_Theory.Proof,
+      id: Export_Theory.Thm_Id)
+    {
+      if (!exported_proofs(id.serial)) {
+        exported_proofs += id.serial
+        val proof = read_proof(id)
+        stmt_decl(id.serial.toString, proof.prop, true)
+      }
+    }
+
+    def thm_decl(c: String, prop: Export_Theory.Prop)
+    {
+      stmt_decl(c, prop, false)
     }
 
 

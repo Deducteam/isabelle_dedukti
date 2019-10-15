@@ -36,7 +36,8 @@ object Importer
     {
       /* import theory content */
 
-      def import_theory(theory: Export_Theory.Theory)
+      def import_theory(
+        theory: Export_Theory.Theory, read_proof: Export_Theory.Thm_Id => Export_Theory.Proof)
       {
         progress.echo("Importing theory " + theory.name)
 
@@ -74,6 +75,7 @@ object Importer
         for (thm <- theory.thms) {
           if (verbose) progress.echo("  " + thm.entity.toString)
 
+          for (id <- thm.proof_boxes) output.proof_decl(read_proof, id)
           output.thm_decl(thm.entity.name, thm.prop)
         }
       }
@@ -88,15 +90,30 @@ object Importer
       }
       else {
         output.prelude_type
-        import_theory(Export_Theory.read_pure_theory(store, cache = Some(cache)))
+
+        import_theory(
+          Export_Theory.read_pure_theory(store, cache = Some(cache)),
+          Export_Theory.read_pure_proof(store, _, cache = Some(cache)))
 
         sessions.foreach(_.process((args: Dump.Args) =>
           {
             val snapshot = args.snapshot
+            val provider = Export.Provider.snapshot(snapshot)
+            val theory_name = snapshot.node_name.theory
             val theory =
-              Export_Theory.read_theory(Export.Provider.snapshot(snapshot),
-                Sessions.DRAFT, snapshot.node_name.theory, cache = Some(cache))
-            import_theory(theory)
+              Export_Theory.read_theory(provider, Sessions.DRAFT, theory_name, cache = Some(cache))
+
+            def read_proof(id: Export_Theory.Thm_Id): Export_Theory.Proof =
+            {
+              if (verbose) {
+                progress.echo("  proof " + id.serial +
+                  (if (theory_name == id.theory_name) "" else " (from " + id.theory_name + ")"))
+              }
+              if (id.pure) Export_Theory.read_pure_proof(store, id, cache = Some(cache))
+              else Export_Theory.read_proof(provider, id, cache = Some(cache))
+            }
+
+            import_theory(theory, read_proof)
           }))
       }
 
