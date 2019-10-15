@@ -42,6 +42,11 @@ object Importer
 
         output.string("\n\n// theory " + theory.name + "\n\n")
 
+        for (a <- theory.classes) {
+          if (verbose) progress.echo("  " + a.entity.toString)
+          output.class_decl(a.entity.name)
+        }
+
         for (a <- theory.types) {
           if (verbose) progress.echo("  " + a.entity.toString)
 

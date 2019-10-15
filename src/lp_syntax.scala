@@ -69,6 +69,7 @@ object LP_Syntax
   def append_kind(a: String, kind: String): String =
     if (kind.isEmpty) a else a + "|" + kind
 
+  def kind_class(a: String): String = append_kind(a, Export_Theory.Kind.CLASS.toString)
   def kind_type(a: String): String = append_kind(a, Export_Theory.Kind.TYPE.toString)
   def kind_const(a: String): String = append_kind(a, Export_Theory.Kind.CONST.toString)
   def kind_thm(a: String): String = append_kind(a, Export_Theory.Kind.THM.toString)
@@ -194,6 +195,16 @@ object LP_Syntax
     def eps_term(t: Term.Term, atomic: Boolean = false)
     {
       block_if(atomic) { eps; space; term(t, atomic = true) }
+    }
+
+
+    /* type classes */
+
+    def class_decl(c: String)
+    {
+      symbol_const; name(kind_class(c)); colon
+      Type; to; eta; space; name(kind_type(Pure_Thy.PROP))
+      nl
     }
 
 
