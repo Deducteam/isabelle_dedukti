@@ -129,6 +129,7 @@ object LP_Syntax
     def eta { string("eta") }
     def eps { string("eps") }
     def colon { string(" : ") }
+    def hole { string("__") }
     def to { string(" \u21d2 ") }
     def dfn { string(" \u2254 ") }
     def rew { string(" \u2192 ") }
@@ -196,6 +197,50 @@ object LP_Syntax
           }
       }
     }
+
+    def proof(prf: Term.Proof, bounds: List[String] = Nil, atomic: Boolean = false)
+    {
+      prf match {
+        case Term.MinProof => hole
+        case Term.PBound(i) =>
+          try { name(bounds(i)) }
+          catch { case _: IndexOutOfBoundsException => isabelle.error("Loose bound variable " + i) }
+        case Term.Abst(x, ty, b) =>
+          block_if(atomic) {
+            lambda; block { name(x); colon; eta_typ(ty) }; comma
+            proof(b, bounds = x :: bounds)
+          }
+        case Term.AbsP(x, hy, b) =>
+          block_if(atomic) {
+            lambda; block { name(x); colon; eps_term(hy) }; comma
+            proof(b, bounds = x :: bounds)
+          }
+        case Term.Appt(a, b) =>
+          block_if(atomic) {
+            proof(a, bounds = bounds, atomic = true)
+            space
+            term(b, bounds = bounds, atomic = true)
+          }
+        case Term.AppP(a, b) =>
+          block_if(atomic) {
+            proof(a, bounds = bounds, atomic = true)
+            space
+            proof(b, bounds = bounds, atomic = true)
+          }
+        case Term.OfClass(t, c) =>
+          block_if(atomic) {
+            name(kind_class(c)); space; typ(t, atomic = true)
+          }
+        /* TODO: missing cases:
+        case class Hyp(hyp: Term) extends Proof
+        case class PAxm(name: String, types: List[Typ]) extends Proof
+        case class Oracle(name: String, prop: Term, types: List[Typ]) extends Proof
+        case class PThm(serial: Long, theory_name: String, approximative_name: String, types: List[Typ])
+        */
+      }
+    }
+
+
 
     def eps_term(t: Term.Term, atomic: Boolean = false)
     {
@@ -280,8 +325,8 @@ object LP_Syntax
     {
       if (!exported_proofs(id.serial)) {
         exported_proofs += id.serial
-        val proof = read_proof(id)
-        stmt_decl(id.serial.toString, proof.prop, true)
+        val prf = read_proof(id)
+        stmt_decl(id.serial.toString, prf.prop, true)
       }
     }
 
