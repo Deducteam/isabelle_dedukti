@@ -66,14 +66,13 @@ object LP_Syntax
 
   /* kinds */
 
-  def append_kind(a: String, kind: String): String =
-    if (kind.isEmpty) a else a + "|" + kind
+  def kind(a: String, k: Export_Theory.Kind.Value): String = a + "|" + k.toString
 
-  def kind_class(a: String): String = append_kind(a, Export_Theory.Kind.CLASS.toString)
-  def kind_type(a: String): String = append_kind(a, Export_Theory.Kind.TYPE.toString)
-  def kind_const(a: String): String = append_kind(a, Export_Theory.Kind.CONST.toString)
-  def kind_thm(a: String): String = append_kind(a, Export_Theory.Kind.THM.toString)
-  def kind_proof(a: String): String = append_kind(a, Export_Theory.Kind.PROOF.toString)
+  def class_kind(a: String): String = kind(a, Export_Theory.Kind.CLASS)
+  def type_kind(a: String): String = kind(a, Export_Theory.Kind.TYPE)
+  def const_kind(a: String): String = kind(a, Export_Theory.Kind.CONST)
+  def thm_kind(a: String): String = kind(a, Export_Theory.Kind.THM)
+  def proof_kind(a: String): String = kind(a, Export_Theory.Kind.PROOF)
 
 
   /* buffered output depending on context (unsynchronized) */
@@ -149,10 +148,10 @@ object LP_Syntax
     {
       ty match {
         case Term.TFree(a, _) => name(a)
-        case Term.Type(c, Nil) => name(kind_type(c))
+        case Term.Type(c, Nil) => name(type_kind(c))
         case Term.Type(c, args) =>
           block_if(atomic) {
-            name(kind_type(c))
+            name(type_kind(c))
             for (arg <- args) {
               space
               typ(arg, atomic = true)
@@ -172,7 +171,7 @@ object LP_Syntax
       tm match {
         case Term.Const(c, typargs) =>
           block_if(atomic && typargs.nonEmpty) {
-            name(kind_const(c))
+            name(const_kind(c))
             for (t <- typargs) { space; typ(t, atomic = true) }
           }
         case Term.Free(x, _) => name(x)
@@ -187,7 +186,7 @@ object LP_Syntax
           }
         case Term.OFCLASS(t, c) =>
           block_if(atomic) {
-            name(kind_class(c)); space; typ(t, atomic = true)
+            name(class_kind(c)); space; typ(t, atomic = true)
           }
         case Term.App(a, b) =>
           block_if(atomic) {
@@ -229,7 +228,7 @@ object LP_Syntax
           }
         case Term.OfClass(t, c) =>
           block_if(atomic) {
-            name(kind_class(c)); space; typ(t, atomic = true)
+            name(class_kind(c)); space; typ(t, atomic = true)
           }
         /* TODO: missing cases:
         case class Hyp(hyp: Term) extends Proof
@@ -252,8 +251,8 @@ object LP_Syntax
 
     def class_decl(c: String)
     {
-      symbol_const; name(kind_class(c)); colon
-      Type; to; eta; space; name(kind_type(Pure_Thy.PROP))
+      symbol_const; name(class_kind(c)); colon
+      Type; to; eta; space; name(type_kind(Pure_Thy.PROP))
       nl
     }
 
@@ -262,14 +261,14 @@ object LP_Syntax
 
     def type_decl(c: String, args: Int)
     {
-      symbol_const; name(kind_type(c)); colon
+      symbol_const; name(type_kind(c)); colon
       for (_ <- 0 until args) { Type; to }; Type
       nl
     }
 
     def type_abbrev(c: String, args: List[String], rhs: Term.Typ)
     {
-      definition; name(kind_type(c))
+      definition; name(type_kind(c))
       for (a <- args) { space; block { name(a); colon; Type } }
       colon; Type; dfn; typ(rhs)
       nl
@@ -288,13 +287,13 @@ object LP_Syntax
 
     def const_decl(c: String, typargs: List[String], ty: Term.Typ)
     {
-      symbol_const; name(kind_const(c)); colon; polymorphic(typargs); eta_typ(ty)
+      symbol_const; name(const_kind(c)); colon; polymorphic(typargs); eta_typ(ty)
       nl
     }
 
     def const_abbrev(c: String, typargs: List[String], ty: Term.Typ, rhs: Term.Term)
     {
-      definition; name(kind_const(c))
+      definition; name(const_kind(c))
       for (a <- typargs) { space; block { name(a); colon; Type } }
       colon; eta_typ(ty); dfn; term(rhs)
       nl
@@ -305,10 +304,10 @@ object LP_Syntax
 
     def stmt_decl(c: String, prop: Export_Theory.Prop, is_proof: Boolean)
     {
-      symbol_const; if (is_proof) name(kind_proof(c)) else name(kind_thm(c)); colon
+      symbol_const; if (is_proof) name(proof_kind(c)) else name(thm_kind(c)); colon
       polymorphic(prop.typargs.map(_._1))
       for ((a, s) <- prop.typargs; c <- s) {
-        eps; space; block { name(kind_class(c)); space; name(a) }; to
+        eps; space; block { name(class_kind(c)); space; name(a) }; to
       }
       if (prop.args.nonEmpty) {
         all; for ((x, ty) <- prop.args) { block { name(x); colon; eta_typ(ty) }; space }; comma
@@ -348,24 +347,24 @@ object LP_Syntax
 
     def prelude_fun
     {
-      rule; eta; space; block { name(kind_type(Pure_Thy.FUN)); string(" &a &b") }; rew;
+      rule; eta; space; block { name(type_kind(Pure_Thy.FUN)); string(" &a &b") }; rew;
         eta; string(" &a"); to; eta; string(" &b"); nl
     }
 
     def prelude_prop
     {
-      symbol; eps; colon; eta; space; name(kind_type(Pure_Thy.PROP)); to; TYPE; nl
+      symbol; eps; colon; eta; space; name(type_kind(Pure_Thy.PROP)); to; TYPE; nl
     }
 
     def prelude_all
     {
-      rule; eps; space; block { name(kind_const(Pure_Thy.ALL)); string(" &a &b") }; rew;
+      rule; eps; space; block { name(const_kind(Pure_Thy.ALL)); string(" &a &b") }; rew;
         all; block { string("x"); colon; eta; string(" &a") }; comma; eps; string(" (&b x)"); nl
     }
 
     def prelude_imp
     {
-      rule; eps; space; block { name(kind_const(Pure_Thy.IMP)); string(" &a &b") }; rew;
+      rule; eps; space; block { name(const_kind(Pure_Thy.IMP)); string(" &a &b") }; rew;
         eps; string(" &a"); to; eps; string(" &b"); nl
     }
   }
