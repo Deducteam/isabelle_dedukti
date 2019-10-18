@@ -71,7 +71,6 @@ object LP_Syntax
   def class_kind(a: String): String = kind(a, Export_Theory.Kind.CLASS)
   def type_kind(a: String): String = kind(a, Export_Theory.Kind.TYPE)
   def const_kind(a: String): String = kind(a, Export_Theory.Kind.CONST)
-  def thm_kind(a: String): String = kind(a, Export_Theory.Kind.THM)
   def proof_kind(a: String): String = kind(a, Export_Theory.Kind.PROOF)
 
 
@@ -302,9 +301,9 @@ object LP_Syntax
 
     /* theorems and proof terms */
 
-    def stmt_decl(c: String, prop: Export_Theory.Prop, is_proof: Boolean)
+    def stmt_decl(c: String, prop: Export_Theory.Prop, k: Export_Theory.Kind.Value)
     {
-      symbol_const; if (is_proof) name(proof_kind(c)) else name(thm_kind(c)); colon
+      symbol_const; name(kind(c, k)); colon
       polymorphic(prop.typargs.map(_._1))
       for ((a, s) <- prop.typargs; c <- s) {
         eps; space; block { name(class_kind(c)); space; name(a) }; to
@@ -325,14 +324,9 @@ object LP_Syntax
       if (!exported_proofs(id.serial)) {
         for (prf <- read_proof(id)) {
           exported_proofs += id.serial
-          stmt_decl(id.serial.toString, prf.prop, true)
+          stmt_decl(id.serial.toString, prf.prop, Export_Theory.Kind.PROOF)
         }
       }
-    }
-
-    def thm_decl(c: String, prop: Export_Theory.Prop)
-    {
-      stmt_decl(c, prop, false)
     }
 
 
