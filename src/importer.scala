@@ -37,7 +37,8 @@ object Importer
       /* import theory content */
 
       def import_theory(
-        theory: Export_Theory.Theory, read_proof: Export_Theory.Thm_Id => Export_Theory.Proof)
+        theory: Export_Theory.Theory,
+        read_proof: Export_Theory.Thm_Id => Option[Export_Theory.Proof])
       {
         progress.echo("Importing theory " + theory.name)
 
@@ -75,7 +76,7 @@ object Importer
         for (thm <- theory.thms) {
           if (verbose) progress.echo("  " + thm.entity.toString)
 
-          for (id <- thm.proof_boxes) output.proof_decl(read_proof, id)
+          for (id <- thm.proof_boxes) output.proof_decl(id, read_proof)
           output.thm_decl(thm.entity.name, thm.prop)
         }
       }
@@ -103,14 +104,17 @@ object Importer
             val theory =
               Export_Theory.read_theory(provider, Sessions.DRAFT, theory_name, cache = Some(cache))
 
-            def read_proof(id: Export_Theory.Thm_Id): Export_Theory.Proof =
+            def read_proof(id: Export_Theory.Thm_Id): Option[Export_Theory.Proof] =
             {
-              if (verbose) {
+              val proof =
+                if (id.pure) Export_Theory.read_pure_proof(store, id, cache = Some(cache))
+                else Export_Theory.read_proof(provider, id, cache = Some(cache))
+
+              if (verbose && proof.isDefined) {
                 progress.echo("  proof " + id.serial +
                   (if (theory_name == id.theory_name) "" else " (from " + id.theory_name + ")"))
               }
-              if (id.pure) Export_Theory.read_pure_proof(store, id, cache = Some(cache))
-              else Export_Theory.read_proof(provider, id, cache = Some(cache))
+              proof
             }
 
             import_theory(theory, read_proof)

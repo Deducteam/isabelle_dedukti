@@ -320,13 +320,14 @@ object LP_Syntax
     private var exported_proofs = Set.empty[Long]
 
     def proof_decl(
-      read_proof: Export_Theory.Thm_Id => Export_Theory.Proof,
-      id: Export_Theory.Thm_Id)
+      id: Export_Theory.Thm_Id,
+      read_proof: Export_Theory.Thm_Id => Option[Export_Theory.Proof])
     {
       if (!exported_proofs(id.serial)) {
-        exported_proofs += id.serial
-        val prf = read_proof(id)
-        stmt_decl(id.serial.toString, prf.prop, true)
+        for (prf <- read_proof(id)) {
+          exported_proofs += id.serial
+          stmt_decl(id.serial.toString, prf.prop, true)
+        }
       }
     }
 
