@@ -71,7 +71,8 @@ object LP_Syntax
   def class_kind(a: String): String = kind(a, Export_Theory.Kind.CLASS)
   def type_kind(a: String): String = kind(a, Export_Theory.Kind.TYPE)
   def const_kind(a: String): String = kind(a, Export_Theory.Kind.CONST)
-  def proof_kind(a: String): String = kind(a, Export_Theory.Kind.PROOF)
+  def axiom_kind(a: String): String = kind(a, Export_Theory.Kind.AXIOM)
+  def proof_kind(serial: Long): String = kind(serial.toString, Export_Theory.Kind.PROOF)
 
 
   /* buffered output depending on context (unsynchronized) */
@@ -127,7 +128,6 @@ object LP_Syntax
     def eta { string("eta") }
     def eps { string("eps") }
     def colon { string(" : ") }
-    def hole { string("__") }
     def to { string(" \u21d2 ") }
     def dfn { string(" \u2254 ") }
     def rew { string(" \u2192 ") }
@@ -196,53 +196,57 @@ object LP_Syntax
       }
     }
 
-    def proof(prf: Term.Proof, bounds: List[String] = Nil, atomic: Boolean = false)
+    def proof(prf: Term.Proof,
+      bounds: List[String] = Nil,
+      bounds_proof: List[String] = Nil,
+      atomic: Boolean = false)
     {
       prf match {
-        case Term.MinProof => hole
         case Term.PBound(i) =>
-          try { name(bounds(i)) }
-          catch { case _: IndexOutOfBoundsException => isabelle.error("Loose bound variable " + i) }
+          try { name(bounds_proof(i)) }
+          catch {
+            case _: IndexOutOfBoundsException => isabelle.error("Loose bound variable (proof) " + i)
+          }
         case Term.Abst(x, ty, b) =>
           block_if(atomic) {
             lambda; block { name(x); colon; eta_typ(ty) }; comma
-            proof(b, bounds = x :: bounds)
+            proof(b, bounds = x :: bounds, bounds_proof)
           }
         case Term.AbsP(x, hy, b) =>
           block_if(atomic) {
-            lambda; block { name(x); colon; eps_term(hy) }; comma
-            proof(b, bounds = x :: bounds)
+            lambda; block { name(x); colon; eps_term(hy, bounds = bounds) }; comma
+            proof(b, bounds = bounds, bounds_proof = x :: bounds_proof)
           }
         case Term.Appt(a, b) =>
           block_if(atomic) {
-            proof(a, bounds = bounds, atomic = true)
+            proof(a, bounds = bounds, bounds_proof = bounds_proof, atomic = true)
             space
             term(b, bounds = bounds, atomic = true)
           }
         case Term.AppP(a, b) =>
           block_if(atomic) {
-            proof(a, bounds = bounds, atomic = true)
+            proof(a, bounds = bounds, bounds_proof = bounds_proof, atomic = true)
             space
-            proof(b, bounds = bounds, atomic = true)
+            proof(b, bounds = bounds, bounds_proof = bounds_proof, atomic = true)
           }
-        case Term.OfClass(t, c) =>
-          block_if(atomic) {
-            name(class_kind(c)); space; typ(t, atomic = true)
+        case axm: Term.PAxm =>
+          block_if(atomic && axm.types.nonEmpty) {
+            name(axiom_kind(axm.name))
+            for (ty <- axm.types) { space; typ(ty, atomic = true) }
           }
-        /* TODO: missing cases:
-        case class Hyp(hyp: Term) extends Proof
-        case class PAxm(name: String, types: List[Typ]) extends Proof
-        case class Oracle(name: String, prop: Term, types: List[Typ]) extends Proof
-        case class PThm(serial: Long, theory_name: String, approximative_name: String, types: List[Typ])
-        */
+        case box: Term.PThm =>
+          block_if(atomic && box.types.nonEmpty) {
+            name(proof_kind(box.serial))
+            for (ty <- box.types) { space; typ(ty, atomic = true) }
+          }
+
+        case _ => isabelle.error("Bad proof term encountered:\n" + prf)
       }
     }
 
-
-
-    def eps_term(t: Term.Term, atomic: Boolean = false)
+    def eps_term(t: Term.Term, bounds: List[String] = Nil, atomic: Boolean = false)
     {
-      block_if(atomic) { eps; space; term(t, atomic = true) }
+      block_if(atomic) { eps; space; term(t, bounds = bounds, atomic = true) }
     }
 
 
@@ -274,10 +278,21 @@ object LP_Syntax
     }
 
 
-    def polymorphic(typargs: List[String])
+    /* arguments */
+
+    def polymorphic(binder: => Unit, typargs: List[String])
     {
       if (typargs.nonEmpty) {
-        all; for (a <- typargs) { block { name(a); colon; Type }; space }; comma
+        binder
+        for (a <- typargs) { block { name(a); colon; Type }; space }; comma
+      }
+    }
+
+    def parameters(binder: => Unit, args: List[(String, Term.Typ)])
+    {
+      if (args.nonEmpty) {
+        binder
+        for ((x, ty) <- args) { block { name(x); colon; eta_typ(ty) }; space }; comma
       }
     }
 
@@ -286,7 +301,7 @@ object LP_Syntax
 
     def const_decl(c: String, typargs: List[String], ty: Term.Typ)
     {
-      symbol_const; name(const_kind(c)); colon; polymorphic(typargs); eta_typ(ty)
+      symbol_const; name(const_kind(c)); colon; polymorphic(all, typargs); eta_typ(ty)
       nl
     }
 
@@ -301,18 +316,28 @@ object LP_Syntax
 
     /* theorems and proof terms */
 
-    def stmt_decl(c: String, prop: Export_Theory.Prop, k: Export_Theory.Kind.Value)
+    def stmt_decl(
+      c: String,
+      prop: Export_Theory.Prop,
+      proof_term: Option[Term.Proof],
+      k: Export_Theory.Kind.Value)
     {
-      symbol_const; name(kind(c, k)); colon
-      polymorphic(prop.typargs.map(_._1))
-      for ((a, s) <- prop.typargs; c <- s) {
-        eps; space; block { name(class_kind(c)); space; name(a) }; to
-      }
-      if (prop.args.nonEmpty) {
-        all; for ((x, ty) <- prop.args) { block { name(x); colon; eta_typ(ty) }; space }; comma
-      }
+      if (proof_term.isEmpty) symbol_const else definition
+
+      name(kind(c, k)); colon
+      polymorphic(all, prop.typargs.map(_._1))
+      parameters(all, prop.args)
       eps_term(prop.term)
       nl
+
+      for (prf <- proof_term) {
+        dfn
+        nl
+        polymorphic(lambda, prop.typargs.map(_._1))
+        parameters(lambda, prop.args)
+        proof(prf)
+        nl
+      }
     }
 
     private var exported_proofs = Set.empty[Long]
@@ -324,7 +349,7 @@ object LP_Syntax
       if (!exported_proofs(id.serial)) {
         for (prf <- read_proof(id)) {
           exported_proofs += id.serial
-          stmt_decl(id.serial.toString, prf.prop, Export_Theory.Kind.PROOF)
+          stmt_decl(id.serial.toString, prf.prop, Some(prf.proof), Export_Theory.Kind.PROOF)
         }
       }
     }

@@ -76,14 +76,14 @@ object Importer
         for (axm <- theory.axioms) {
           if (verbose) progress.echo("  " + axm.entity.toString)
 
-          output.stmt_decl(axm.entity.name, axm.prop, axm.entity.kind)
+          output.stmt_decl(axm.entity.name, axm.prop, None, axm.entity.kind)
         }
 
         for (thm <- theory.thms) {
           if (verbose) progress.echo("  " + thm.entity.toString)
 
           for (id <- thm.proof_boxes) output.proof_decl(id, read_proof)
-          output.stmt_decl(thm.entity.name, thm.prop, thm.entity.kind)
+          output.stmt_decl(thm.entity.name, thm.prop, Some(thm.proof), thm.entity.kind)
         }
       }
 

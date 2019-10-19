@@ -10,7 +10,7 @@ Isabelle component for dedukti.
   * Suitable Isabelle repository clone (see also https://isabelle.in.tum.de/repos/isabelle/file/tip/README_REPOSITORY):
 
         hg clone https://isabelle.in.tum.de/repos/isabelle
-        hg up -r 5f6dea6a7a4c
+        hg up -r 3ed399935d7c
 
         isabelle/bin/isabelle components -I
         isabelle/bin/isabelle components -a
