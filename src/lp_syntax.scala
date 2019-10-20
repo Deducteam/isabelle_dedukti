@@ -73,6 +73,7 @@ object LP_Syntax
   def const_kind(a: String): String = kind(a, Export_Theory.Kind.CONST)
   def axiom_kind(a: String): String = kind(a, Export_Theory.Kind.AXIOM)
   def proof_kind(serial: Long): String = kind(serial.toString, Export_Theory.Kind.PROOF)
+  def thm_kind(a: String): String = kind(a, Export_Theory.Kind.THM)
 
 
   /* buffered output depending on context (unsynchronized) */
@@ -234,10 +235,10 @@ object LP_Syntax
             name(axiom_kind(axm.name))
             for (ty <- axm.types) { space; typ(ty, atomic = true) }
           }
-        case box: Term.PThm =>
-          block_if(atomic && box.types.nonEmpty) {
-            name(proof_kind(box.serial))
-            for (ty <- box.types) { space; typ(ty, atomic = true) }
+        case thm: Term.PThm =>
+          block_if(atomic && thm.types.nonEmpty) {
+            if (thm.name.nonEmpty) name(thm_kind(thm.name)) else name(proof_kind(thm.serial))
+            for (ty <- thm.types) { space; typ(ty, atomic = true) }
           }
 
         case _ => isabelle.error("Bad proof term encountered:\n" + prf)

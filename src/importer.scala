@@ -25,8 +25,14 @@ object Importer
 
     val logic = Thy_Header.PURE
 
+    val standard_proofs = options.bool("export_standard_proofs")
+
+    val dump_options =
+      if (standard_proofs) options + "record_proofs=2"
+      else options + "record_proofs=2" + "export_proofs" + "prune_proofs"
+
     val context =
-      Dump.Context(options + "record_proofs=2" + "export_proofs" + "prune_proofs",
+      Dump.Context(dump_options,
         aspects = Dump.known_aspects, progress = progress,
         dirs = dirs, select_dirs = select_dirs, selection = selection)
 
@@ -82,7 +88,9 @@ object Importer
         for (thm <- theory.thms) {
           if (verbose) progress.echo("  " + thm.entity.toString)
 
-          for (id <- thm.proof_boxes) output.proof_decl(id, read_proof)
+          if (!standard_proofs) {
+            for (id <- thm.proof_boxes) output.proof_decl(id, read_proof)
+          }
           output.stmt_decl(thm.entity.name, thm.prop, Some(thm.proof), thm.entity.kind)
         }
       }

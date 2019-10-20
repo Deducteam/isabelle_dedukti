@@ -42,6 +42,10 @@ isabelle dedukti_import FOL-ex
 isabelle dedukti_import -D.
 ```
 
+Small-scale proofs with nicer names:
+```
+isabelle dedukti_import -o export_standard_proofs Dedukti_Base
+```
 
 ### Interaction
 
