@@ -322,22 +322,25 @@ object LP_Syntax
       proof_term: Option[Term.Proof],
       k: Export_Theory.Kind.Value)
     {
-      if (proof_term.isEmpty) symbol_const else definition
+      try {
+        if (proof_term.isEmpty) symbol_const else definition
 
-      name(kind(c, k)); colon
-      polymorphic(all, prop.typargs.map(_._1))
-      parameters(all, prop.args)
-      eps_term(prop.term)
-      nl
+        name(kind(c, k)); colon
+        polymorphic(all, prop.typargs.map(_._1))
+        parameters(all, prop.args)
+        eps_term(prop.term)
+        nl
 
-      for (prf <- proof_term) {
-        dfn
-        nl
-        polymorphic(lambda, prop.typargs.map(_._1))
-        parameters(lambda, prop.args)
-        proof(prf)
-        nl
+        for (prf <- proof_term) {
+          dfn
+          nl
+          polymorphic(lambda, prop.typargs.map(_._1))
+          parameters(lambda, prop.args)
+          proof(prf)
+          nl
+        }
       }
+      catch { case ERROR(msg) => error(msg + "\nin " + quote(c)) }
     }
 
     private var exported_proofs = Set.empty[Long]
