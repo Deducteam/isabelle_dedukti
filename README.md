@@ -16,6 +16,14 @@ Isabelle component for dedukti.
         isabelle/bin/isabelle components -a
         isabelle/bin/isabelle jedit -b
 
+  * Lambdapi:
+
+        git clone https://github.com/Deducteam/lambdapi.git
+        cd lambdapi
+        git checkout 72d3a1889a9afb7b560c96924236bc63d4cfc141
+
+        make && make install
+
 
 ## Settings
 
