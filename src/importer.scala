@@ -104,6 +104,7 @@ object Importer
         progress.echo_warning("Nothing to import")
       }
       else {
+        output.prelude_eta
         output.prelude_type
 
         import_theory(

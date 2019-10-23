@@ -362,6 +362,10 @@ object LP_Syntax
     /* preludes for minimal Higher-order Logic (Isabelle/Pure) */
     // see https://raw.githubusercontent.com/Deducteam/Libraries/master/theories/stt.dk
 
+    def prelude_eta
+    {
+      string("set flag \"eta_equality\" on"); nl
+    }
     def prelude_type
     {
       symbol_const; Type; colon; TYPE; nl
