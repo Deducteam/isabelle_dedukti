@@ -6,6 +6,6 @@ set -e
 
 OUTPUT="${1:-output.lp}"
 
-isabelle dedukti_import -D "$ISABELLE_DEDUKTI_HOME"
+isabelle dedukti_import Dedukti_Base
 
 "$ISABELLE_LAMBDAPI" "$OUTPUT"
