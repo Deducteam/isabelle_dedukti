@@ -72,8 +72,9 @@ object LP_Syntax
   def type_kind(a: String): String = kind(a, Export_Theory.Kind.TYPE)
   def const_kind(a: String): String = kind(a, Export_Theory.Kind.CONST)
   def axiom_kind(a: String): String = kind(a, Export_Theory.Kind.AXIOM)
-  def proof_kind(serial: Long): String = kind(serial.toString, Export_Theory.Kind.PROOF)
   def thm_kind(a: String): String = kind(a, Export_Theory.Kind.THM)
+
+  def proof_kind(serial: Long): String = "proof" + serial
 
 
   /* buffered output depending on context (unsynchronized) */
