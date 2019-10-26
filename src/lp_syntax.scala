@@ -318,15 +318,14 @@ object LP_Syntax
     /* theorems and proof terms */
 
     def stmt_decl(
-      c: String,
+      s: String,
       prop: Export_Theory.Prop,
-      proof_term: Option[Term.Proof],
-      k: Export_Theory.Kind.Value)
+      proof_term: Option[Term.Proof])
     {
       try {
         if (proof_term.isEmpty) symbol_const else definition
 
-        name(kind(c, k)); colon
+        name(s); colon
         polymorphic(all, prop.typargs.map(_._1))
         parameters(all, prop.args)
         eps_term(prop.term)
@@ -341,7 +340,7 @@ object LP_Syntax
           nl
         }
       }
-      catch { case ERROR(msg) => error(msg + "\nin " + quote(c)) }
+      catch { case ERROR(msg) => error(msg + "\nin " + quote(s)) }
     }
 
     private var exported_proofs = Set.empty[Long]
@@ -353,7 +352,7 @@ object LP_Syntax
       if (!exported_proofs(id.serial)) {
         for (prf <- read_proof(id)) {
           exported_proofs += id.serial
-          stmt_decl(id.serial.toString, prf.prop, Some(prf.proof), Export_Theory.Kind.PROOF)
+          stmt_decl(proof_kind(id.serial), prf.prop, Some(prf.proof))
         }
       }
     }
