@@ -364,7 +364,7 @@ object LP_Syntax
 
     def prelude_eta
     {
-      string("set flag \"eta_equality\" on"); nl
+      string("""set flag "eta_equality" on"""); nl
     }
     def prelude_type
     {
