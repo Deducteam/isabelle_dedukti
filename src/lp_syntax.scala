@@ -362,7 +362,7 @@ object LP_Syntax
 
     def require(module: String)
     {
-      string("require open " + module); nl
+      string("require open"); space; name(module); nl
     }
 
 
