@@ -4,6 +4,7 @@
 package isabelle.dedukti
 
 import isabelle._
+import scala.collection.mutable.ListBuffer
 
 object Importer
 {
@@ -103,6 +104,11 @@ object Importer
       progress.echo_warning("Nothing to import")
     }
     else {
+      // we store the theories imported so far and
+      // require all of them for any subsequent theory we load
+      // TODO: only require those theories that are really used
+      var imported_theories = new ListBuffer[String]()
+
       using(new LP_Syntax.Output(output_file))(output =>
       {
         output.prelude_eta
@@ -112,6 +118,7 @@ object Importer
           output,
           Export_Theory.read_pure_theory(store, cache = Some(cache)),
           Export_Theory.read_pure_proof(store, _, cache = Some(cache)))
+        imported_theories += Thy_Header.PURE
 
         sessions.foreach(_.process((args: Dump.Args) =>
           {
@@ -135,6 +142,7 @@ object Importer
             }
 
             import_theory(output, theory, read_proof)
+            imported_theories += theory.name
           }))
       })
     }

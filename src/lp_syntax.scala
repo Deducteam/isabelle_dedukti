@@ -358,6 +358,13 @@ object LP_Syntax
       }
     }
 
+    /* importing of other modules */
+
+    def require(module: String)
+    {
+      string("require open " + module); nl
+    }
+
 
     /* preludes for minimal Higher-order Logic (Isabelle/Pure) */
     // see https://raw.githubusercontent.com/Deducteam/Libraries/master/theories/stt.dk
