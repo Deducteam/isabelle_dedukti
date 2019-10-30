@@ -38,76 +38,78 @@ object Importer
 
     context.build_logic(logic)
 
-    using(new LP_Syntax.Output(output_file))(output =>
+    /* import theory content */
+
+    def import_theory(
+      output: LP_Syntax.Output,
+      theory: Export_Theory.Theory,
+      read_proof: Export_Theory.Thm_Id => Option[Export_Theory.Proof])
     {
-      /* import theory content */
+      progress.echo("Importing theory " + theory.name)
 
-      def import_theory(
-        theory: Export_Theory.Theory,
-        read_proof: Export_Theory.Thm_Id => Option[Export_Theory.Proof])
+      output.string("\n\n// theory " + theory.name + "\n\n")
+
+      for (a <- theory.classes) {
+        if (verbose) progress.echo("  " + a.entity.toString)
+        output.class_decl(a.entity.name)
+      }
+
+      for (a <- theory.types) {
+        if (verbose) progress.echo("  " + a.entity.toString)
+
+        a.abbrev match {
+          case None => output.type_decl(a.entity.name, a.args.length)
+          case Some(rhs) => output.type_abbrev(a.entity.name, a.args, rhs)
+        }
+
+        if (a.entity.name == Pure_Thy.FUN) output.prelude_fun
+        if (a.entity.name == Pure_Thy.PROP) output.prelude_prop
+      }
+
+      for (a <- theory.consts) {
+        if (verbose) progress.echo("  " + a.entity.toString)
+
+        a.abbrev match {
+          case None => output.const_decl(a.entity.name, a.typargs, a.typ)
+          case Some(rhs) => output.const_abbrev(a.entity.name, a.typargs, a.typ, rhs)
+        }
+
+        if (a.entity.name == Pure_Thy.ALL) output.prelude_all
+        if (a.entity.name == Pure_Thy.IMP) output.prelude_imp
+      }
+
+      for (axm <- theory.axioms) {
+        if (verbose) progress.echo("  " + axm.entity.toString)
+
+        output.stmt_decl(LP_Syntax.axiom_kind(axm.entity.name), axm.prop, None)
+      }
+
+      for (thm <- theory.thms) {
+        if (verbose) progress.echo("  " + thm.entity.toString)
+
+        if (!standard_proofs) {
+          for (id <- thm.proof_boxes) output.proof_decl(id, read_proof)
+        }
+        output.stmt_decl(LP_Syntax.thm_kind(thm.entity.name), thm.prop, Some(thm.proof))
+      }
+    }
+
+
+    /* import session (headless PIDE) */
+
+    val sessions = context.sessions(logic)
+
+    if (sessions.isEmpty) {
+      progress.echo_warning("Nothing to import")
+    }
+    else {
+      using(new LP_Syntax.Output(output_file))(output =>
       {
-        progress.echo("Importing theory " + theory.name)
-
-        output.string("\n\n// theory " + theory.name + "\n\n")
-
-        for (a <- theory.classes) {
-          if (verbose) progress.echo("  " + a.entity.toString)
-          output.class_decl(a.entity.name)
-        }
-
-        for (a <- theory.types) {
-          if (verbose) progress.echo("  " + a.entity.toString)
-
-          a.abbrev match {
-            case None => output.type_decl(a.entity.name, a.args.length)
-            case Some(rhs) => output.type_abbrev(a.entity.name, a.args, rhs)
-          }
-
-          if (a.entity.name == Pure_Thy.FUN) output.prelude_fun
-          if (a.entity.name == Pure_Thy.PROP) output.prelude_prop
-        }
-
-        for (a <- theory.consts) {
-          if (verbose) progress.echo("  " + a.entity.toString)
-
-          a.abbrev match {
-            case None => output.const_decl(a.entity.name, a.typargs, a.typ)
-            case Some(rhs) => output.const_abbrev(a.entity.name, a.typargs, a.typ, rhs)
-          }
-
-          if (a.entity.name == Pure_Thy.ALL) output.prelude_all
-          if (a.entity.name == Pure_Thy.IMP) output.prelude_imp
-        }
-
-        for (axm <- theory.axioms) {
-          if (verbose) progress.echo("  " + axm.entity.toString)
-
-          output.stmt_decl(LP_Syntax.axiom_kind(axm.entity.name), axm.prop, None)
-        }
-
-        for (thm <- theory.thms) {
-          if (verbose) progress.echo("  " + thm.entity.toString)
-
-          if (!standard_proofs) {
-            for (id <- thm.proof_boxes) output.proof_decl(id, read_proof)
-          }
-          output.stmt_decl(LP_Syntax.thm_kind(thm.entity.name), thm.prop, Some(thm.proof))
-        }
-      }
-
-
-      /* import session (headless PIDE) */
-
-      val sessions = context.sessions(logic)
-
-      if (sessions.isEmpty) {
-        progress.echo_warning("Nothing to import")
-      }
-      else {
         output.prelude_eta
         output.prelude_type
 
         import_theory(
+          output,
           Export_Theory.read_pure_theory(store, cache = Some(cache)),
           Export_Theory.read_pure_proof(store, _, cache = Some(cache)))
 
@@ -132,12 +134,12 @@ object Importer
               proof
             }
 
-            import_theory(theory, read_proof)
+            import_theory(output, theory, read_proof)
           }))
-      }
+      })
+    }
 
-      context.check_errors
-    })
+    context.check_errors
 
     progress.echo("Output " + output_file)
   }
