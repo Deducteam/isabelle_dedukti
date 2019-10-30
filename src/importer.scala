@@ -95,6 +95,9 @@ object Importer
       }
     }
 
+    def theory_file(theory_name: String) =
+      output_file.dir + Path.explode(theory_name + ".lp")
+
 
     /* import session (headless PIDE) */
 
@@ -109,7 +112,12 @@ object Importer
       // TODO: only require those theories that are really used
       var imported_theories = new ListBuffer[String]()
 
-      using(new LP_Syntax.Output(output_file))(output =>
+      def require_imported(output: LP_Syntax.Output)
+      {
+        imported_theories.foreach(output.require)
+      }
+
+      using(new LP_Syntax.Output(theory_file(Thy_Header.PURE)))(output =>
       {
         output.prelude_eta
         output.prelude_type
@@ -119,32 +127,40 @@ object Importer
           Export_Theory.read_pure_theory(store, cache = Some(cache)),
           Export_Theory.read_pure_proof(store, _, cache = Some(cache)))
         imported_theories += Thy_Header.PURE
+      })
 
-        sessions.foreach(_.process((args: Dump.Args) =>
+      sessions.foreach(_.process((args: Dump.Args) =>
+        {
+          val snapshot = args.snapshot
+          val provider = Export.Provider.snapshot(snapshot)
+          val theory_name = snapshot.node_name.theory
+          val theory =
+            Export_Theory.read_theory(provider, Sessions.DRAFT, theory_name, cache = Some(cache))
+
+          def read_proof(id: Export_Theory.Thm_Id): Option[Export_Theory.Proof] =
           {
-            val snapshot = args.snapshot
-            val provider = Export.Provider.snapshot(snapshot)
-            val theory_name = snapshot.node_name.theory
-            val theory =
-              Export_Theory.read_theory(provider, Sessions.DRAFT, theory_name, cache = Some(cache))
+            val proof =
+              if (id.pure) Export_Theory.read_pure_proof(store, id, cache = Some(cache))
+              else Export_Theory.read_proof(provider, id, cache = Some(cache))
 
-            def read_proof(id: Export_Theory.Thm_Id): Option[Export_Theory.Proof] =
-            {
-              val proof =
-                if (id.pure) Export_Theory.read_pure_proof(store, id, cache = Some(cache))
-                else Export_Theory.read_proof(provider, id, cache = Some(cache))
-
-              if (verbose && proof.isDefined) {
-                progress.echo("  proof " + id.serial +
-                  (if (theory_name == id.theory_name) "" else " (from " + id.theory_name + ")"))
-              }
-              proof
+            if (verbose && proof.isDefined) {
+              progress.echo("  proof " + id.serial +
+                (if (theory_name == id.theory_name) "" else " (from " + id.theory_name + ")"))
             }
+            proof
+          }
 
+          using(new LP_Syntax.Output(theory_file(theory.name)))(output =>
+          {
+            output.prelude_eta
+            require_imported(output)
             import_theory(output, theory, read_proof)
             imported_theories += theory.name
-          }))
-      })
+          })
+
+        }))
+
+      using(new LP_Syntax.Output(output_file))(require_imported)
     }
 
     context.check_errors
