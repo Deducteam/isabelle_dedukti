@@ -30,7 +30,7 @@ object Importer
 
     val dump_options =
       if (standard_proofs) options + "record_proofs=2"
-      else options + "record_proofs=2" + "export_proofs" + "prune_proofs"
+      else options + "record_proofs=2" + "export_proofs"
 
     val context =
       Dump.Context(dump_options,
