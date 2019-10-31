@@ -4,6 +4,7 @@
 package isabelle.dedukti
 
 import isabelle._
+import scala.collection.mutable.ListBuffer
 
 object Importer
 {
@@ -38,106 +39,131 @@ object Importer
 
     context.build_logic(logic)
 
-    using(new LP_Syntax.Output(output_file))(output =>
+    /* import theory content */
+
+    def import_theory(
+      output: LP_Syntax.Output,
+      theory: Export_Theory.Theory,
+      read_proof: Export_Theory.Thm_Id => Option[Export_Theory.Proof])
     {
-      /* import theory content */
+      progress.echo("Importing theory " + theory.name)
 
-      def import_theory(
-        theory: Export_Theory.Theory,
-        read_proof: Export_Theory.Thm_Id => Option[Export_Theory.Proof])
+      output.string("\n\n// theory " + theory.name + "\n\n")
+
+      for (a <- theory.classes) {
+        if (verbose) progress.echo("  " + a.entity.toString)
+        output.class_decl(a.entity.name)
+      }
+
+      for (a <- theory.types) {
+        if (verbose) progress.echo("  " + a.entity.toString)
+
+        a.abbrev match {
+          case None => output.type_decl(a.entity.name, a.args.length)
+          case Some(rhs) => output.type_abbrev(a.entity.name, a.args, rhs)
+        }
+
+        if (a.entity.name == Pure_Thy.FUN) output.prelude_fun
+        if (a.entity.name == Pure_Thy.PROP) output.prelude_prop
+      }
+
+      for (a <- theory.consts) {
+        if (verbose) progress.echo("  " + a.entity.toString)
+
+        a.abbrev match {
+          case None => output.const_decl(a.entity.name, a.typargs, a.typ)
+          case Some(rhs) => output.const_abbrev(a.entity.name, a.typargs, a.typ, rhs)
+        }
+
+        if (a.entity.name == Pure_Thy.ALL) output.prelude_all
+        if (a.entity.name == Pure_Thy.IMP) output.prelude_imp
+      }
+
+      for (axm <- theory.axioms) {
+        if (verbose) progress.echo("  " + axm.entity.toString)
+
+        output.stmt_decl(LP_Syntax.axiom_kind(axm.entity.name), axm.prop, None)
+      }
+
+      for (thm <- theory.thms) {
+        if (verbose) progress.echo("  " + thm.entity.toString)
+
+        if (!standard_proofs) {
+          for (id <- thm.proof_boxes) output.proof_decl(id, read_proof)
+        }
+        output.stmt_decl(LP_Syntax.thm_kind(thm.entity.name), thm.prop, Some(thm.proof))
+      }
+    }
+
+    def theory_file(theory_name: String) =
+      output_file.dir + Path.explode(theory_name + ".lp")
+
+
+    /* import session (headless PIDE) */
+
+    val sessions = context.sessions(logic)
+
+    if (sessions.isEmpty) {
+      progress.echo_warning("Nothing to import")
+    }
+    else {
+      // we store the theories imported so far and
+      // require all of them for any subsequent theory we load
+      // TODO: only require those theories that are really used
+      var imported_theories = new ListBuffer[String]()
+
+      def require_imported(output: LP_Syntax.Output)
       {
-        progress.echo("Importing theory " + theory.name)
-
-        output.string("\n\n// theory " + theory.name + "\n\n")
-
-        for (a <- theory.classes) {
-          if (verbose) progress.echo("  " + a.entity.toString)
-          output.class_decl(a.entity.name)
-        }
-
-        for (a <- theory.types) {
-          if (verbose) progress.echo("  " + a.entity.toString)
-
-          a.abbrev match {
-            case None => output.type_decl(a.entity.name, a.args.length)
-            case Some(rhs) => output.type_abbrev(a.entity.name, a.args, rhs)
-          }
-
-          if (a.entity.name == Pure_Thy.FUN) output.prelude_fun
-          if (a.entity.name == Pure_Thy.PROP) output.prelude_prop
-        }
-
-        for (a <- theory.consts) {
-          if (verbose) progress.echo("  " + a.entity.toString)
-
-          a.abbrev match {
-            case None => output.const_decl(a.entity.name, a.typargs, a.typ)
-            case Some(rhs) => output.const_abbrev(a.entity.name, a.typargs, a.typ, rhs)
-          }
-
-          if (a.entity.name == Pure_Thy.ALL) output.prelude_all
-          if (a.entity.name == Pure_Thy.IMP) output.prelude_imp
-        }
-
-        for (axm <- theory.axioms) {
-          if (verbose) progress.echo("  " + axm.entity.toString)
-
-          output.stmt_decl(LP_Syntax.axiom_kind(axm.entity.name), axm.prop, None)
-        }
-
-        for (thm <- theory.thms) {
-          if (verbose) progress.echo("  " + thm.entity.toString)
-
-          if (!standard_proofs) {
-            for (id <- thm.proof_boxes) output.proof_decl(id, read_proof)
-          }
-          output.stmt_decl(LP_Syntax.thm_kind(thm.entity.name), thm.prop, Some(thm.proof))
-        }
+        imported_theories.foreach(output.require)
       }
 
-
-      /* import session (headless PIDE) */
-
-      val sessions = context.sessions(logic)
-
-      if (sessions.isEmpty) {
-        progress.echo_warning("Nothing to import")
-      }
-      else {
+      using(new LP_Syntax.Output(theory_file(Thy_Header.PURE)))(output =>
+      {
         output.prelude_eta
         output.prelude_type
 
         import_theory(
+          output,
           Export_Theory.read_pure_theory(store, cache = Some(cache)),
           Export_Theory.read_pure_proof(store, _, cache = Some(cache)))
+        imported_theories += Thy_Header.PURE
+      })
 
-        sessions.foreach(_.process((args: Dump.Args) =>
+      sessions.foreach(_.process((args: Dump.Args) =>
+        {
+          val snapshot = args.snapshot
+          val provider = Export.Provider.snapshot(snapshot)
+          val theory_name = snapshot.node_name.theory
+          val theory =
+            Export_Theory.read_theory(provider, Sessions.DRAFT, theory_name, cache = Some(cache))
+
+          def read_proof(id: Export_Theory.Thm_Id): Option[Export_Theory.Proof] =
           {
-            val snapshot = args.snapshot
-            val provider = Export.Provider.snapshot(snapshot)
-            val theory_name = snapshot.node_name.theory
-            val theory =
-              Export_Theory.read_theory(provider, Sessions.DRAFT, theory_name, cache = Some(cache))
+            val proof =
+              if (id.pure) Export_Theory.read_pure_proof(store, id, cache = Some(cache))
+              else Export_Theory.read_proof(provider, id, cache = Some(cache))
 
-            def read_proof(id: Export_Theory.Thm_Id): Option[Export_Theory.Proof] =
-            {
-              val proof =
-                if (id.pure) Export_Theory.read_pure_proof(store, id, cache = Some(cache))
-                else Export_Theory.read_proof(provider, id, cache = Some(cache))
-
-              if (verbose && proof.isDefined) {
-                progress.echo("  proof " + id.serial +
-                  (if (theory_name == id.theory_name) "" else " (from " + id.theory_name + ")"))
-              }
-              proof
+            if (verbose && proof.isDefined) {
+              progress.echo("  proof " + id.serial +
+                (if (theory_name == id.theory_name) "" else " (from " + id.theory_name + ")"))
             }
+            proof
+          }
 
-            import_theory(theory, read_proof)
-          }))
-      }
+          using(new LP_Syntax.Output(theory_file(theory.name)))(output =>
+          {
+            output.prelude_eta
+            require_imported(output)
+            import_theory(output, theory, read_proof)
+            imported_theories += theory.name
+          })
 
-      context.check_errors
-    })
+        }))
+
+      using(new LP_Syntax.Output(output_file))(require_imported)
+    }
+
+    context.check_errors
 
     progress.echo("Output " + output_file)
   }
