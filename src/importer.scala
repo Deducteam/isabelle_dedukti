@@ -107,15 +107,7 @@ object Importer
       progress.echo_warning("Nothing to import")
     }
     else {
-      // we store the theories imported so far and
-      // require all of them for any subsequent theory we load
-      // TODO: only require those theories that are really used
-      var imported_theories = new ListBuffer[String]()
-
-      def require_imported(output: LP_Syntax.Output)
-      {
-        imported_theories.foreach(output.require_open)
-      }
+      var imported_theories = new ListBuffer[String]
 
       using(new LP_Syntax.Output(theory_file(Thy_Header.PURE)))(output =>
       {
@@ -153,14 +145,20 @@ object Importer
           using(new LP_Syntax.Output(theory_file(theory.name)))(output =>
           {
             output.prelude_eta
-            require_imported(output)
+
+            for {
+              name <- snapshot.version.nodes.requirements(List(snapshot.node_name))
+              if name.is_theory && name.theory != theory_name
+            } output.require_open(name.theory)
+
             import_theory(output, theory, read_proof)
             imported_theories += theory.name
           })
 
         }))
 
-      using(new LP_Syntax.Output(output_file))(require_imported)
+      using(new LP_Syntax.Output(output_file))(output =>
+        imported_theories.foreach(output.require_open))
     }
 
     context.check_errors
