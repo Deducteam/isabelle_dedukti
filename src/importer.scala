@@ -114,7 +114,7 @@ object Importer
 
       def require_imported(output: LP_Syntax.Output)
       {
-        imported_theories.foreach(output.require)
+        imported_theories.foreach(output.require_open)
       }
 
       using(new LP_Syntax.Output(theory_file(Thy_Header.PURE)))(output =>

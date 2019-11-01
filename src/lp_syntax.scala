@@ -360,7 +360,7 @@ object LP_Syntax
 
     /* importing of other modules */
 
-    def require(module: String)
+    def require_open(module: String)
     {
       string("require open"); space; name(module); nl
     }
