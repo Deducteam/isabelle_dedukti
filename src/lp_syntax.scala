@@ -344,19 +344,9 @@ object LP_Syntax
       catch { case ERROR(msg) => error(msg + "\nin " + quote(s)) }
     }
 
-    private var exported_proofs = Set.empty[Long]
+    def proof_decl(serial: Long, prop: Export_Theory.Prop, prf: Term.Proof): Unit =
+      stmt_decl(proof_kind(serial), prop, Some(prf))
 
-    def proof_decl(
-      id: Export_Theory.Thm_Id,
-      read_proof: Export_Theory.Thm_Id => Option[Export_Theory.Proof])
-    {
-      if (!exported_proofs(id.serial)) {
-        for (prf <- read_proof(id)) {
-          exported_proofs += id.serial
-          stmt_decl(proof_kind(id.serial), prf.prop, Some(prf.proof))
-        }
-      }
-    }
 
     /* importing of other modules */
 

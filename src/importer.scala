@@ -39,12 +39,15 @@ object Importer
 
     context.build_logic(logic)
 
+
     /* import theory content */
+
+    var exported_proofs = Set.empty[Long]
 
     def import_theory(
       output: LP_Syntax.Output,
       theory: Export_Theory.Theory,
-      read_proof: Export_Theory.Thm_Id => Option[Export_Theory.Proof])
+      provider: Export.Provider)
     {
       progress.echo("Importing theory " + theory.name)
 
@@ -88,8 +91,22 @@ object Importer
       for (thm <- theory.thms) {
         if (verbose) progress.echo("  " + thm.entity.toString)
 
-        if (!standard_proofs) {
-          for (id <- thm.proof_boxes) output.proof_decl(id, read_proof)
+        val boxes =
+          try {
+            Export_Theory.read_proof_boxes(
+              store, provider, thm.proof,
+              suppress = id => exported_proofs(id.serial), cache = Some(cache))
+          }
+          catch { case ERROR(msg) => error(msg + "\nin " + thm.entity) }
+
+        for ((id, prf) <- boxes) {
+          if (verbose) {
+            progress.echo("  proof " + id.serial +
+              (if (theory.name == id.theory_name) "" else " (from " + id.theory_name + ")"))
+          }
+
+          exported_proofs += id.serial
+          output.proof_decl(id.serial, prf.prop, prf.proof)
         }
         output.stmt_decl(LP_Syntax.thm_kind(thm.entity.name), thm.prop, Some(thm.proof))
       }
@@ -117,7 +134,7 @@ object Importer
         import_theory(
           output,
           Export_Theory.read_pure_theory(store, cache = Some(cache)),
-          Export_Theory.read_pure_proof(store, _, cache = Some(cache)))
+          Export.Provider.none)
         imported_theories += Thy_Header.PURE
       })
 
@@ -129,19 +146,6 @@ object Importer
           val theory =
             Export_Theory.read_theory(provider, Sessions.DRAFT, theory_name, cache = Some(cache))
 
-          def read_proof(id: Export_Theory.Thm_Id): Option[Export_Theory.Proof] =
-          {
-            val proof =
-              if (id.pure) Export_Theory.read_pure_proof(store, id, cache = Some(cache))
-              else Export_Theory.read_proof(provider, id, cache = Some(cache))
-
-            if (verbose && proof.isDefined) {
-              progress.echo("  proof " + id.serial +
-                (if (theory_name == id.theory_name) "" else " (from " + id.theory_name + ")"))
-            }
-            proof
-          }
-
           using(new LP_Syntax.Output(theory_file(theory.name)))(output =>
           {
             output.prelude_eta
@@ -151,7 +155,7 @@ object Importer
               if name.is_theory && name.theory != theory_name
             } output.require_open(name.theory)
 
-            import_theory(output, theory, read_proof)
+            import_theory(output, theory, provider)
             imported_theories += theory.name
           })
 
