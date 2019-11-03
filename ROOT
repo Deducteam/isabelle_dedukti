@@ -10,7 +10,7 @@ session Dedukti_Import in "Ex/Import" = Dedukti_Base +
   options [export_theory, record_proofs = 2, export_proofs]
   sessions HOL
   theories
-    HOL.Groups
+    HOL.Inductive
 
 session Isabelle_Export in "Ex/Export" = Dedukti_Base +
   options [export_theory, record_proofs = 2, export_proofs]
