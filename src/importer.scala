@@ -26,11 +26,11 @@ object Importer
 
     val logic = Thy_Header.PURE
 
-    val standard_proofs = options.bool("export_standard_proofs")
-
     val dump_options =
-      if (standard_proofs) options + "record_proofs=2"
-      else options + "record_proofs=2" + "export_proofs"
+      if (options.bool("export_standard_proofs")) {
+        options + "record_proofs=2" + "prune_proofs=false"
+      }
+      else options + "record_proofs=2" + "export_proofs" + "prune_proofs"
 
     val context =
       Dump.Context(dump_options,
