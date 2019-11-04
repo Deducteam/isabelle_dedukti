@@ -10,7 +10,7 @@ Isabelle component for dedukti.
   * Suitable Isabelle repository clone (see also https://isabelle.in.tum.de/repos/isabelle/file/tip/README_REPOSITORY):
 
         hg clone https://isabelle.sketis.net/repos/isabelle
-        hg up -r c85efa2be619
+        hg up -r 38bed2483e6a
 
         isabelle/bin/isabelle components -I
         isabelle/bin/isabelle components -a
@@ -44,19 +44,12 @@ isabelle dedukti_build && isabelle dedukti_test
 
 ## Examples
 
-### Batch mode
 ```
-isabelle dedukti_import FOL-ex
-isabelle dedukti_import -D.
+isabelle dedukti_import Dedukti_Import
+lambdapi output.lp
 ```
 
 Small-scale proofs with nicer names:
 ```
 isabelle dedukti_import -o export_standard_proofs Dedukti_Base
-```
-
-### Interaction
-
-```
-isabelle jedit -d. -l Dedukti_Base Ex/Ex_HOL.thy
 ```

@@ -4,7 +4,7 @@
 package isabelle.dedukti
 
 import isabelle._
-import scala.collection.mutable.ListBuffer
+
 
 object Importer
 {
@@ -14,33 +14,46 @@ object Importer
 
   def importer(
     options: Options,
+    session: String,
     progress: Progress = No_Progress,
     dirs: List[Path] = Nil,
-    select_dirs: List[Path] = Nil,
+    fresh_build: Boolean = false,
     output_file: Path = default_output_file,
-    selection: Sessions.Selection = Sessions.Selection.empty,
     verbose: Boolean = false)
   {
-    val store = Sessions.store(options)
-    val cache = Term.make_cache()
+    /* build session with exports */
 
-    val logic = Thy_Header.PURE
+    val build_options =
+    {
+      val options1 = options + "export_theory" + "record_proofs=2"
+      if (options.bool("export_standard_proofs")) options1 + "prune_proofs=false"
+      else options1 + "export_proofs" + "prune_proofs=false" // FIXME
+    }
 
-    val dump_options =
-      if (options.bool("export_standard_proofs")) {
-        options + "record_proofs=2" + "prune_proofs=false"
+    Build.build_logic(build_options, session, progress = progress, dirs = dirs,
+      fresh = fresh_build, strict = true)
+
+
+    /* session structure */
+
+    val base_info = Sessions.base_info(options, Thy_Header.PURE, progress = progress, dirs = dirs)
+
+    val session_info =
+      base_info.sessions_structure.get(session) match {
+        case Some(info) if info.parent == Some(Thy_Header.PURE) => info
+        case Some(_) => error("Parent session needs to be Pure")
+        case None => error("Bad session " + quote(session))
       }
-      else options + "record_proofs=2" + "export_proofs" + "prune_proofs"
 
-    val context =
-      Dump.Context(dump_options,
-        aspects = Dump.known_aspects, progress = progress,
-        dirs = dirs, select_dirs = select_dirs, selection = selection)
+    val resources = new Resources(base_info.sessions_structure, base_info.check_base)
 
-    context.build_logic(logic)
+    val dependencies = resources.session_dependencies(session_info, progress = progress)
 
 
     /* import theory content */
+
+    val store = Sessions.store(options)
+    val cache = Term.make_cache()
 
     var exported_proofs = Set.empty[Long]
 
@@ -116,58 +129,42 @@ object Importer
       output_file.dir + Path.explode(theory_name + ".lp")
 
 
-    /* import session (headless PIDE) */
+    /* import session */
 
-    val sessions = context.sessions(logic)
+    val all_theories = dependencies.theory_graph.topological_order
 
-    if (sessions.isEmpty) {
-      progress.echo_warning("Nothing to import")
-    }
-    else {
-      var imported_theories = new ListBuffer[String]
-
-      using(new LP_Syntax.Output(theory_file(Thy_Header.PURE)))(output =>
-      {
-        output.prelude_eta
-        output.prelude_type
-
-        import_theory(
-          output,
-          Export_Theory.read_pure_theory(store, cache = Some(cache)),
-          Export.Provider.none)
-        imported_theories += Thy_Header.PURE
-      })
-
-      sessions.foreach(_.process((args: Dump.Args) =>
+    using(store.open_database(session))(db =>
+    {
+      for (name <- all_theories) {
+        using(new LP_Syntax.Output(theory_file(name.theory)))(output =>
         {
-          val snapshot = args.snapshot
-          val provider = Export.Provider.snapshot(snapshot)
-          val theory_name = snapshot.node_name.theory
-          val theory =
-            Export_Theory.read_theory(provider, Sessions.DRAFT, theory_name, cache = Some(cache))
+          output.prelude_eta
 
-          using(new LP_Syntax.Output(theory_file(theory.name)))(output =>
-          {
-            output.prelude_eta
+          if (name.theory == Thy_Header.PURE) {
+            output.prelude_type
+
+            import_theory(output,
+              Export_Theory.read_pure_theory(store, cache = Some(cache)),
+              Export.Provider.none)
+          }
+          else {
+            val provider = Export.Provider.database(db, session, name.theory)
+            val theory =
+              Export_Theory.read_theory(provider, session, name.theory, cache = Some(cache))
 
             for {
-              name <- snapshot.version.nodes.requirements(List(snapshot.node_name))
-              if name.is_theory && name.theory != theory_name
-            } output.require_open(name.theory)
-
+              req <- dependencies.theory_graph.all_preds(List(name)).reverse.map(_.theory)
+              if req != name.theory
+            } output.require_open(req)
+    
             import_theory(output, theory, provider)
-            imported_theories += theory.name
-          })
+          }
+        })
+      }
+    })
 
-        }))
-
-      using(new LP_Syntax.Output(output_file))(output =>
-        imported_theories.foreach(output.require_open))
-    }
-
-    context.check_errors
-
-    progress.echo("Output " + output_file)
+    using(new LP_Syntax.Output(output_file))(output =>
+      all_theories.foreach(name => output.require_open(name.theory)))
   }
 
 
@@ -176,62 +173,40 @@ object Importer
   val isabelle_tool =
     Isabelle_Tool("dedukti_import", "import theory content into Dedukti", args =>
     {
-      var base_sessions: List[String] = Nil
-      var select_dirs: List[Path] = Nil
       var output_file = default_output_file
-      var requirements = false
-      var exclude_session_groups: List[String] = Nil
-      var all_sessions = false
       var dirs: List[Path] = Nil
-      var session_groups: List[String] = Nil
+      var fresh_build = false
       var options = Options.init()
       var verbose = false
-      var exclude_sessions: List[String] = Nil
 
       val getopts = Getopts("""
-Usage: isabelle dedukti_import [OPTIONS] [SESSIONS ...]
+Usage: isabelle dedukti_import [OPTIONS] SESSION
 
   Options are:
-    -B NAME      include session NAME and all descendants
-    -D DIR       include session directory and select its sessions
     -O FILE      output file for Dedukti theory in lp syntax (default: """ + default_output_file + """)
-    -R           operate on requirements of selected sessions
-    -X NAME      exclude sessions from group NAME and all descendants
-    -a           select all sessions
     -d DIR       include session directory
-    -g NAME      select session group NAME
+    -f           fresh build
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
     -v           verbose mode
-    -x NAME      exclude session NAME and all descendants
 
   Import specified sessions as Dedukti files.
 """,
-      "B:" -> (arg => base_sessions = base_sessions ::: List(arg)),
-      "D:" -> (arg => { select_dirs = select_dirs ::: List(Path.explode(arg)) }),
-      "R" -> (_ => requirements = true),
       "O:" -> (arg => output_file = Path.explode(arg)),
-      "X:" -> (arg => exclude_session_groups = exclude_session_groups ::: List(arg)),
-      "a" -> (_ => all_sessions = true),
       "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
-      "g:" -> (arg => session_groups = session_groups ::: List(arg)),
+      "f" -> (_ => fresh_build = true),
       "o:" -> (arg => { options += arg }),
-      "v" -> (_ => verbose = true),
-      "x:" -> (arg => exclude_sessions = exclude_sessions ::: List(arg)))
+      "v" -> (_ => verbose = true))
 
-      val sessions = getopts(args)
+      val more_args = getopts(args)
 
-      val selection =
-        Sessions.Selection(
-          requirements = requirements,
-          all_sessions = all_sessions,
-          base_sessions = base_sessions,
-          exclude_session_groups = exclude_session_groups,
-          exclude_sessions = exclude_sessions,
-          session_groups = session_groups,
-          sessions = sessions)
+      val session =
+        more_args match {
+          case List(name) => name
+          case _ => getopts.usage()
+        }
 
       val progress =
-        new Console_Progress(verbose = verbose) {
+        new Console_Progress(verbose = true) {
           override def theory(theory: Progress.Theory): Unit =
             if (verbose) echo("Processing " + theory.print_theory + theory.print_percentage)
         }
@@ -241,11 +216,10 @@ Usage: isabelle dedukti_import [OPTIONS] [SESSIONS ...]
 
       progress.interrupt_handler {
         try {
-          importer(options,
+          importer(options, session,
             progress = progress,
             dirs = dirs,
-            select_dirs = select_dirs,
-            selection = selection,
+            fresh_build = fresh_build,
             output_file = output_file,
             verbose = verbose)
         }
