@@ -205,11 +205,7 @@ Usage: isabelle dedukti_import [OPTIONS] SESSION
           case _ => getopts.usage()
         }
 
-      val progress =
-        new Console_Progress(verbose = true) {
-          override def theory(theory: Progress.Theory): Unit =
-            if (verbose) echo("Processing " + theory.print_theory + theory.print_percentage)
-        }
+      val progress = new Console_Progress(verbose = true)
 
       val start_date = Date.now()
       if (verbose) progress.echo("Started at " + Build_Log.print_date(start_date) + "\n")
