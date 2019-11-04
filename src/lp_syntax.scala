@@ -246,7 +246,7 @@ object LP_Syntax
             for (ty <- thm.types) { space; typ(ty, atomic = true) }
           }
 
-        case _ => isabelle.error("Bad proof term encountered:\n" + prf)
+        case _ => error("Bad proof term encountered:\n" + prf)
       }
     }
 
