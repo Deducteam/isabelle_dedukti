@@ -124,6 +124,10 @@ object LP_Syntax
     def symbol_const { string("symbol const ") }
     def symbol { string("symbol ") }
     def definition { string("definition ") }
+    def theorem { string("theorem ") }
+    def proof { string("proof ") }
+    def refine { string("refine ") }
+    def qed { string("qed") }
     def rule { string("rule ") }
     def TYPE { string("TYPE") }
     def Type { string("Type") }
@@ -324,7 +328,7 @@ object LP_Syntax
       proof_term: Option[Term.Proof])
     {
       try {
-        if (proof_term.isEmpty) symbol_const else definition
+        if (proof_term.isEmpty) symbol_const else theorem
 
         name(s); colon
         polymorphic(all, prop.typargs.map(_._1))
@@ -333,11 +337,13 @@ object LP_Syntax
         nl
 
         for (prf <- proof_term) {
-          dfn
-          nl
+          proof
+          refine
           polymorphic(lambda, prop.typargs.map(_._1))
           parameters(lambda, prop.args)
           proof(prf)
+          nl
+          qed
           nl
         }
       }
