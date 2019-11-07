@@ -14,21 +14,12 @@ object Syntax
   type Ident = String
 
   sealed abstract class Term
-  {
-    def rvars(): Set[Ident] =
-      this match {
-        case RVar(id) => Set(id)
-        case Appl(t1, t2) => t1.rvars() ++ t2.rvars()
-        case _ => Set.empty
-      }
-  }
   type Typ = Term
   sealed case class Arg(id: Option[Ident], typ: Option[Typ])
 
   case object TYPE extends Term
   case  class Name(id: Ident) extends Term
   case  class Vrbl(idx: Int) extends Term
-  case  class RVar(id: Ident) extends Term
   case  class Appl(t1: Term, t2: Term) extends Term
   case  class Abst(arg: Arg, t: Term) extends Term
   case  class Prod(arg: Arg, t: Term) extends Term
@@ -41,7 +32,7 @@ object Syntax
   def arrows(tys: List[Typ], tm: Term): Term =  tys.foldRight(tm)(arrow)
 
   sealed abstract class Command
-  case class Rewrite(lhs: Term, rhs: Term) extends Command
+  case class Rewrite(vars: List[Ident], lhs: Term, rhs: Term) extends Command
   case class Declaration(id: Ident, args: List[Arg], ty: Typ, const: Boolean = true) extends Command
   case class Definition(id: Ident, args: List[Arg], ty: Option[Typ], tm: Term) extends Command
   case class Theorem(id: Ident, args: List[Arg], ty: Typ, prf: Term) extends Command
@@ -106,11 +97,11 @@ object Prelude
   /* produces "rule f (g &a &b) → f &a ⇒ f &b */
   def rule_distr(etaeps: Syntax.Term, funimp: Syntax.Term): Syntax.Command =
   {
-    val a = Syntax.RVar("a")
-    val b = Syntax.RVar("b")
+    val a = Syntax.Vrbl(0)
+    val b = Syntax.Vrbl(1)
     val etaeps_a = Syntax.Appl(etaeps, a)
     val etaeps_b = Syntax.Appl(etaeps, b)
-    Syntax.Rewrite(
+    Syntax.Rewrite(List("a", "b"),
       Syntax.Appl(etaeps, Syntax.appls(funimp, List(a, b))),
       Syntax.arrow(etaeps_a, etaeps_b))
   }
@@ -129,12 +120,13 @@ object Prelude
   val allR =
   {
     val all = Syntax.Name(const_kind(Pure_Thy.ALL))
-    val a = Syntax.RVar("a")
-    val b = Syntax.RVar("b")
+    val a  = Syntax.Vrbl(0)
+    val bl = Syntax.Vrbl(1)
+    val br = Syntax.Vrbl(2)
     val eta_a = Syntax.Appl(etaT, a)
-    val eps_bx = Syntax.Appl(epsT, Syntax.Appl(b, Syntax.Name("x")))
-    Syntax.Rewrite(
-      Syntax.Appl(epsT, Syntax.appls(all, List(a, b))),
+    val eps_bx = Syntax.Appl(epsT, Syntax.Appl(br, Syntax.Name("x")))
+    Syntax.Rewrite(List("a", "b"),
+      Syntax.Appl(epsT, Syntax.appls(all, List(a, bl))),
       Syntax.Prod(Syntax.Arg(Some("x"), Some(eta_a)), eps_bx))
   }
 }
@@ -366,8 +358,7 @@ object LP_Syntax
 
   class SyntaxWriter(writer: Writer) extends Syntax.SyntaxWriter(writer)
   {
-    def name(a: String): Unit =
-      write(escape_if_needed(a))
+    def name(a: String): Unit = write(escape_if_needed(a))
 
     def comma  = write(", ")
     def colon  = write(" : ")
@@ -402,8 +393,6 @@ object LP_Syntax
           write("TYPE")
         case Syntax.Name(id) =>
           name(id)
-        case Syntax.RVar(id) =>
-          write("&" ++ id)
         case Syntax.Vrbl(idx) =>
           write(bounds(idx))
         case Syntax.Appl(t1, t2) =>
@@ -423,11 +412,12 @@ object LP_Syntax
     {
       c match
       {
-        case Syntax.Rewrite(lhs, rhs) =>
+        case Syntax.Rewrite(vars, lhs, rhs) =>
+          val ampvars = vars.map(v => "&" ++ v)
           write("rule ")
-          term(lhs)
+          term(lhs, ampvars)
           rew
-          term(rhs)
+          term(rhs, ampvars)
         case Syntax.Declaration(id, args, ty, const) =>
           write("symbol ")
           if (const) write("const ")
