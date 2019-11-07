@@ -58,47 +58,47 @@ object Importer
     var exported_proofs = Set.empty[Long]
 
     def import_theory(
-      output: LP_Syntax.Output,
+      output: Syntax.SyntaxWriter,
       theory: Export_Theory.Theory,
       provider: Export.Provider)
     {
       progress.echo("Importing theory " + theory.name)
 
-      output.string("\n\n// theory " + theory.name + "\n\n")
+      //output.string("\n\n// theory " + theory.name + "\n\n")
 
       for (a <- theory.classes) {
         if (verbose) progress.echo("  " + a.entity.toString)
-        output.class_decl(a.entity.name)
+        output.write(Translate.class_decl(a.entity.name))
       }
 
       for (a <- theory.types) {
         if (verbose) progress.echo("  " + a.entity.toString)
 
         a.abbrev match {
-          case None => output.type_decl(a.entity.name, a.args.length)
-          case Some(rhs) => output.type_abbrev(a.entity.name, a.args, rhs)
+          case None => output.write(Translate.type_decl(a.entity.name, a.args.length))
+          case Some(rhs) => output.write(Translate.type_abbrev(a.entity.name, a.args, rhs))
         }
 
-        if (a.entity.name == Pure_Thy.FUN) output.prelude_fun
-        if (a.entity.name == Pure_Thy.PROP) output.prelude_prop
+        if (a.entity.name == Pure_Thy.FUN ) output.write(Prelude.funR)
+        if (a.entity.name == Pure_Thy.PROP) output.write(Prelude.epsD)
       }
 
       for (a <- theory.consts) {
         if (verbose) progress.echo("  " + a.entity.toString)
 
         a.abbrev match {
-          case None => output.const_decl(a.entity.name, a.typargs, a.typ)
-          case Some(rhs) => output.const_abbrev(a.entity.name, a.typargs, a.typ, rhs)
+          case None => output.write(Translate.const_decl(a.entity.name, a.typargs, a.typ))
+          case Some(rhs) => output.write(Translate.const_abbrev(a.entity.name, a.typargs, a.typ, rhs))
         }
 
-        if (a.entity.name == Pure_Thy.ALL) output.prelude_all
-        if (a.entity.name == Pure_Thy.IMP) output.prelude_imp
+        if (a.entity.name == Pure_Thy.ALL) output.write(Prelude.allR)
+        if (a.entity.name == Pure_Thy.IMP) output.write(Prelude.impR)
       }
 
       for (axm <- theory.axioms) {
         if (verbose) progress.echo("  " + axm.entity.toString)
 
-        output.stmt_decl(LP_Syntax.axiom_kind(axm.entity.name), axm.prop, None)
+        output.write(Translate.stmt_decl(Prelude.axiom_kind(axm.entity.name), axm.prop, None))
       }
 
       for (thm <- theory.thms) {
@@ -119,11 +119,12 @@ object Importer
           }
 
           exported_proofs += id.serial
-          output.proof_decl(id.serial, prf.prop, prf.proof)
+          output.write(Translate.proof_decl(id.serial, prf.prop, prf.proof))
         }
-        output.stmt_decl(LP_Syntax.thm_kind(thm.entity.name), thm.prop, Some(thm.proof))
+        output.write(Translate.stmt_decl(Prelude.thm_kind(thm.entity.name), thm.prop, Some(thm.proof)))
       }
     }
+
 
     def theory_file(theory_name: String) =
       output_file.dir + Path.explode(theory_name + ".lp")
@@ -136,14 +137,17 @@ object Importer
     using(store.open_database(session))(db =>
     {
       for (name <- all_theories) {
-        using(new LP_Syntax.Output(theory_file(name.theory)))(output =>
+        using(new PartWriter(theory_file(name.theory)))(partwriter =>
         {
-          output.prelude_eta
+          partwriter.write("""set flag "eta_equality" on""" + "\n")
+
+          val syntax = new LP_Syntax.SyntaxWriter(partwriter)
 
           if (name.theory == Thy_Header.PURE) {
-            output.prelude_type
+            syntax.write(Prelude.typeD)
+            syntax.write(Prelude.etaD)
 
-            import_theory(output,
+            import_theory(syntax,
               Export_Theory.read_pure_theory(store, cache = Some(cache)),
               Export.Provider.none)
           }
@@ -155,16 +159,18 @@ object Importer
             for {
               req <- dependencies.theory_graph.all_preds(List(name)).reverse.map(_.theory)
               if req != name.theory
-            } output.require_open(req)
+            } syntax.require_open(req)
     
-            import_theory(output, theory, provider)
+            import_theory(syntax, theory, provider)
           }
         })
       }
     })
 
-    using(new LP_Syntax.Output(output_file))(output =>
-      all_theories.foreach(name => output.require_open(name.theory)))
+    using(new PartWriter(output_file))(output => {
+      val syntax = new LP_Syntax.SyntaxWriter(output)
+      all_theories.foreach(name => syntax.require_open(name.theory))
+    })
   }
 
 

@@ -6,7 +6,303 @@ package isabelle.dedukti
 
 import isabelle._
 
-import java.io.{FileOutputStream, OutputStreamWriter, BufferedWriter}
+import java.io.{FileOutputStream, OutputStreamWriter, BufferedWriter, Writer}
+
+
+object Syntax
+{
+  type Ident = String
+
+  sealed abstract class Term
+  {
+    def rvars(): Set[Ident] =
+      this match {
+        case RVar(id) => Set(id)
+        case Appl(t1, t2) => t1.rvars() ++ t2.rvars()
+        case _ => Set.empty
+      }
+  }
+  type Typ = Term
+  sealed case class Arg(id: Option[Ident], typ: Option[Typ])
+
+  case object TYPE extends Term
+  case  class Name(id: Ident) extends Term
+  case  class RVar(id: Ident) extends Term
+  case  class Appl(t1: Term, t2: Term) extends Term
+  case  class Abst(arg: Arg, t: Term) extends Term
+  case  class Prod(arg: Arg, t: Term) extends Term
+
+  def arrow(ty: Typ, tm: Term) = Prod(Arg(None, Some(ty)), tm)
+
+  def appls(head: Term, spine: List[Term]): Term = spine.foldLeft(head)(Appl)
+  def absts(args: List[Arg], tm: Term): Term = args.foldRight(tm)(Abst)
+  def prods(args: List[Arg], tm: Term): Term = args.foldRight(tm)(Prod)
+  def arrows(tys: List[Typ], tm: Term): Term =  tys.foldRight(tm)(arrow)
+
+  sealed abstract class Command
+  case class Rewrite(lhs: Term, rhs: Term) extends Command
+  case class Declaration(id: Ident, args: List[Arg], ty: Typ, const: Boolean = true) extends Command
+  case class Definition(id: Ident, args: List[Arg], ty: Option[Typ], tm: Term) extends Command
+  case class Theorem(id: Ident, args: List[Arg], ty: Typ, prf: Term) extends Command
+
+  abstract class SyntaxWriter(writer: Writer)
+  {
+    def write(c: Char) = writer.write(c)
+    def write(s: String) = writer.write(s)
+
+    def space = write(' ')
+    def nl = write('\n')
+
+    def bg = write('(')
+    def en = write(')')
+
+    def block(body: => Unit) { bg; body; en }
+    def block_if(atomic: Boolean)(body: => Unit)
+    {
+      if (atomic) bg
+      body
+      if (atomic) en
+    }
+
+    def write(c: Command)
+  }
+}
+
+
+// preludes for minimal Higher-order Logic (Isabelle/Pure)
+// see https://raw.githubusercontent.com/Deducteam/Libraries/master/theories/stt.dk
+
+object Prelude
+{
+  /* special names */
+
+  val typeId = "Type"
+  val  etaId =  "eta"
+  val  epsId =  "eps"
+
+  val TypeT = Syntax.Name(typeId)
+  val  etaT = Syntax.Name( etaId)
+  val  epsT = Syntax.Name( epsId)
+
+
+  /* kinds */
+
+  def kind(a: String, k: Export_Theory.Kind.Value): String = a + "|" + k.toString
+
+  def class_kind(a: String): String = kind(a, Export_Theory.Kind.CLASS)
+  def type_kind(a: String): String = kind(a, Export_Theory.Kind.TYPE)
+  def const_kind(a: String): String = kind(a, Export_Theory.Kind.CONST)
+  def axiom_kind(a: String): String = kind(a, Export_Theory.Kind.AXIOM)
+  def thm_kind(a: String): String = kind(a, Export_Theory.Kind.THM)
+
+  def proof_kind(serial: Long): String = "proof" + serial
+
+
+  val typeD = Syntax.Declaration(typeId, Nil, Syntax.TYPE)
+  val  etaD = Syntax.Declaration(etaId, Nil, Syntax.arrow(TypeT, Syntax.TYPE), const = false)
+
+
+  /* produces "rule f (g &a &b) → f &a ⇒ f &b */
+  def rule_distr(etaeps: Syntax.Term, funimp: Syntax.Term): Syntax.Command =
+  {
+    val a = Syntax.RVar("a")
+    val b = Syntax.RVar("b")
+    val etaeps_a = Syntax.Appl(etaeps, a)
+    val etaeps_b = Syntax.Appl(etaeps, b)
+    Syntax.Rewrite(
+      Syntax.Appl(etaeps, Syntax.appls(funimp, List(a, b))),
+      Syntax.arrow(etaeps_a, etaeps_b))
+  }
+
+  val funR = rule_distr(etaT, Syntax.Name(type_kind(Pure_Thy.FUN)))
+  val impR = rule_distr(epsT, Syntax.Name(const_kind(Pure_Thy.IMP)))
+
+  val epsD =
+  {
+    val prop = Syntax.Name(type_kind(Pure_Thy.PROP))
+    val eta_prop = Syntax.Appl(etaT, prop)
+    Syntax.Declaration(epsId, Nil, Syntax.arrow(eta_prop, Syntax.TYPE), const = false)
+  }
+
+  // rule eps ({|Pure.all|const|} &a &b) → ∀ (x : eta &a), eps (&b x)
+  val allR =
+  {
+    val all = Syntax.Name(const_kind(Pure_Thy.ALL))
+    val a = Syntax.RVar("a")
+    val b = Syntax.RVar("b")
+    val eta_a = Syntax.Appl(etaT, a)
+    val eps_bx = Syntax.Appl(epsT, Syntax.Appl(b, Syntax.Name("x")))
+    Syntax.Rewrite(
+      Syntax.Appl(epsT, Syntax.appls(all, List(a, b))),
+      Syntax.Prod(Syntax.Arg(Some("x"), Some(eta_a)), eps_bx))
+  }
+}
+
+
+
+
+object Translate
+{
+  import Prelude._
+
+  def TypeA(name: String): Syntax.Arg =
+    Syntax.Arg(Some(name), Some(TypeT))
+
+  def eta_arg(name: String, ty: Term.Typ) =
+    Syntax.Arg(Some(name), Some(eta_ty(ty)))
+
+  sealed case class Bounds(
+    all: List[String] = Nil,
+    trm: List[String] = Nil,
+    prf: List[String] = Nil) {
+
+    def add_trm(tm: String) =
+      this.copy(all = tm :: this.all, trm = tm :: this.trm)
+    def add_prf(pf: String) =
+      this.copy(all = pf :: this.all, prf = pf :: this.prf)
+
+    def get_trm(idx: Int) = this.all.indexOf(this.trm(idx))
+    def get_prf(idx: Int) = this.all.indexOf(this.prf(idx))
+  }
+
+  /* types and terms */
+
+  def typ(ty: Term.Typ): Syntax.Typ =
+  {
+    ty match {
+      case Term.TFree(a, _) => Syntax.Name(a)
+      case Term.Type(c, args) =>
+        Syntax.appls(Syntax.Name(type_kind(c)), args.map(typ))
+      case Term.TVar(xi, _) => error("Illegal schematic type variable " + xi.toString)
+    }
+  }
+
+  def eta_ty(ty: Term.Typ): Syntax.Typ =
+    Syntax.Appl(etaT, typ(ty))
+
+  def term(tm: Term.Term, bounds: Bounds): Syntax.Term =
+  {
+    tm match {
+      case Term.Const(c, typargs) =>
+        Syntax.appls(Syntax.Name(const_kind(c)), typargs.map(typ))
+      case Term.Free(x, _) => Syntax.Name(x)
+      case Term.Var(xi, _) => error("Illegal schematic variable " + xi.toString)
+      case Term.Bound(i) =>
+        try { Syntax.Name(bounds.trm(i)) }
+        catch { case _: IndexOutOfBoundsException => isabelle.error("Loose bound variable " + i) }
+      case Term.Abs(x, ty, b) =>
+        Syntax.Abst(eta_arg(x, ty), term(b, bounds.add_trm(x)))
+      case Term.OFCLASS(t, c) =>
+        Syntax.Appl(Syntax.Name(class_kind(c)), typ(t))
+      case Term.App(a, b) =>
+        Syntax.Appl(term(a, bounds), term(b, bounds))
+    }
+  }
+
+  def eps_tm(tm: Term.Term, bounds: Bounds): Syntax.Term =
+    Syntax.Appl(epsT, term(tm, bounds))
+
+  def proof(prf: Term.Proof, bounds: Bounds): Syntax.Term =
+  {
+    prf match {
+      case Term.PBound(i) =>
+        try { Syntax.Name(bounds.prf(i)) }
+        catch {
+          case _: IndexOutOfBoundsException => isabelle.error("Loose bound variable (proof) " + i)
+        }
+      case Term.Abst(x, ty, b) =>
+        Syntax.Abst(eta_arg(x, ty), proof(b, bounds.add_trm(x)))
+      case Term.AbsP(x, hy, b) =>
+        Syntax.Abst(
+          Syntax.Arg(Some(x), Some (eps_tm(hy, bounds))),
+          proof(b, bounds.add_prf(x)))
+      case Term.Appt(a, b) =>
+        Syntax.Appl(proof(a, bounds), term(b, bounds))
+      case Term.AppP(a, b) =>
+        Syntax.Appl(proof(a, bounds), proof(b, bounds))
+      case axm: Term.PAxm =>
+        Syntax.appls(Syntax.Name(axiom_kind(axm.name)), axm.types.map(typ))
+      case thm: Term.PThm =>
+        val head = if (thm.name.nonEmpty) thm_kind(thm.name) else proof_kind(thm.serial)
+        Syntax.appls(Syntax.Name(head), thm.types.map(typ))
+      case _ => error("Bad proof term encountered:\n" + prf)
+    }
+  }
+
+
+  /* type classes */
+
+  def class_decl(c: String): Syntax.Command =
+  {
+    val eta_prop = Syntax.Appl(etaT, Syntax.Name(type_kind(Pure_Thy.PROP)))
+    Syntax.Declaration(class_kind(c), Nil, Syntax.arrow(TypeT, eta_prop))
+  }
+
+
+  /* types */
+
+  def type_decl(c: String, args: Int): Syntax.Command =
+    Syntax.Declaration(type_kind(c), Nil,
+      Syntax.arrows(List.fill(args)(TypeT), TypeT))
+
+  def type_abbrev(c: String, args: List[String], rhs: Term.Typ): Syntax.Command =
+    Syntax.Definition(type_kind(c), args.map(TypeA), Some(TypeT), typ(rhs))
+
+
+  /* consts */
+
+  def const_decl(c: String, typargs: List[String], ty: Term.Typ): Syntax.Command =
+    Syntax.Declaration(const_kind(c), Nil,
+      Syntax.prods(typargs.map(TypeA), eta_ty(ty)))
+
+  def const_abbrev(c: String, typargs: List[String], ty: Term.Typ, rhs: Term.Term): Syntax.Command =
+    Syntax.Definition(const_kind(c), typargs.map(TypeA),
+      Some(eta_ty(ty)), term(rhs, Bounds()))
+
+
+  /* theorems and proof terms */
+
+  def stmt_decl(
+    s: String,
+    prop: Export_Theory.Prop,
+    proof_term: Option[Term.Proof]): Syntax.Command =
+  {
+    val args =
+      prop.typargs.map(_._1).map(TypeA) ++
+      prop.args.map((eta_arg _).tupled)
+    val ty = Syntax.prods(args, eps_tm(prop.term, Bounds()))
+
+    try proof_term match {
+      case None => Syntax.Declaration(s, Nil, ty)
+      case Some(prf) =>
+        Syntax.Theorem(s, Nil, ty, Syntax.absts(args, proof(prf, Bounds())))
+    }
+    catch { case ERROR(msg) => error(msg + "\nin " + quote(s)) }
+  }
+
+  def proof_decl(serial: Long, prop: Export_Theory.Prop, prf: Term.Proof): Syntax.Command =
+    stmt_decl(Prelude.proof_kind(serial), prop, Some(prf))
+
+}
+
+
+class PartWriter(file: Path) extends Writer
+{
+  private val file_part = file.ext("part")
+
+  private val w =
+    new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file_part.file), UTF8.charset))
+
+  def write(c: Char) = w.write(c)
+  def write(a: Array[Char], off: Int, len: Int) = w.write(a, off, len)
+  def flush() = w.flush()
+
+  def close()
+  {
+    w.close()
+    File.move(file_part, file)
+  }
+}
 
 
 object LP_Syntax
@@ -64,338 +360,91 @@ object LP_Syntax
     else "{|" + name + "|}"
 
 
-  /* kinds */
-
-  def kind(a: String, k: Export_Theory.Kind.Value): String = a + "|" + k.toString
-
-  def class_kind(a: String): String = kind(a, Export_Theory.Kind.CLASS)
-  def type_kind(a: String): String = kind(a, Export_Theory.Kind.TYPE)
-  def const_kind(a: String): String = kind(a, Export_Theory.Kind.CONST)
-  def axiom_kind(a: String): String = kind(a, Export_Theory.Kind.AXIOM)
-  def thm_kind(a: String): String = kind(a, Export_Theory.Kind.THM)
-
-  def proof_kind(serial: Long): String = "proof" + serial
-
-
-  /* buffered output depending on context (unsynchronized) */
-
-  class Output(file: Path) extends AutoCloseable
+  class SyntaxWriter(writer: Writer) extends Syntax.SyntaxWriter(writer)
   {
-    /* manage output file */
-
-    private val file_part = file.ext("part")
-
-    private val writer =
-      new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file_part.file), UTF8.charset))
-
-    def char(c: Char): Unit = writer.write(c)
-    def string(s: String): Unit = writer.write(s)
-
-    def close()
-    {
-      writer.close
-      File.move(file_part, file)
-    }
-
-
-    /* white space */
-
-    def space: Unit = char(' ')
-    def nl: Unit = char('\n')
-
-
-    /* blocks (parentheses) */
-
-    def bg { string("(") }
-    def en { string(")") }
-
-    def block(body: => Unit) { bg; body; en }
-    def block_if(atomic: Boolean)(body: => Unit)
-    {
-      if (atomic) bg
-      body
-      if (atomic) en
-    }
-
-
-    /* concrete syntax and special names */
-
-    def comma { string(", ") }
-    def symbol_const { string("symbol const ") }
-    def symbol { string("symbol ") }
-    def definition { string("definition ") }
-    def theorem { string("theorem ") }
-    def proof { string("proof ") }
-    def refine { string("refine ") }
-    def qed { string("qed") }
-    def rule { string("rule ") }
-    def TYPE { string("TYPE") }
-    def Type { string("Type") }
-    def eta { string("eta") }
-    def eps { string("eps") }
-    def colon { string(" : ") }
-    def to { string(" \u21d2 ") }
-    def dfn { string(" \u2254 ") }
-    def rew { string(" \u2192 ") }
-    def all { string("\u2200 ") }
-    def lambda { string("\u03bb ") }
-
-
-    /* names */
-
     def name(a: String): Unit =
-      string(if (reserved(a) || !is_regular_identifier(a)) make_escaped_identifier(a) else a)
+      write(if (reserved(a) || !is_regular_identifier(a)) make_escaped_identifier(a) else a)
 
+    def comma  = write(", ")
+    def colon  = write(" : ")
+    def to     = write(" \u21d2 ")
+    def rew    = write(" \u2192 ")
+    def dfn    = write(" \u2254 ")
+    def lambda = write("\u03bb ")
+    def forall = write("\u2200 ")
 
-    /* types and terms */
-
-    def typ(ty: Term.Typ, atomic: Boolean = false)
+    def arg(a: Syntax.Arg)
     {
-      ty match {
-        case Term.TFree(a, _) => name(a)
-        case Term.Type(c, Nil) => name(type_kind(c))
-        case Term.Type(c, args) =>
-          block_if(atomic) {
-            name(type_kind(c))
-            for (arg <- args) {
-              space
-              typ(arg, atomic = true)
-            }
-          }
-        case Term.TVar(xi, _) => error("Illegal schematic type variable " + xi.toString)
+      a.id match {
+        case Some(id) => name(id)
+        case None => write('_')
       }
+      for (t <- a.typ) { colon; term(t) }
     }
 
-    def eta_typ(ty: Term.Typ, atomic: Boolean = false)
+    def term(t: Syntax.Term, atomic: Boolean = false)
     {
-      block_if(atomic) { eta; space; typ(ty, atomic = true) }
-    }
-
-    def term(tm: Term.Term, bounds: List[String] = Nil, atomic: Boolean = false)
-    {
-      tm match {
-        case Term.Const(c, typargs) =>
-          block_if(atomic && typargs.nonEmpty) {
-            name(const_kind(c))
-            for (t <- typargs) { space; typ(t, atomic = true) }
-          }
-        case Term.Free(x, _) => name(x)
-        case Term.Var(xi, _) => error("Illegal schematic variable " + xi.toString)
-        case Term.Bound(i) =>
-          try { name(bounds(i)) }
-          catch { case _: IndexOutOfBoundsException => isabelle.error("Loose bound variable " + i) }
-        case Term.Abs(x, ty, b) =>
+      t match
+      {
+        case Syntax.TYPE =>
+          write("TYPE")
+        case Syntax.Name(id) =>
+          name(id)
+        case Syntax.RVar(id) =>
+          write("&" ++ id)
+        case Syntax.Appl(t1, t2) =>
           block_if(atomic) {
-            lambda; block { name(x); colon; eta_typ(ty) }; comma
-            term(b, bounds = x :: bounds)
-          }
-        case Term.OFCLASS(t, c) =>
-          block_if(atomic) {
-            name(class_kind(c)); space; typ(t, atomic = true)
-          }
-        case Term.App(a, b) =>
-          block_if(atomic) {
-            term(a, bounds = bounds, atomic = true)
+            term(t1, atomic = true)
             space
-            term(b, bounds = bounds, atomic = true)
+            term(t2, atomic = true)
           }
+        case Syntax.Abst(a, t) =>
+          block_if(atomic) { lambda; block { arg(a) }; comma; term(t) }
+        case Syntax.Prod(a, t) =>
+          block_if(atomic) { forall; block { arg(a) }; comma; term(t) }
       }
     }
 
-    def proof(prf: Term.Proof,
-      bounds: List[String] = Nil,
-      bounds_proof: List[String] = Nil,
-      atomic: Boolean = false)
+    def write(c: Syntax.Command)
     {
-      prf match {
-        case Term.PBound(i) =>
-          try { name(bounds_proof(i)) }
-          catch {
-            case _: IndexOutOfBoundsException => isabelle.error("Loose bound variable (proof) " + i)
-          }
-        case Term.Abst(x, ty, b) =>
-          block_if(atomic) {
-            lambda; block { name(x); colon; eta_typ(ty) }; comma
-            proof(b, bounds = x :: bounds, bounds_proof)
-          }
-        case Term.AbsP(x, hy, b) =>
-          block_if(atomic) {
-            lambda; block { name(x); colon; eps_term(hy, bounds = bounds) }; comma
-            proof(b, bounds = bounds, bounds_proof = x :: bounds_proof)
-          }
-        case Term.Appt(a, b) =>
-          block_if(atomic) {
-            proof(a, bounds = bounds, bounds_proof = bounds_proof, atomic = true)
-            space
-            term(b, bounds = bounds, atomic = true)
-          }
-        case Term.AppP(a, b) =>
-          block_if(atomic) {
-            proof(a, bounds = bounds, bounds_proof = bounds_proof, atomic = true)
-            space
-            proof(b, bounds = bounds, bounds_proof = bounds_proof, atomic = true)
-          }
-        case axm: Term.PAxm =>
-          block_if(atomic && axm.types.nonEmpty) {
-            name(axiom_kind(axm.name))
-            for (ty <- axm.types) { space; typ(ty, atomic = true) }
-          }
-        case thm: Term.PThm =>
-          block_if(atomic && thm.types.nonEmpty) {
-            if (thm.name.nonEmpty) name(thm_kind(thm.name)) else name(proof_kind(thm.serial))
-            for (ty <- thm.types) { space; typ(ty, atomic = true) }
-          }
-
-        case _ => error("Bad proof term encountered:\n" + prf)
+      c match
+      {
+        case Syntax.Rewrite(lhs, rhs) =>
+          write("rule ")
+          term(lhs)
+          rew
+          term(rhs)
+        case Syntax.Declaration(id, args, ty, const) =>
+          write("symbol ")
+          if (const) write("const ")
+          name(id)
+          for (a <- args) { space; block { arg(a) } }
+          colon
+          term(ty)
+        case Syntax.Definition(id, args, ty, tm) =>
+          write("definition ");
+          name(id)
+          for (a <- args) { space; block { arg(a) } }
+          for (ty <- ty) { colon; term(ty) }
+          dfn
+          term(tm)
+        case Syntax.Theorem(id, args, ty, prf) =>
+          write("theorem ");
+          name(id)
+          for (a <- args) { space; block { arg(a) } }
+          colon; term(ty)
+          write(" proof refine ")
+          term(prf)
+          write(" qed")
       }
-    }
-
-    def eps_term(t: Term.Term, bounds: List[String] = Nil, atomic: Boolean = false)
-    {
-      block_if(atomic) { eps; space; term(t, bounds = bounds, atomic = true) }
-    }
-
-
-    /* type classes */
-
-    def class_decl(c: String)
-    {
-      symbol_const; name(class_kind(c)); colon
-      Type; to; eta; space; name(type_kind(Pure_Thy.PROP))
       nl
     }
 
-
-    /* types */
-
-    def type_decl(c: String, args: Int)
+    def require_open(module: String) =
     {
-      symbol_const; name(type_kind(c)); colon
-      for (_ <- 0 until args) { Type; to }; Type
+      write("require open ")
+      name(module)
       nl
-    }
-
-    def type_abbrev(c: String, args: List[String], rhs: Term.Typ)
-    {
-      definition; name(type_kind(c))
-      for (a <- args) { space; block { name(a); colon; Type } }
-      colon; Type; dfn; typ(rhs)
-      nl
-    }
-
-
-    /* arguments */
-
-    def polymorphic(binder: => Unit, typargs: List[String])
-    {
-      if (typargs.nonEmpty) {
-        binder
-        for (a <- typargs) { block { name(a); colon; Type }; space }; comma
-      }
-    }
-
-    def parameters(binder: => Unit, args: List[(String, Term.Typ)])
-    {
-      if (args.nonEmpty) {
-        binder
-        for ((x, ty) <- args) { block { name(x); colon; eta_typ(ty) }; space }; comma
-      }
-    }
-
-
-    /* consts */
-
-    def const_decl(c: String, typargs: List[String], ty: Term.Typ)
-    {
-      symbol_const; name(const_kind(c)); colon; polymorphic(all, typargs); eta_typ(ty)
-      nl
-    }
-
-    def const_abbrev(c: String, typargs: List[String], ty: Term.Typ, rhs: Term.Term)
-    {
-      definition; name(const_kind(c))
-      for (a <- typargs) { space; block { name(a); colon; Type } }
-      colon; eta_typ(ty); dfn; term(rhs)
-      nl
-    }
-
-
-    /* theorems and proof terms */
-
-    def stmt_decl(
-      s: String,
-      prop: Export_Theory.Prop,
-      proof_term: Option[Term.Proof])
-    {
-      try {
-        if (proof_term.isEmpty) symbol_const else theorem
-
-        name(s); colon
-        polymorphic(all, prop.typargs.map(_._1))
-        parameters(all, prop.args)
-        eps_term(prop.term)
-        nl
-
-        for (prf <- proof_term) {
-          proof
-          refine
-          polymorphic(lambda, prop.typargs.map(_._1))
-          parameters(lambda, prop.args)
-          proof(prf)
-          nl
-          qed
-          nl
-        }
-      }
-      catch { case ERROR(msg) => error(msg + "\nin " + quote(s)) }
-    }
-
-    def proof_decl(serial: Long, prop: Export_Theory.Prop, prf: Term.Proof): Unit =
-      stmt_decl(proof_kind(serial), prop, Some(prf))
-
-
-    /* importing of other modules */
-
-    def require_open(module: String)
-    {
-      string("require open"); space; name(module); nl
-    }
-
-
-    /* preludes for minimal Higher-order Logic (Isabelle/Pure) */
-    // see https://raw.githubusercontent.com/Deducteam/Libraries/master/theories/stt.dk
-
-    def prelude_eta
-    {
-      string("""set flag "eta_equality" on"""); nl
-    }
-    def prelude_type
-    {
-      symbol_const; Type; colon; TYPE; nl
-      symbol; eta; colon; Type; to; TYPE; nl
-    }
-
-    def prelude_fun
-    {
-      rule; eta; space; block { name(type_kind(Pure_Thy.FUN)); string(" &a &b") }; rew;
-        eta; string(" &a"); to; eta; string(" &b"); nl
-    }
-
-    def prelude_prop
-    {
-      symbol; eps; colon; eta; space; name(type_kind(Pure_Thy.PROP)); to; TYPE; nl
-    }
-
-    def prelude_all
-    {
-      rule; eps; space; block { name(const_kind(Pure_Thy.ALL)); string(" &a &b") }; rew;
-        all; block { string("x"); colon; eta; string(" &a") }; comma; eps; string(" (&b x)"); nl
-    }
-
-    def prelude_imp
-    {
-      rule; eps; space; block { name(const_kind(Pure_Thy.IMP)); string(" &a &b") }; rew;
-        eps; string(" &a"); to; eps; string(" &b"); nl
     }
   }
 }
