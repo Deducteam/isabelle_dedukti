@@ -27,6 +27,7 @@ object Syntax
 
   case object TYPE extends Term
   case  class Name(id: Ident) extends Term
+  case  class Vrbl(idx: Int) extends Term
   case  class RVar(id: Ident) extends Term
   case  class Appl(t1: Term, t2: Term) extends Term
   case  class Abst(arg: Arg, t: Term) extends Term
@@ -188,7 +189,7 @@ object Translate
       case Term.Free(x, _) => Syntax.Name(x)
       case Term.Var(xi, _) => error("Illegal schematic variable " + xi.toString)
       case Term.Bound(i) =>
-        try { Syntax.Name(bounds.trm(i)) }
+        try { Syntax.Vrbl(bounds.get_trm(i)) }
         catch { case _: IndexOutOfBoundsException => isabelle.error("Loose bound variable " + i) }
       case Term.Abs(x, ty, b) =>
         Syntax.Abst(eta_arg(x, ty), term(b, bounds.add_trm(x)))
@@ -206,7 +207,7 @@ object Translate
   {
     prf match {
       case Term.PBound(i) =>
-        try { Syntax.Name(bounds.prf(i)) }
+        try { Syntax.Vrbl(bounds.get_prf(i)) }
         catch {
           case _: IndexOutOfBoundsException => isabelle.error("Loose bound variable (proof) " + i)
         }
@@ -359,11 +360,14 @@ object LP_Syntax
     if (name.containsSlice("|}")) error("Bad name: " + quote(name))
     else "{|" + name + "|}"
 
+  def escape_if_needed(a: String) : String =
+    if (reserved(a) || !is_regular_identifier(a)) make_escaped_identifier(a) else a
+
 
   class SyntaxWriter(writer: Writer) extends Syntax.SyntaxWriter(writer)
   {
     def name(a: String): Unit =
-      write(if (reserved(a) || !is_regular_identifier(a)) make_escaped_identifier(a) else a)
+      write(escape_if_needed(a))
 
     def comma  = write(", ")
     def colon  = write(" : ")
@@ -373,16 +377,24 @@ object LP_Syntax
     def lambda = write("\u03bb ")
     def forall = write("\u2200 ")
 
-    def arg(a: Syntax.Arg)
+    def arg(a: Syntax.Arg, bounds: List[String] = Nil)
     {
       a.id match {
         case Some(id) => name(id)
         case None => write('_')
       }
-      for (t <- a.typ) { colon; term(t) }
+      for (t <- a.typ) { colon; term(t, bounds) }
     }
 
-    def term(t: Syntax.Term, atomic: Boolean = false)
+    def bind(arg: Syntax.Arg, bounds: List[String]) =
+    {
+      arg match {
+        case Syntax.Arg(Some(name), _) => escape_if_needed(name) :: bounds
+        case _ => bounds
+      }
+    }
+
+    def term(t: Syntax.Term, bounds: List[String] = Nil, atomic: Boolean = false)
     {
       t match
       {
@@ -392,16 +404,18 @@ object LP_Syntax
           name(id)
         case Syntax.RVar(id) =>
           write("&" ++ id)
+        case Syntax.Vrbl(idx) =>
+          write(bounds(idx))
         case Syntax.Appl(t1, t2) =>
           block_if(atomic) {
-            term(t1, atomic = true)
+            term(t1, bounds, atomic = true)
             space
-            term(t2, atomic = true)
+            term(t2, bounds, atomic = true)
           }
         case Syntax.Abst(a, t) =>
-          block_if(atomic) { lambda; block { arg(a) }; comma; term(t) }
+          block_if(atomic) { lambda; block { arg(a, bounds) }; comma; term(t, bind(a, bounds)) }
         case Syntax.Prod(a, t) =>
-          block_if(atomic) { forall; block { arg(a) }; comma; term(t) }
+          block_if(atomic) { forall; block { arg(a, bounds) }; comma; term(t, bind(a, bounds)) }
       }
     }
 
