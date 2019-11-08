@@ -28,8 +28,6 @@ object Syntax
   def arrow(ty: Typ, tm: Term) = Prod(Arg(None, Some(ty)), tm)
 
   def appls(head: Term, spine: List[Term]): Term = spine.foldLeft(head)(Appl)
-  def absts(args: List[Arg], tm: Term): Term = args.foldRight(tm)(Abst)
-  def prods(args: List[Arg], tm: Term): Term = args.foldRight(tm)(Prod)
   def arrows(tys: List[Typ], tm: Term): Term =  tys.foldRight(tm)(arrow)
 
   sealed abstract class Command
@@ -142,30 +140,40 @@ object Translate
   def TypeA(name: String): Syntax.Arg =
     Syntax.Arg(Some(name), Some(TypeT))
 
-  def eta_arg(name: String, ty: Term.Typ, bounds: Bounds = Bounds()) =
+  def TypeB(name: String)(bounds: Bounds): (Bounds, Syntax.Arg) =
+    (bounds.add(name), TypeA(name))
+
+  def etaA(name: String, ty: Term.Typ, bounds: Bounds = Bounds()) =
     Syntax.Arg(Some(name), Some(eta_ty(ty, bounds)))
+
+  def etaB(name: String, ty: Term.Typ)(bounds: Bounds = Bounds()): (Bounds, Syntax.Arg) =
+    (bounds.add(name), etaA(name, ty, bounds))
 
   sealed case class Bounds(
     all: List[String] = Nil,
     trm: List[String] = Nil,
     prf: List[String] = Nil) {
 
+    def add(ty: String) =
+      this.copy(all = ty :: this.all)
     def add_trm(tm: String) =
       this.copy(all = tm :: this.all, trm = tm :: this.trm)
     def add_prf(pf: String) =
       this.copy(all = pf :: this.all, prf = pf :: this.prf)
 
+    def get(tm: String) = this.all.indexOf(tm)
     def get_trm(idx: Int) = this.all.indexOf(this.trm(idx))
     def get_prf(idx: Int) = this.all.indexOf(this.prf(idx))
-
-    def get(tm: String) = this.all.indexOf(tm)
   }
 
-  def prods_with(args: List[Syntax.Arg], f: Bounds => Syntax.Term) =
-    Syntax.prods(args, f(Bounds(args.flatMap(_.id).reverse)))
-  def absts_with(args: List[Syntax.Arg], f: Bounds => Syntax.Term) =
-    Syntax.absts(args, f(Bounds(args.flatMap(_.id).reverse)))
-
+  def bind_args[A](
+    binder: (Syntax.Arg, A) => A,
+    argfuns: List[Bounds => (Bounds, Syntax.Arg)],
+    rightmost: (Bounds => A),
+    initial: Bounds = Bounds()): A =
+    argfuns.foldRight(rightmost)((argfun, acc) => bounds => {
+      val (bounds2, arg) = argfun(bounds)
+      binder(arg, acc(bounds2))})(initial)
 
   /* types and terms */
 
@@ -201,7 +209,7 @@ object Translate
         try Syntax.BVar(bounds.get_trm(i))
         catch { case _: IndexOutOfBoundsException => isabelle.error("Loose bound variable " + i) }
       case Term.Abs(x, ty, b) =>
-        Syntax.Abst(eta_arg(x, ty, bounds), term(b, bounds.add_trm(x)))
+        Syntax.Abst(etaA(x, ty, bounds), term(b, bounds.add_trm(x)))
       case Term.OFCLASS(t, c) =>
         Syntax.Appl(Syntax.Symb(class_kind(c)), typ(t, bounds))
       case Term.App(a, b) =>
@@ -221,7 +229,7 @@ object Translate
           case _: IndexOutOfBoundsException => isabelle.error("Loose bound variable (proof) " + i)
         }
       case Term.Abst(x, ty, b) =>
-        Syntax.Abst(eta_arg(x, ty, bounds), proof(b, bounds.add_trm(x)))
+        Syntax.Abst(etaA(x, ty, bounds), proof(b, bounds.add_trm(x)))
       case Term.AbsP(x, hy, b) =>
         Syntax.Abst(
           Syntax.Arg(Some(x), Some (eps_tm(hy, bounds))),
@@ -263,7 +271,7 @@ object Translate
 
   def const_decl(c: String, typargs: List[String], ty: Term.Typ): Syntax.Command =
     Syntax.Declaration(const_kind(c), Nil,
-      prods_with(typargs.map(TypeA), eta_ty(ty, _)))
+      bind_args(Syntax.Prod, typargs.map(TypeB), eta_ty(ty, _)))
 
   def const_abbrev(c: String, typargs: List[String], ty: Term.Typ, rhs: Term.Term): Syntax.Command =
     Syntax.Definition(const_kind(c), typargs.map(TypeA),
@@ -277,15 +285,15 @@ object Translate
     prop: Export_Theory.Prop,
     proof_term: Option[Term.Proof]): Syntax.Command =
   {
-    val args =
-      prop.typargs.map(_._1).map(TypeA) ++
-      prop.args.map { case (x, ty) => eta_arg(x, ty) }
-    val ty = prods_with(args, eps_tm(prop.term, _))
+    val argfuns: List[Bounds => (Bounds, Syntax.Arg)] =
+      prop.typargs.map(_._1).map(TypeB) ++
+      prop.args.map((etaB _).tupled)
+    val ty = bind_args(Syntax.Prod, argfuns, eps_tm(prop.term, _))
 
     try proof_term match {
       case None => Syntax.Declaration(s, Nil, ty)
       case Some(prf) =>
-        Syntax.Theorem(s, Nil, ty, absts_with(args, proof(prf, _)))
+        Syntax.Theorem(s, Nil, ty, bind_args(Syntax.Abst, argfuns, proof(prf, _)))
     }
     catch { case ERROR(msg) => error(msg + "\nin " + quote(s)) }
   }
@@ -411,6 +419,7 @@ object LP_Syntax
         case Syntax.Symb(id) =>
           name(id)
         case Syntax.FVar(id) =>
+          assert(!bounds.contains(escape_if_needed(id)))
           name(id)
         case Syntax.BVar(idx) =>
           write(bounds(idx))
