@@ -18,8 +18,9 @@ object Syntax
   sealed case class Arg(id: Option[Ident], typ: Option[Typ])
 
   case object TYPE extends Term
-  case  class Name(id: Ident) extends Term
-  case  class Vrbl(idx: Int) extends Term
+  case  class Symb(id: Ident) extends Term
+  case  class FVar(id: Ident) extends Term
+  case  class BVar(idx: Int) extends Term
   case  class Appl(t1: Term, t2: Term) extends Term
   case  class Abst(arg: Arg, t: Term) extends Term
   case  class Prod(arg: Arg, t: Term) extends Term
@@ -72,9 +73,9 @@ object Prelude
   val  etaId =  "eta"
   val  epsId =  "eps"
 
-  val TypeT = Syntax.Name(typeId)
-  val  etaT = Syntax.Name( etaId)
-  val  epsT = Syntax.Name( epsId)
+  val TypeT = Syntax.Symb(typeId)
+  val  etaT = Syntax.Symb( etaId)
+  val  epsT = Syntax.Symb( epsId)
 
 
   /* kinds */
@@ -97,8 +98,8 @@ object Prelude
   /* produces "rule f (g &a &b) → f &a ⇒ f &b */
   def rule_distr(etaeps: Syntax.Term, funimp: Syntax.Term): Syntax.Command =
   {
-    val a = Syntax.Vrbl(0)
-    val b = Syntax.Vrbl(1)
+    val a = Syntax.BVar(0)
+    val b = Syntax.BVar(1)
     val etaeps_a = Syntax.Appl(etaeps, a)
     val etaeps_b = Syntax.Appl(etaeps, b)
     Syntax.Rewrite(List("a", "b"),
@@ -106,12 +107,12 @@ object Prelude
       Syntax.arrow(etaeps_a, etaeps_b))
   }
 
-  val funR = rule_distr(etaT, Syntax.Name(type_kind(Pure_Thy.FUN)))
-  val impR = rule_distr(epsT, Syntax.Name(const_kind(Pure_Thy.IMP)))
+  val funR = rule_distr(etaT, Syntax.Symb(type_kind(Pure_Thy.FUN)))
+  val impR = rule_distr(epsT, Syntax.Symb(const_kind(Pure_Thy.IMP)))
 
   val epsD =
   {
-    val prop = Syntax.Name(type_kind(Pure_Thy.PROP))
+    val prop = Syntax.Symb(type_kind(Pure_Thy.PROP))
     val eta_prop = Syntax.Appl(etaT, prop)
     Syntax.Declaration(epsId, Nil, Syntax.arrow(eta_prop, Syntax.TYPE), const = false)
   }
@@ -119,12 +120,12 @@ object Prelude
   // rule eps ({|Pure.all|const|} &a &b) → ∀ (x : eta &a), eps (&b x)
   val allR =
   {
-    val all = Syntax.Name(const_kind(Pure_Thy.ALL))
-    val a  = Syntax.Vrbl(0)
-    val bl = Syntax.Vrbl(1)
-    val br = Syntax.Vrbl(2)
+    val all = Syntax.Symb(const_kind(Pure_Thy.ALL))
+    val a  = Syntax.BVar(0)
+    val bl = Syntax.BVar(1)
+    val br = Syntax.BVar(2)
     val eta_a = Syntax.Appl(etaT, a)
-    val eps_bx = Syntax.Appl(epsT, Syntax.Appl(br, Syntax.Name("x")))
+    val eps_bx = Syntax.Appl(epsT, Syntax.Appl(br, Syntax.Symb("x")))
     Syntax.Rewrite(List("a", "b"),
       Syntax.Appl(epsT, Syntax.appls(all, List(a, bl))),
       Syntax.Prod(Syntax.Arg(Some("x"), Some(eta_a)), eps_bx))
@@ -141,8 +142,8 @@ object Translate
   def TypeA(name: String): Syntax.Arg =
     Syntax.Arg(Some(name), Some(TypeT))
 
-  def eta_arg(name: String, ty: Term.Typ) =
-    Syntax.Arg(Some(name), Some(eta_ty(ty)))
+  def eta_arg(name: String, ty: Term.Typ, bounds: Bounds = Bounds()) =
+    Syntax.Arg(Some(name), Some(eta_ty(ty, bounds)))
 
   sealed case class Bounds(
     all: List[String] = Nil,
@@ -156,37 +157,53 @@ object Translate
 
     def get_trm(idx: Int) = this.all.indexOf(this.trm(idx))
     def get_prf(idx: Int) = this.all.indexOf(this.prf(idx))
+
+    def get(tm: String) = this.all.indexOf(tm)
   }
+
+  def prods_with(args: List[Syntax.Arg], f: Bounds => Syntax.Term) =
+    Syntax.prods(args, f(Bounds(args.flatMap(_.id).reverse)))
+  def absts_with(args: List[Syntax.Arg], f: Bounds => Syntax.Term) =
+    Syntax.absts(args, f(Bounds(args.flatMap(_.id).reverse)))
+
 
   /* types and terms */
 
-  def typ(ty: Term.Typ): Syntax.Typ =
+  def typ(ty: Term.Typ, bounds: Bounds = Bounds()): Syntax.Typ =
   {
     ty match {
-      case Term.TFree(a, _) => Syntax.Name(a)
+      case Term.TFree(a, _) =>
+        bounds.get(a) match {
+          case -1 => Syntax.FVar(a)
+          case  i => Syntax.BVar(i)
+        }
       case Term.Type(c, args) =>
-        Syntax.appls(Syntax.Name(type_kind(c)), args.map(typ))
+        Syntax.appls(Syntax.Symb(type_kind(c)), args.map(typ(_, bounds)))
       case Term.TVar(xi, _) => error("Illegal schematic type variable " + xi.toString)
     }
   }
 
-  def eta_ty(ty: Term.Typ): Syntax.Typ =
-    Syntax.Appl(etaT, typ(ty))
+  def eta_ty(ty: Term.Typ, bounds: Bounds = Bounds()): Syntax.Typ =
+    Syntax.Appl(etaT, typ(ty, bounds))
 
   def term(tm: Term.Term, bounds: Bounds): Syntax.Term =
   {
     tm match {
       case Term.Const(c, typargs) =>
-        Syntax.appls(Syntax.Name(const_kind(c)), typargs.map(typ))
-      case Term.Free(x, _) => Syntax.Name(x)
+        Syntax.appls(Syntax.Symb(const_kind(c)), typargs.map(typ(_, bounds)))
+      case Term.Free(x, _) =>
+        bounds.get(x) match {
+          case -1 => Syntax.FVar(x)
+          case  i => Syntax.BVar(i)
+        }
       case Term.Var(xi, _) => error("Illegal schematic variable " + xi.toString)
       case Term.Bound(i) =>
-        try { Syntax.Vrbl(bounds.get_trm(i)) }
+        try Syntax.BVar(bounds.get_trm(i))
         catch { case _: IndexOutOfBoundsException => isabelle.error("Loose bound variable " + i) }
       case Term.Abs(x, ty, b) =>
-        Syntax.Abst(eta_arg(x, ty), term(b, bounds.add_trm(x)))
+        Syntax.Abst(eta_arg(x, ty, bounds), term(b, bounds.add_trm(x)))
       case Term.OFCLASS(t, c) =>
-        Syntax.Appl(Syntax.Name(class_kind(c)), typ(t))
+        Syntax.Appl(Syntax.Symb(class_kind(c)), typ(t, bounds))
       case Term.App(a, b) =>
         Syntax.Appl(term(a, bounds), term(b, bounds))
     }
@@ -199,12 +216,12 @@ object Translate
   {
     prf match {
       case Term.PBound(i) =>
-        try { Syntax.Vrbl(bounds.get_prf(i)) }
+        try Syntax.BVar(bounds.get_prf(i))
         catch {
           case _: IndexOutOfBoundsException => isabelle.error("Loose bound variable (proof) " + i)
         }
       case Term.Abst(x, ty, b) =>
-        Syntax.Abst(eta_arg(x, ty), proof(b, bounds.add_trm(x)))
+        Syntax.Abst(eta_arg(x, ty, bounds), proof(b, bounds.add_trm(x)))
       case Term.AbsP(x, hy, b) =>
         Syntax.Abst(
           Syntax.Arg(Some(x), Some (eps_tm(hy, bounds))),
@@ -214,10 +231,10 @@ object Translate
       case Term.AppP(a, b) =>
         Syntax.Appl(proof(a, bounds), proof(b, bounds))
       case axm: Term.PAxm =>
-        Syntax.appls(Syntax.Name(axiom_kind(axm.name)), axm.types.map(typ))
+        Syntax.appls(Syntax.Symb(axiom_kind(axm.name)), axm.types.map(typ(_, bounds)))
       case thm: Term.PThm =>
         val head = if (thm.name.nonEmpty) thm_kind(thm.name) else proof_kind(thm.serial)
-        Syntax.appls(Syntax.Name(head), thm.types.map(typ))
+        Syntax.appls(Syntax.Symb(head), thm.types.map(typ(_, bounds)))
       case _ => error("Bad proof term encountered:\n" + prf)
     }
   }
@@ -227,7 +244,7 @@ object Translate
 
   def class_decl(c: String): Syntax.Command =
   {
-    val eta_prop = Syntax.Appl(etaT, Syntax.Name(type_kind(Pure_Thy.PROP)))
+    val eta_prop = Syntax.Appl(etaT, Syntax.Symb(type_kind(Pure_Thy.PROP)))
     Syntax.Declaration(class_kind(c), Nil, Syntax.arrow(TypeT, eta_prop))
   }
 
@@ -246,7 +263,7 @@ object Translate
 
   def const_decl(c: String, typargs: List[String], ty: Term.Typ): Syntax.Command =
     Syntax.Declaration(const_kind(c), Nil,
-      Syntax.prods(typargs.map(TypeA), eta_ty(ty)))
+      prods_with(typargs.map(TypeA), eta_ty(ty, _)))
 
   def const_abbrev(c: String, typargs: List[String], ty: Term.Typ, rhs: Term.Term): Syntax.Command =
     Syntax.Definition(const_kind(c), typargs.map(TypeA),
@@ -262,13 +279,13 @@ object Translate
   {
     val args =
       prop.typargs.map(_._1).map(TypeA) ++
-      prop.args.map((eta_arg _).tupled)
-    val ty = Syntax.prods(args, eps_tm(prop.term, Bounds()))
+      prop.args.map { case (x, ty) => eta_arg(x, ty) }
+    val ty = prods_with(args, eps_tm(prop.term, _))
 
     try proof_term match {
       case None => Syntax.Declaration(s, Nil, ty)
       case Some(prf) =>
-        Syntax.Theorem(s, Nil, ty, Syntax.absts(args, proof(prf, Bounds())))
+        Syntax.Theorem(s, Nil, ty, absts_with(args, proof(prf, _)))
     }
     catch { case ERROR(msg) => error(msg + "\nin " + quote(s)) }
   }
@@ -391,9 +408,11 @@ object LP_Syntax
       {
         case Syntax.TYPE =>
           write("TYPE")
-        case Syntax.Name(id) =>
+        case Syntax.Symb(id) =>
           name(id)
-        case Syntax.Vrbl(idx) =>
+        case Syntax.FVar(id) =>
+          name(id)
+        case Syntax.BVar(idx) =>
           write(bounds(idx))
         case Syntax.Appl(t1, t2) =>
           block_if(atomic) {
