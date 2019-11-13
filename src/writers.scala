@@ -28,7 +28,7 @@ class PartWriter(file: Path) extends Writer
 }
 
 
-abstract class IdentWriter
+trait IdentWriter
 {
   val reserved: Set[String]
 
@@ -51,7 +51,7 @@ abstract class IdentWriter
 }
 
 
-abstract class LambdaPiWriter(writer: Writer)
+abstract class LambdaPiWriter(writer: Writer) extends IdentWriter
 {
   def write(c: Char) = writer.write(c)
   def write(s: String) = writer.write(s)
@@ -61,6 +61,7 @@ abstract class LambdaPiWriter(writer: Writer)
 
   def bg = write('(')
   def en = write(')')
+  def colon = write(" : ")
 
   def block(body: => Unit) { bg; body; en }
   def block_if(atomic: Boolean)(body: => Unit)
@@ -70,11 +71,30 @@ abstract class LambdaPiWriter(writer: Writer)
     if (atomic) en
   }
 
+  def name(a: String) = write(escape_if_needed(a))
+
+  def bind(arg: Syntax.Arg, bounds: List[String]) =
+    arg match {
+      case Syntax.Arg(Some(name), _) => escape_if_needed(name) :: bounds
+      case _ => bounds
+    }
+
+  def term(t: Syntax.Term, bounds: List[String] = Nil, atomic: Boolean = false)
+
+  def arg(a: Syntax.Arg, bounds: List[String] = Nil)
+  {
+    a.id match {
+      case Some(id) => name(id)
+      case None => write('_')
+    }
+    for (t <- a.typ) { colon; term(t, bounds) }
+  }
+
   def write(c: Syntax.Command)
 }
 
 
-class LPIdentWriter extends IdentWriter
+class LPWriter(writer: Writer) extends LambdaPiWriter(writer)
 {
   val reserved =
     Set(
@@ -113,37 +133,13 @@ class LPIdentWriter extends IdentWriter
       "_",
       "type",
       "compute")
-}
-
-
-class LPWriter(writer: Writer) extends LambdaPiWriter(writer)
-{
-  val identwriter = new LPIdentWriter
-  def name(a: String) = write(identwriter.escape_if_needed(a))
 
   def comma  = write(", ")
-  def colon  = write(" : ")
   def to     = write(" \u21d2 ")
   def rew    = write(" \u2192 ")
   def dfn    = write(" \u2254 ")
   def lambda = write("\u03bb ")
   def forall = write("\u2200 ")
-
-
-  def arg(a: Syntax.Arg, bounds: List[String] = Nil)
-  {
-    a.id match {
-      case Some(id) => name(id)
-      case None => write('_')
-    }
-    for (t <- a.typ) { colon; term(t, bounds) }
-  }
-
-  def bind(arg: Syntax.Arg, bounds: List[String]) =
-    arg match {
-      case Syntax.Arg(Some(name), _) => identwriter.escape_if_needed(name) :: bounds
-      case _ => bounds
-    }
 
   def term(t: Syntax.Term, bounds: List[String] = Nil, atomic: Boolean = false)
   {
@@ -154,15 +150,15 @@ class LPWriter(writer: Writer) extends LambdaPiWriter(writer)
       case Syntax.Symb(id) =>
         name(id)
       case Syntax.FVar(id) =>
-        assert(!bounds.contains(identwriter.escape_if_needed(id)))
+        assert(!bounds.contains(escape_if_needed(id)))
         name(id)
       case Syntax.BVar(idx) =>
         write(bounds(idx))
       case Syntax.Appl(t1, t2) =>
         block_if(atomic) {
-          term(t1, bounds, atomic = true)
-          space
-          term(t2, bounds, atomic = true)
+          val (head, spine) = Syntax.dest_appls(t1, List(t2))
+          term(head, bounds, atomic = true)
+          for (s <- spine) { space; term(s, bounds, atomic = true) }
         }
       case Syntax.Abst(a, t) =>
         block_if(atomic) { lambda; block { arg(a, bounds) }; comma; term(t, bind(a, bounds)) }
@@ -211,6 +207,82 @@ class LPWriter(writer: Writer) extends LambdaPiWriter(writer)
   {
     write("require open ")
     name(module)
+    nl
+  }
+}
+
+
+class DKWriter(writer: Writer) extends LambdaPiWriter(writer)
+{
+  val reserved =
+    Set(
+      "def",
+      "thm",
+      "_")
+
+  def dot   = write('.')
+  def dfn    = write(" := ")
+  def ar_lam = write(" => ")
+  def ar_pi  = write(" -> ")
+  def rew    = write(" --> ")
+
+  def term(t: Syntax.Term, bounds: List[String] = Nil, atomic: Boolean = false)
+  {
+    t match
+    {
+      case Syntax.TYPE =>
+        write("Type")
+      case Syntax.Symb(id) =>
+        name(id)
+      case Syntax.FVar(id) =>
+        assert(!bounds.contains(escape_if_needed(id)))
+        name(id)
+      case Syntax.BVar(idx) =>
+        write(bounds(idx))
+      case Syntax.Appl(t1, t2) =>
+        block_if(atomic) {
+          val (head, spine) = Syntax.dest_appls(t1, List(t2))
+          term(head, bounds, atomic = true)
+          for (s <- spine) { space; term(s, bounds, atomic = true) }
+        }
+      case Syntax.Abst(a, t) =>
+        block_if(atomic) { arg(a, bounds); ar_lam; term(t, bind(a, bounds)) }
+      case Syntax.Prod(a, t) =>
+        block_if(atomic) { arg(a, bounds); ar_pi ; term(t, bind(a, bounds)) }
+    }
+  }
+
+  def write(c: Syntax.Command)
+  {
+    c match
+    {
+      case Syntax.Rewrite(vars, lhs, rhs) =>
+        if (!vars.isEmpty) write("[" ++ vars.mkString(sep = ", ") ++ "] ")
+        term(lhs, vars)
+        rew
+        term(rhs, vars)
+      case Syntax.Declaration(id, args, ty, const) =>
+        if (!const) write("def ")
+        name(id)
+        for (a <- args) { space; block { arg(a) } }
+        colon
+        term(ty)
+      case Syntax.Definition(id, args, ty, tm) =>
+        write("def ");
+        name(id)
+        for (a <- args) { space; block { arg(a) } }
+        for (ty <- ty) { colon; term(ty) }
+        dfn
+        term(tm)
+      case Syntax.Theorem(id, args, ty, prf) =>
+        write("thm ");
+        name(id)
+        for (a <- args) { space; block { arg(a) } }
+        colon; term(ty)
+        dfn
+        term(prf)
+    }
+    dot
     nl
   }
 }

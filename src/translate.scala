@@ -11,9 +11,9 @@ object Prelude
 {
   /* special names */
 
-  val typeId = "Type"
-  val  etaId =  "eta"
-  val  epsId =  "eps"
+  val typeId = "Typ"
+  val  etaId = "eta"
+  val  epsId = "eps"
 
   val TypeT = Syntax.Symb(typeId)
   val  etaT = Syntax.Symb( etaId)

@@ -22,6 +22,13 @@ object Syntax
   def appls(head: Term, spine: List[Term]): Term = spine.foldLeft(head)(Appl)
   def arrows(tys: List[Typ], tm: Term): Term =  tys.foldRight(tm)(arrow)
 
+  def dest_appls(t: Term, args: List[Term]): (Term, List[Term]) =
+    t match
+    {
+      case Syntax.Appl(t1, t2) => dest_appls(t1, args = t2 :: args)
+      case t => (t, args)
+    }
+
   sealed abstract class Command
   case class Rewrite(vars: List[Ident], lhs: Term, rhs: Term) extends Command
   case class Declaration(id: Ident, args: List[Arg], ty: Typ, const: Boolean = true) extends Command
