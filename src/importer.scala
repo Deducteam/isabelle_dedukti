@@ -4,6 +4,7 @@
 package isabelle.dedukti
 
 import isabelle._
+import lambdapi._
 
 
 object Importer
@@ -58,7 +59,7 @@ object Importer
     var exported_proofs = Set.empty[Long]
 
     def import_theory(
-      output: Syntax.SyntaxWriter,
+      output: LambdaPiWriter,
       theory: Export_Theory.Theory,
       provider: Export.Provider)
     {
@@ -141,7 +142,7 @@ object Importer
         {
           partwriter.write("""set flag "eta_equality" on""" + "\n")
 
-          val syntax = new LP_Syntax.SyntaxWriter(partwriter)
+          val syntax = new LPWriter(partwriter)
 
           if (name.theory == Thy_Header.PURE) {
             syntax.write(Prelude.typeD)
@@ -168,7 +169,7 @@ object Importer
     })
 
     using(new PartWriter(output_file))(output => {
-      val syntax = new LP_Syntax.SyntaxWriter(output)
+      val syntax = new LPWriter(output)
       all_theories.foreach(name => syntax.require_open(name.theory))
     })
   }

@@ -9,7 +9,9 @@ set -e
 
 declare -a SOURCES=(
   src/importer.scala
-  src/lp_syntax.scala
+  src/lambdapi.scala
+  src/writers.scala
+  src/translate.scala
   src/tools.scala
 )
 
@@ -34,6 +36,6 @@ isabelle_scala scalac $SCALAC_OPTIONS "${SOURCES[@]}"
 
 # make jar
 cd "$TARGET_DIR"
-isabelle_jdk jar cf "$TARGET" isabelle/dedukti/*.class
+isabelle_jdk jar cf "$TARGET" isabelle/dedukti/*.class lambdapi/*.class
 
-rm -rf isabelle
+rm -rf isabelle lambdapi
