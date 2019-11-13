@@ -90,6 +90,7 @@ abstract class LambdaPiWriter(writer: Writer) extends IdentWriter
     for (t <- a.typ) { colon; term(t, bounds) }
   }
 
+  def comment(c: String)
   def write(c: Syntax.Command)
 }
 
@@ -167,6 +168,10 @@ class LPWriter(writer: Writer) extends LambdaPiWriter(writer)
     }
   }
 
+  def comment(c: String) =
+    write("// " ++ c)
+    nl
+
   def write(c: Syntax.Command)
   {
     c match
@@ -203,6 +208,12 @@ class LPWriter(writer: Writer) extends LambdaPiWriter(writer)
     nl
   }
 
+  def eta_equality() =
+  {
+    write("""set flag "eta_equality" on""")
+    nl
+  }
+
   def require_open(module: String) =
   {
     write("require open ")
@@ -220,7 +231,7 @@ class DKWriter(writer: Writer) extends LambdaPiWriter(writer)
       "thm",
       "_")
 
-  def dot   = write('.')
+  def dot    = write('.')
   def dfn    = write(" := ")
   def ar_lam = write(" => ")
   def ar_pi  = write(" -> ")
@@ -251,6 +262,10 @@ class DKWriter(writer: Writer) extends LambdaPiWriter(writer)
         block_if(atomic) { arg(a, bounds); ar_pi ; term(t, bind(a, bounds)) }
     }
   }
+
+  def comment(c: String) =
+    write("(; " ++ c ++ " ;)")
+    nl
 
   def write(c: Syntax.Command)
   {

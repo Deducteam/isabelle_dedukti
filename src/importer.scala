@@ -65,7 +65,9 @@ object Importer
     {
       progress.echo("Importing theory " + theory.name)
 
-      //output.string("\n\n// theory " + theory.name + "\n\n")
+      output.nl
+      output.comment("theory " + theory.name)
+      output.nl
 
       for (a <- theory.classes) {
         if (verbose) progress.echo("  " + a.entity.toString)
@@ -127,50 +129,71 @@ object Importer
     }
 
 
-    def theory_file(theory_name: String) =
-      output_file.dir + Path.explode(theory_name + ".lp")
-
-
     /* import session */
 
     val all_theories = dependencies.theory_graph.topological_order
 
     using(store.open_database(session))(db =>
     {
-      for (name <- all_theories) {
-        using(new PartWriter(theory_file(name.theory)))(partwriter =>
+      def import_theory_by_name(name: String, syntax: LambdaPiWriter)
+      {
+        if (name == Thy_Header.PURE)
         {
-          partwriter.write("""set flag "eta_equality" on""" + "\n")
+          syntax.write(Prelude.typeD)
+          syntax.write(Prelude.etaD)
 
-          val syntax = new LPWriter(partwriter)
+          import_theory(syntax,
+            Export_Theory.read_pure_theory(store, cache = Some(cache)),
+            Export.Provider.none)
+        }
+        else
+        {
+          val provider = Export.Provider.database(db, session, name)
+          val theory =
+            Export_Theory.read_theory(provider, session, name, cache = Some(cache))
 
-          if (name.theory == Thy_Header.PURE) {
-            syntax.write(Prelude.typeD)
-            syntax.write(Prelude.etaD)
-
-            import_theory(syntax,
-              Export_Theory.read_pure_theory(store, cache = Some(cache)),
-              Export.Provider.none)
-          }
-          else {
-            val provider = Export.Provider.database(db, session, name.theory)
-            val theory =
-              Export_Theory.read_theory(provider, session, name.theory, cache = Some(cache))
-
-            for {
-              req <- dependencies.theory_graph.all_preds(List(name)).reverse.map(_.theory)
-              if req != name.theory
-            } syntax.require_open(req)
-    
-            import_theory(syntax, theory, provider)
-          }
-        })
+          import_theory(syntax, theory, provider)
+        }
       }
-    })
 
-    using(new PartWriter(output_file))(output => {
-      val syntax = new LPWriter(output)
-      all_theories.foreach(name => syntax.require_open(name.theory))
+      output_file.get_ext match
+      {
+        case "dk" =>
+          // write into a single file
+          using(new PartWriter(output_file))(partwriter =>
+          {
+            val syntax = new DKWriter(partwriter)
+            for (name <- all_theories)
+              import_theory_by_name(name.theory, syntax)
+          })
+
+        case "lp" =>
+          def theory_file(theory_name: String) =
+            output_file.dir + Path.explode(theory_name + ".lp")
+
+          // write one file per theory
+          for (name <- all_theories)
+            using(new PartWriter(theory_file(name.theory)))(partwriter =>
+            {
+              val syntax = new LPWriter(partwriter)
+              syntax.eta_equality
+
+              for {
+                req <- dependencies.theory_graph.all_preds(List(name)).reverse.map(_.theory)
+                if req != name.theory
+              } syntax.require_open(req)
+
+              import_theory_by_name(name.theory, syntax)
+            })
+
+          // write one file that loads all the other ones
+          using(new PartWriter(output_file))(output => {
+            val syntax = new LPWriter(output)
+            all_theories.foreach(name => syntax.require_open(name.theory))
+          })
+
+        case ext => error("Unknown output format " + ext)
+      }
     })
   }
 
@@ -190,7 +213,7 @@ object Importer
 Usage: isabelle dedukti_import [OPTIONS] SESSION
 
   Options are:
-    -O FILE      output file for Dedukti theory in lp syntax (default: """ + default_output_file + """)
+    -O FILE      output file for Dedukti theory in lp or dk syntax (default: """ + default_output_file + """)
     -d DIR       include session directory
     -f           fresh build
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
