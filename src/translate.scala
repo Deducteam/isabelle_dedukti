@@ -202,23 +202,29 @@ object Translate
 
   /* types */
 
-  def type_decl(c: String, args: Int): Syntax.Command =
-    Syntax.Declaration(type_kind(c), Nil,
-      Syntax.arrows(List.fill(args)(TypeT), TypeT))
-
-  def type_abbrev(c: String, args: List[String], rhs: Term.Typ): Syntax.Command =
-    Syntax.Definition(type_kind(c), args.map(TypeA), Some(TypeT), typ(rhs))
+  def type_decl(c: String, args: List[String], rhs: Option[Term.Typ]): Syntax.Command =
+    rhs match
+    {
+      case None =>
+        Syntax.Declaration(type_kind(c), Nil,
+          Syntax.arrows(List.fill(args.length)(TypeT), TypeT))
+      case Some(rhs) =>
+        Syntax.Definition(type_kind(c), args.map(TypeA), Some(TypeT), typ(rhs))
+    }
 
 
   /* consts */
 
-  def const_decl(c: String, typargs: List[String], ty: Term.Typ): Syntax.Command =
-    Syntax.Declaration(const_kind(c), Nil,
-      bind_args(Syntax.Prod, typargs.map(TypeB), eta_ty(ty, _)))
-
-  def const_abbrev(c: String, typargs: List[String], ty: Term.Typ, rhs: Term.Term): Syntax.Command =
-    Syntax.Definition(const_kind(c), typargs.map(TypeA),
-      Some(eta_ty(ty)), term(rhs, Bounds()))
+  def const_decl(c: String, typargs: List[String], ty: Term.Typ, rhs: Option[Term.Term]): Syntax.Command =
+    rhs match
+    {
+      case None =>
+        Syntax.Declaration(const_kind(c), Nil,
+          bind_args(Syntax.Prod, typargs.map(TypeB), eta_ty(ty, _)))
+      case Some(rhs) =>
+        Syntax.Definition(const_kind(c), typargs.map(TypeA),
+          Some(eta_ty(ty)), term(rhs, Bounds()))
+    }
 
 
   /* theorems and proof terms */
@@ -240,8 +246,4 @@ object Translate
     }
     catch { case ERROR(msg) => error(msg + "\nin " + quote(s)) }
   }
-
-  def proof_decl(serial: Long, prop: Export_Theory.Prop, prf: Term.Proof): Syntax.Command =
-    stmt_decl(Prelude.proof_kind(serial), prop, Some(prf))
-
 }

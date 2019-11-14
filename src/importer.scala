@@ -58,6 +58,14 @@ object Importer
 
     var exported_proofs = Set.empty[Long]
 
+    def proof_boxes(thm: Export_Theory.Thm, provider: Export.Provider) =
+      try {
+        Export_Theory.read_proof_boxes(
+          store, provider, thm.proof,
+          suppress = id => exported_proofs(id.serial), cache = Some(cache))
+      }
+      catch { case ERROR(msg) => error(msg + "\nin " + thm.entity) }
+
     def import_theory(
       output: LambdaPiWriter,
       theory: Export_Theory.Theory,
@@ -76,11 +84,7 @@ object Importer
 
       for (a <- theory.types) {
         if (verbose) progress.echo("  " + a.entity.toString)
-
-        a.abbrev match {
-          case None => output.write(Translate.type_decl(a.entity.name, a.args.length))
-          case Some(rhs) => output.write(Translate.type_abbrev(a.entity.name, a.args, rhs))
-        }
+        output.write(Translate.type_decl(a.entity.name, a.args, a.abbrev))
 
         if (a.entity.name == Pure_Thy.FUN ) output.write(Prelude.funR)
         if (a.entity.name == Pure_Thy.PROP) output.write(Prelude.epsD)
@@ -88,11 +92,7 @@ object Importer
 
       for (a <- theory.consts) {
         if (verbose) progress.echo("  " + a.entity.toString)
-
-        a.abbrev match {
-          case None => output.write(Translate.const_decl(a.entity.name, a.typargs, a.typ))
-          case Some(rhs) => output.write(Translate.const_abbrev(a.entity.name, a.typargs, a.typ, rhs))
-        }
+        output.write(Translate.const_decl(a.entity.name, a.typargs, a.typ, a.abbrev))
 
         if (a.entity.name == Pure_Thy.ALL) output.write(Prelude.allR)
         if (a.entity.name == Pure_Thy.IMP) output.write(Prelude.impR)
@@ -100,29 +100,20 @@ object Importer
 
       for (axm <- theory.axioms) {
         if (verbose) progress.echo("  " + axm.entity.toString)
-
         output.write(Translate.stmt_decl(Prelude.axiom_kind(axm.entity.name), axm.prop, None))
       }
 
       for (thm <- theory.thms) {
         if (verbose) progress.echo("  " + thm.entity.toString)
 
-        val boxes =
-          try {
-            Export_Theory.read_proof_boxes(
-              store, provider, thm.proof,
-              suppress = id => exported_proofs(id.serial), cache = Some(cache))
-          }
-          catch { case ERROR(msg) => error(msg + "\nin " + thm.entity) }
-
-        for ((id, prf) <- boxes) {
+        for ((id, prf) <- proof_boxes(thm, provider)) {
           if (verbose) {
             progress.echo("  proof " + id.serial +
               (if (theory.name == id.theory_name) "" else " (from " + id.theory_name + ")"))
           }
 
           exported_proofs += id.serial
-          output.write(Translate.proof_decl(id.serial, prf.prop, prf.proof))
+          output.write(Translate.stmt_decl(Prelude.proof_kind(id.serial), prf.prop, Some(prf.proof)))
         }
         output.write(Translate.stmt_decl(Prelude.thm_kind(thm.entity.name), thm.prop, Some(thm.proof)))
       }
