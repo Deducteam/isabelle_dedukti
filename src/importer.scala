@@ -158,6 +158,15 @@ object Importer
               import_theory_by_name(name.theory, syntax)
           })
 
+        case "ko" =>
+          // write into a single file
+          using(new PartWriter(output_file))(partwriter =>
+          {
+            val syntax = new KOWriter(partwriter)
+            for (name <- all_theories)
+              import_theory_by_name(name.theory, syntax)
+          })
+
         case "lp" =>
           def theory_file(theory_name: String) =
             output_file.dir + Path.explode(theory_name + ".lp")
