@@ -223,7 +223,7 @@ class LPWriter(writer: Writer) extends LambdaPiWriter(writer)
 }
 
 
-class DKWriter(writer: Writer) extends LambdaPiWriter(writer)
+class DKWriter(writer: Writer, prefix_binders: Boolean = false) extends LambdaPiWriter(writer)
 {
   val reserved =
     Set(
@@ -232,6 +232,8 @@ class DKWriter(writer: Writer) extends LambdaPiWriter(writer)
       "_")
 
   def dot    = write('.')
+  def lambda = write("\\ ")
+  def pi     = write("! ")
   def dfn    = write(" := ")
   def ar_lam = write(" => ")
   def ar_pi  = write(" -> ")
@@ -257,9 +259,9 @@ class DKWriter(writer: Writer) extends LambdaPiWriter(writer)
           for (s <- spine) { space; term(s, bounds, atomic = true) }
         }
       case Syntax.Abst(a, t) =>
-        block_if(atomic) { arg(a, bounds); ar_lam; term(t, bind(a, bounds)) }
+        block_if(atomic) { if (prefix_binders) lambda; arg(a, bounds); ar_lam; term(t, bind(a, bounds)) }
       case Syntax.Prod(a, t) =>
-        block_if(atomic) { arg(a, bounds); ar_pi ; term(t, bind(a, bounds)) }
+        block_if(atomic) { if (prefix_binders) pi    ; arg(a, bounds); ar_pi ; term(t, bind(a, bounds)) }
     }
   }
 
@@ -299,38 +301,5 @@ class DKWriter(writer: Writer) extends LambdaPiWriter(writer)
     }
     dot
     nl
-  }
-}
-
-class KOWriter(writer: Writer) extends DKWriter(writer)
-{
-  def comma  = write(", ")
-  def lambda = write('\\')
-  def forall = write('!')
-
-  override def term(t: Syntax.Term, bounds: List[String] = Nil, atomic: Boolean = false)
-  {
-    t match
-    {
-      case Syntax.TYPE =>
-        write("Type")
-      case Syntax.Symb(id) =>
-        name(id)
-      case Syntax.FVar(id) =>
-        assert(!bounds.contains(escape_if_needed(id)))
-        name(id)
-      case Syntax.BVar(idx) =>
-        write(bounds(idx))
-      case Syntax.Appl(t1, t2) =>
-        block_if(atomic) {
-          val (head, spine) = Syntax.dest_appls(t1, List(t2))
-          term(head, bounds, atomic = true)
-          for (s <- spine) { space; term(s, bounds, atomic = true) }
-        }
-      case Syntax.Abst(a, t) =>
-        block_if(atomic) { lambda; arg(a, bounds); comma; term(t, bind(a, bounds)) }
-      case Syntax.Prod(a, t) =>
-        block_if(atomic) { forall; arg(a, bounds); comma; term(t, bind(a, bounds)) }
-    }
   }
 }

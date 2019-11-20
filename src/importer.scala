@@ -147,22 +147,15 @@ object Importer
         }
       }
 
-      output_file.get_ext match
+      val ext = output_file.get_ext
+      ext match
       {
         case "dk" =>
-          // write into a single file
-          using(new PartWriter(output_file))(partwriter =>
-          {
-            val syntax = new DKWriter(partwriter)
-            for (name <- all_theories)
-              import_theory_by_name(name.theory, syntax)
-          })
-
         case "ko" =>
           // write into a single file
           using(new PartWriter(output_file))(partwriter =>
           {
-            val syntax = new KOWriter(partwriter)
+            val syntax = new DKWriter(partwriter, prefix_binders = ext == "ko")
             for (name <- all_theories)
               import_theory_by_name(name.theory, syntax)
           })
@@ -213,7 +206,7 @@ object Importer
 Usage: isabelle dedukti_import [OPTIONS] SESSION
 
   Options are:
-    -O FILE      output file for Dedukti theory in lp or dk syntax (default: """ + default_output_file + """)
+    -O FILE      output file for Dedukti theory in lp, dk, or ko syntax (default: """ + default_output_file + """)
     -d DIR       include session directory
     -f           fresh build
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
