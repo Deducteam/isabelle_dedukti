@@ -265,8 +265,10 @@ class DKWriter(writer: Writer, prefix_binders: Boolean = false) extends LambdaPi
   }
 
   def comment(c: String) =
+  {
     write("(; " + c + " ;)")
     nl
+  }
 
   def write(c: Syntax.Command)
   {
