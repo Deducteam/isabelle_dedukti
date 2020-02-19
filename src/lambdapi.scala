@@ -26,8 +26,7 @@ object Syntax
   def arrows(tys: List[Typ], tm: Term): Term =  tys.foldRight(tm)(arrow)
 
   def dest_appls(t: Term, args: List[Term]): (Term, List[Term]) =
-    t match
-    {
+    t match {
       case Syntax.Appl(t1, t2) => dest_appls(t1, args = t2 :: args)
       case t => (t, args)
     }

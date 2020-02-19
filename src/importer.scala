@@ -128,8 +128,7 @@ object Importer
     {
       def import_theory_by_name(name: String, syntax: LambdaPiWriter)
       {
-        if (name == Thy_Header.PURE)
-        {
+        if (name == Thy_Header.PURE) {
           syntax.write(Prelude.typeD)
           syntax.write(Prelude.etaD)
 
@@ -137,8 +136,7 @@ object Importer
             Export_Theory.read_pure_theory(store, cache = Some(cache)),
             Export.Provider.none)
         }
-        else
-        {
+        else {
           val provider = Export.Provider.database(db, session, name)
           val theory =
             Export_Theory.read_theory(provider, session, name, cache = Some(cache))
@@ -148,8 +146,7 @@ object Importer
       }
 
       val ext = output_file.get_ext
-      ext match
-      {
+      ext match {
         case "dk" | "ko" =>
           // write into a single file
           using(new PartWriter(output_file))(partwriter =>
@@ -179,7 +176,8 @@ object Importer
             })
 
           // write one file that loads all the other ones
-          using(new PartWriter(output_file))(output => {
+          using(new PartWriter(output_file))(output =>
+          {
             val syntax = new LPWriter(output)
             all_theories.foreach(name => syntax.require_open(name.theory))
           })

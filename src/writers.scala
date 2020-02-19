@@ -42,16 +42,12 @@ trait IdentWriter
     name.forall(c => Symbol.is_ascii_letter(c) || Symbol.is_ascii_digit(c) || c == '_')
 
   def escape(name: String): String =
-    if (name.containsSlice("|}"))
-      Exn.error("Bad name: " + Library.quote(name))
-    else
-      "{|" + name + "|}"
+    if (name.containsSlice("|}")) Exn.error("Bad name: " + Library.quote(name))
+    else "{|" + name + "|}"
 
-  def escape_if_needed(a: String) : String =
-    if (reserved(a) || !is_regular_identifier(a))
-      escape(a)
-    else
-      a
+  def escape_if_needed(a: String): String =
+    if (reserved(a) || !is_regular_identifier(a)) escape(a)
+    else a
 }
 
 
@@ -148,8 +144,7 @@ class LPWriter(writer: Writer) extends LambdaPiWriter(writer)
 
   def term(t: Syntax.Term, bounds: List[String] = Nil, atomic: Boolean = false)
   {
-    t match
-    {
+    t match {
       case Syntax.TYPE =>
         write("TYPE")
       case Syntax.Symb(id) =>
@@ -178,8 +173,7 @@ class LPWriter(writer: Writer) extends LambdaPiWriter(writer)
 
   def write(c: Syntax.Command)
   {
-    c match
-    {
+    c match {
       case Syntax.Rewrite(vars, lhs, rhs) =>
         val ampvars = vars.map(v => "&" ++ v)
         write("rule ")
@@ -245,8 +239,7 @@ class DKWriter(writer: Writer, prefix_binders: Boolean = false) extends LambdaPi
 
   def term(t: Syntax.Term, bounds: List[String] = Nil, atomic: Boolean = false)
   {
-    t match
-    {
+    t match {
       case Syntax.TYPE =>
         write("Type")
       case Syntax.Symb(id) =>
@@ -275,8 +268,7 @@ class DKWriter(writer: Writer, prefix_binders: Boolean = false) extends LambdaPi
 
   def write(c: Syntax.Command)
   {
-    c match
-    {
+    c match {
       case Syntax.Rewrite(vars, lhs, rhs) =>
         if (!vars.isEmpty) write("[" ++ vars.mkString(sep = ", ") ++ "] ")
         term(lhs, vars)

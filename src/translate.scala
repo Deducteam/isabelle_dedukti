@@ -98,8 +98,8 @@ object Translate
   sealed case class Bounds(
     all: List[String] = Nil,
     trm: List[String] = Nil,
-    prf: List[String] = Nil) {
-
+    prf: List[String] = Nil)
+  {
     def add(ty: String) =
       this.copy(all = ty :: this.all)
     def add_trm(tm: String) =
@@ -117,9 +117,11 @@ object Translate
     argfuns: List[Bounds => (Bounds, Syntax.Arg)],
     rightmost: (Bounds => A),
     initial: Bounds = Bounds()): A =
-    argfuns.foldRight(rightmost)((argfun, acc) => bounds => {
+    argfuns.foldRight(rightmost)((argfun, acc) => bounds =>
+    {
       val (bounds2, arg) = argfun(bounds)
-      binder(arg, acc(bounds2))})(initial)
+      binder(arg, acc(bounds2))
+    })(initial)
 
   /* types and terms */
 
@@ -206,8 +208,7 @@ object Translate
   /* types */
 
   def type_decl(c: String, args: List[String], rhs: Option[Term.Typ]): Syntax.Command =
-    rhs match
-    {
+    rhs match {
       case None =>
         Syntax.Declaration(type_kind(c), Nil,
           Syntax.arrows(List.fill(args.length)(TypeT), TypeT))
@@ -219,8 +220,7 @@ object Translate
   /* consts */
 
   def const_decl(c: String, typargs: List[String], ty: Term.Typ, rhs: Option[Term.Term]): Syntax.Command =
-    rhs match
-    {
+    rhs match {
       case None =>
         Syntax.Declaration(const_kind(c), Nil,
           bind_args(Syntax.Prod, typargs.map(TypeB), eta_ty(ty, _)))
