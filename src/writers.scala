@@ -168,8 +168,10 @@ class LPWriter(writer: Writer) extends LambdaPiWriter(writer)
   }
 
   def comment(c: String) =
+  {
     write("// " ++ c)
     nl
+  }
 
   def write(c: Syntax.Command)
   {
