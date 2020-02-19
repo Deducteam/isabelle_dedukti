@@ -100,16 +100,13 @@ object Translate
     trm: List[String] = Nil,
     prf: List[String] = Nil)
   {
-    def add(ty: String) =
-      this.copy(all = ty :: this.all)
-    def add_trm(tm: String) =
-      this.copy(all = tm :: this.all, trm = tm :: this.trm)
-    def add_prf(pf: String) =
-      this.copy(all = pf :: this.all, prf = pf :: this.prf)
+    def add(ty: String): Bounds = copy(all = ty :: all)
+    def add_trm(tm: String): Bounds = copy(all = tm :: all, trm = tm :: trm)
+    def add_prf(pf: String): Bounds = copy(all = pf :: all, prf = pf :: prf)
 
-    def get(tm: String) = this.all.indexOf(tm)
-    def get_trm(idx: Int) = this.all.indexOf(this.trm(idx))
-    def get_prf(idx: Int) = this.all.indexOf(this.prf(idx))
+    def get(tm: String): Int = all.indexOf(tm)
+    def get_trm(idx: Int): Int = all.indexOf(trm(idx))
+    def get_prf(idx: Int): Int = all.indexOf(prf(idx))
   }
 
   def bind_args[A](
