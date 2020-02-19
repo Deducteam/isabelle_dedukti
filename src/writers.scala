@@ -169,7 +169,7 @@ class LPWriter(writer: Writer) extends LambdaPiWriter(writer)
 
   def comment(c: String) =
   {
-    write("// " ++ c)
+    write("// " + c)
     nl
   }
 
@@ -177,7 +177,7 @@ class LPWriter(writer: Writer) extends LambdaPiWriter(writer)
   {
     c match {
       case Syntax.Rewrite(vars, lhs, rhs) =>
-        val ampvars = vars.map(v => "&" ++ v)
+        val ampvars = vars.map(v => "&" + v)
         write("rule ")
         term(lhs, ampvars)
         rew
@@ -265,14 +265,14 @@ class DKWriter(writer: Writer, prefix_binders: Boolean = false) extends LambdaPi
   }
 
   def comment(c: String) =
-    write("(; " ++ c ++ " ;)")
+    write("(; " + c + " ;)")
     nl
 
   def write(c: Syntax.Command)
   {
     c match {
       case Syntax.Rewrite(vars, lhs, rhs) =>
-        if (!vars.isEmpty) write("[" ++ vars.mkString(sep = ", ") ++ "] ")
+        if (!vars.isEmpty) write("[" + vars.mkString(sep = ", ") + "] ")
         term(lhs, vars)
         rew
         term(rhs, vars)
