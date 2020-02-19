@@ -238,7 +238,7 @@ object Translate
     proof_term: Option[Term.Proof]): Syntax.Command =
   {
     val argfuns: List[Bounds => (Bounds, Syntax.Arg)] =
-      prop.typargs.map(_._1).map(TypeB) ++
+      prop.typargs.map(_._1).map(TypeB) :::
       prop.args.map((etaB _).tupled)
     val ty = bind_args(Syntax.Prod, argfuns, eps_tm(prop.term, _))
 
