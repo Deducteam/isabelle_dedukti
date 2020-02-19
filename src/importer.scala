@@ -1,4 +1,4 @@
-/** Isabelle/Dedukti importer (lp syntax) **/
+/** Isabelle/Dedukti importer **/
 
 
 package isabelle.dedukti

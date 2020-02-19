@@ -1,3 +1,6 @@
+/** Translation of Isabelle (proof)terms into lambda-Pi calculus **/
+
+
 package isabelle.dedukti
 
 import isabelle._

@@ -1,3 +1,6 @@
+/** Abstract syntax for lambda-Pi calculus **/
+
+
 package lambdapi
 
 
