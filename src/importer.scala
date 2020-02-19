@@ -150,8 +150,7 @@ object Importer
       val ext = output_file.get_ext
       ext match
       {
-        case "dk" =>
-        case "ko" =>
+        case "dk" | "ko" =>
           // write into a single file
           using(new PartWriter(output_file))(partwriter =>
           {
