@@ -20,7 +20,7 @@ object Syntax
   case  class Abst(arg: Arg, t: Term) extends Term
   case  class Prod(arg: Arg, t: Term) extends Term
 
-  def arrow(ty: Typ, tm: Term) = Prod(Arg(None, Some(ty)), tm)
+  def arrow(ty: Typ, tm: Term): Term = Prod(Arg(None, Some(ty)), tm)
 
   def appls(head: Term, spine: List[Term]): Term = spine.foldLeft(head)(Appl)
   def arrows(tys: List[Typ], tm: Term): Term =  tys.foldRight(tm)(arrow)

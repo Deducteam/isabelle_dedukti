@@ -20,9 +20,9 @@ class PartWriter(file: Path) extends Writer
   private val w =
     new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file_part.file), UTF8.charset))
 
-  def write(c: Char) = w.write(c)
-  def write(a: Array[Char], off: Int, len: Int) = w.write(a, off, len)
-  def flush() = w.flush()
+  def write(c: Char) { w.write(c) }
+  def write(a: Array[Char], off: Int, len: Int) { w.write(a, off, len) }
+  def flush() { w.flush() }
 
   def close()
   {
@@ -167,7 +167,7 @@ class LPWriter(writer: Writer) extends LambdaPiWriter(writer)
     }
   }
 
-  def comment(c: String) =
+  def comment(c: String)
   {
     write("// " + c)
     nl
@@ -208,13 +208,13 @@ class LPWriter(writer: Writer) extends LambdaPiWriter(writer)
     nl
   }
 
-  def eta_equality() =
+  def eta_equality()
   {
     write("""set flag "eta_equality" on""")
     nl
   }
 
-  def require_open(module: String) =
+  def require_open(module: String)
   {
     write("require open ")
     name(module)
@@ -264,7 +264,7 @@ class DKWriter(writer: Writer, prefix_binders: Boolean = false) extends LambdaPi
     }
   }
 
-  def comment(c: String) =
+  def comment(c: String)
   {
     write("(; " + c + " ;)")
     nl
