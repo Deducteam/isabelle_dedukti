@@ -27,8 +27,8 @@ object Importer
     val build_options =
     {
       val options1 = options + "export_theory" + "record_proofs=2"
-      if (options.bool("export_standard_proofs")) options1 + "prune_proofs=false"
-      else options1 + "export_proofs" + "prune_proofs=false" // FIXME
+      if (options.bool("export_standard_proofs")) options1
+      else options1 + "export_proofs"
     }
 
     Build.build_logic(build_options, session, progress = progress, dirs = dirs,
