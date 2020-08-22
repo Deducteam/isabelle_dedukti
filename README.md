@@ -16,12 +16,20 @@ Isabelle component for dedukti.
         isabelle/bin/isabelle components -a
         isabelle/bin/isabelle jedit -b
 
+To verify the produced files, you can use either Dedukti or Lambdapi.
+
+  * Dedukti:
+
+        git clone https://github.com/Deducteam/Dedukti
+        cd Dedukti
+        git checkout 38e0c57c2e29fce9c483fc679e5e3943522f536a
+        make && make install
+
   * Lambdapi:
 
         git clone https://github.com/Deducteam/lambdapi.git
         cd lambdapi
         git checkout 72d3a1889a9afb7b560c96924236bc63d4cfc141
-
         make && make install
 
 
@@ -44,12 +52,22 @@ isabelle dedukti_build && isabelle dedukti_test
 
 ## Examples
 
+Generating and checking a Dedukti file:
+
+~~~
+isabelle dedukti_import -O output.dk Dedukti_Import
+dkcheck --eta output.dk
+~~~
+
+Generating and checking a Lambdapi file:
+
 ```
-isabelle dedukti_import Dedukti_Import
+isabelle dedukti_import -O output.lp Dedukti_Base
 lambdapi output.lp
 ```
 
 Small-scale proofs with nicer names:
+
 ```
 isabelle dedukti_import -o export_standard_proofs Dedukti_Base
 ```

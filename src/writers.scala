@@ -223,7 +223,7 @@ class LPWriter(writer: Writer) extends LambdaPiWriter(writer)
 }
 
 
-class DKWriter(writer: Writer, prefix_binders: Boolean = false) extends LambdaPiWriter(writer)
+class DKWriter(writer: Writer) extends LambdaPiWriter(writer)
 {
   val reserved =
     Set(
@@ -258,9 +258,9 @@ class DKWriter(writer: Writer, prefix_binders: Boolean = false) extends LambdaPi
           for (s <- spine) { space; term(s, bounds, atomic = true) }
         }
       case Syntax.Abst(a, t) =>
-        block_if(atomic) { if (prefix_binders) lambda; arg(a, bounds); ar_lam; term(t, bind(a, bounds)) }
+        block_if(atomic) { arg(a, bounds); ar_lam; term(t, bind(a, bounds)) }
       case Syntax.Prod(a, t) =>
-        block_if(atomic) { if (prefix_binders) pi    ; arg(a, bounds); ar_pi ; term(t, bind(a, bounds)) }
+        block_if(atomic) { arg(a, bounds); ar_pi ; term(t, bind(a, bounds)) }
     }
   }
 
