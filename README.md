@@ -12,7 +12,7 @@ Isabelle component for dedukti.
         hg clone https://isabelle.sketis.net/repos/isabelle
         cd isabelle
         hg up -r Isabelle2020
-        # add ./bin/isabelle in your $PATH
+        # add `pwd`/bin in your $PATH
         isabelle components -I
         isabelle components -a
         isabelle jedit -b
