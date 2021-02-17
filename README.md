@@ -10,12 +10,15 @@ Isabelle component for dedukti.
   * Suitable Isabelle repository clone (see also https://isabelle.in.tum.de/repos/isabelle/file/tip/README_REPOSITORY):
 
         hg clone https://isabelle.sketis.net/repos/isabelle
+        cd isabelle
         hg up -r Isabelle2020
-
-        isabelle/bin/isabelle components -I
-        isabelle/bin/isabelle components -a
-        isabelle/bin/isabelle jedit -b
-
+        # add ./bin/isabelle in your $PATH
+        isabelle components -I
+        isabelle components -a
+        isabelle jedit -b
+        # install isabelle_dedukti here:
+        git clone https://github.com/Deducteam/isabelle_dedukti.git
+        
 To verify the produced files, you can use either Dedukti or Lambdapi.
 
   * Dedukti:
@@ -40,7 +43,7 @@ Init Isabelle/Dedukti component in `$ISABELLE_HOME_USER/etc/settings` like this:
 init_component ".../isabelle_dedukti"
 ```
 
-where `.../isabelle_dedukti` is a local working directory of this repository and `ISABELLE_HOME_USER` the location reported by `isabelle getenv ISABELLE_HOME_USER` (e.g. `$HOME/.isabelle` on Unix).
+where `.../isabelle_dedukti` is a *sub-directory* of the `isabelle` repository, and `ISABELLE_HOME_USER` the location reported by `isabelle getenv ISABELLE_HOME_USER` (e.g. `$HOME/.isabelle` on Unix).
 
 
 ## Build and test
