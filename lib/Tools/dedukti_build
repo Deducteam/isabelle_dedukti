@@ -47,5 +47,5 @@ mkdir -p "$GRADLE_PROJECT/src/main/scala/isabelle.dedukti"
 
 for SRC in "${SOURCES[@]}"
 do
-  ln -s "$ISABELLE_DEDUKTI_HOME/src/$SRC" "$GRADLE_PROJECT/src/main/scala/isabelle.dedukti"
+  ln -s "$ISABELLE_DEDUKTI_HOME/$SRC" "$GRADLE_PROJECT/src/main/scala/isabelle.dedukti"
 done
