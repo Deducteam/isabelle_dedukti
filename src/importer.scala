@@ -16,7 +16,7 @@ object Importer
   def importer(
     options: Options,
     session: String,
-    progress: Progress = No_Progress,
+    progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
     fresh_build: Boolean = false,
     output_file: Path = default_output_file,
@@ -46,7 +46,7 @@ object Importer
         case None => error("Bad session " + quote(session))
       }
 
-    val resources = new Resources(base_info.sessions_structure, base_info.check_base)
+    val resources = new Resources(base_info.sessions_structure, base_info.check.base)
 
     val dependencies = resources.session_dependencies(session_info, progress = progress)
 
@@ -54,7 +54,7 @@ object Importer
     /* import theory content */
 
     val store = Sessions.store(options)
-    val cache = Term.make_cache()
+    val term_cache = Term.Cache.make()
 
     var exported_proofs = Set.empty[Long]
 
@@ -62,7 +62,7 @@ object Importer
       try {
         Export_Theory.read_proof_boxes(
           store, provider, thm.proof,
-          suppress = id => exported_proofs(id.serial), cache = Some(cache))
+          suppress = id => exported_proofs(id.serial), cache = term_cache)
       }
       catch { case ERROR(msg) => error(msg + "\nin " + thm.entity) }
 
@@ -133,13 +133,12 @@ object Importer
           syntax.write(Prelude.etaD)
 
           import_theory(syntax,
-            Export_Theory.read_pure_theory(store, cache = Some(cache)),
+            Export_Theory.read_pure_theory(store, cache = term_cache),
             Export.Provider.none)
         }
         else {
-          val provider = Export.Provider.database(db, session, name)
-          val theory =
-            Export_Theory.read_theory(provider, session, name, cache = Some(cache))
+          val provider = Export.Provider.database(db, store.cache, session, name)
+          val theory = Export_Theory.read_theory(provider, session, name, cache = term_cache)
 
           import_theory(syntax, theory, provider)
         }
@@ -191,7 +190,8 @@ object Importer
   /* Isabelle tool wrapper */
 
   val isabelle_tool =
-    Isabelle_Tool("dedukti_import", "import theory content into Dedukti", args =>
+    Isabelle_Tool("dedukti_import", "import theory content into Dedukti", Scala_Project.here,
+      args =>
     {
       var output_file = default_output_file
       var dirs: List[Path] = Nil

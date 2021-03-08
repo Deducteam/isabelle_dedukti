@@ -1,5 +1,6 @@
 lib/classes/dedukti.jar
 output.lp
+gradle_project/
 
 *~
 *.class
