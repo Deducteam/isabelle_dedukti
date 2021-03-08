@@ -10,13 +10,12 @@ Isabelle component for dedukti.
       - Download Isabelle2021 from the official website (or mirror)
         https://isabelle.in.tum.de/website-Isabelle2021
 
-      - Unpack and run the main Isabelle2021 application at least
+      - Unpack and run `Isabelle2021/bin/isabelle jedit` at least
         once, to ensure that everything works (e.g. see Documentation
-        / Examples in Isabelle/jEdit).
+        panel with Examples).
 
-      - The command-line executable `isabelle` is used below without
-        further qualification, but it is located in
-        `Isabelle2021/bin/isabelle` and can be used like this:
+      - The command-line executable `isabelle` is subsequently used
+        without further qualification, in practice it works like this:
 
           + explicit executable path (relative or absolute) on the command-line
 
@@ -101,17 +100,17 @@ isabelle dedukti_import -o export_standard_proofs Dedukti_Base
   bootstrap theory context is provided by
   $ISABELLE_HOME/src/Pure/ROOT.ML (see Documentation panel).
 
-* Isabelle/Scala: use IntelliJ IDEA with the Gradle project generated
-  by `isabelle dedukti_build` within the Isabelle/Dedukti directory:
-
-    idea gradle_project
-
 * Isabelle/HOL: use Isabelle/Pure to process the theory and ML sources
   in Isabelle/jEdit, e.g. like this:
 
     isabelle jedit -l Pure
 
   then open $ISABELLE_HOME/src/HOL/Main.thy via File Browser / Favorites
+
+* Isabelle/Scala: use IntelliJ IDEA with the Gradle project generated
+  by `isabelle dedukti_build` within the Isabelle/Dedukti directory:
+
+    idea gradle_project
 
 * Note: Without proper IDE support Isabelle sources are very hard to
   read and write.  (Emacs or vi are not a proper IDE.)
