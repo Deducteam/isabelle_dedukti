@@ -19,7 +19,7 @@ object Importer
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
     fresh_build: Boolean = false,
-    output_file: Path = default_output_file,
+    output_file: Path,
     verbose: Boolean = false)
   {
     /* build session with exports */
@@ -163,8 +163,8 @@ object Importer
           for (name <- all_theories)
             using(new PartWriter(theory_file(name.theory)))(partwriter =>
             {
-              val syntax = new LPWriter(partwriter)
-              syntax.eta_equality
+              val syntax = new LPWriter(output_file.dir, partwriter)
+              syntax.eta_equality()
 
               for {
                 req <- dependencies.theory_graph.all_preds(List(name)).reverse.map(_.theory)
@@ -177,7 +177,7 @@ object Importer
           // write one file that loads all the other ones
           using(new PartWriter(output_file))(output =>
           {
-            val syntax = new LPWriter(output)
+            val syntax = new LPWriter(output_file.dir, output)
             all_theories.foreach(name => syntax.require_open(name.theory))
           })
 
