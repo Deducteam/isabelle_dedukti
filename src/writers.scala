@@ -232,7 +232,7 @@ class LPWriter(root_path: Path, writer: Writer) extends LambdaPiWriter(writer)
         colon_equal
         term(tm)
       case Syntax.Theorem(id, args, ty, prf) =>
-        write("symbol ");
+        write("opaque symbol ");
         name(id)
         for (a <- args) { space; block { arg(a) } }
         colon; term(ty)
