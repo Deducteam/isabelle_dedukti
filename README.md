@@ -36,7 +36,7 @@ Isabelle component for dedukti.
       - Register it to Isabelle as a user component, by providing a
         (relative or absolute) directory name as follows:
 
-          isabelle component -u isabelle_dedukti
+          isabelle components -u isabelle_dedukti
 
         The resulting configuration is in
         $ISABELLE_HOME_USER/etc/components (e.g. use Isabelle/jEdit /
