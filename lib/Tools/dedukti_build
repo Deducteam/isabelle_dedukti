@@ -9,7 +9,7 @@ set -e
 
 declare -a SOURCES=(
   src/importer.scala
-  src/lambdapi.scala
+  src/ast.scala
   src/writers.scala
   src/translate.scala
   src/tools.scala
