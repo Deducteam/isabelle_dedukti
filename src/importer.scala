@@ -68,6 +68,7 @@ object Importer
 
     def import_theory(
       output: AbstractWriter,
+      notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation],
       theory: Export_Theory.Theory,
       provider: Export.Provider)
     {
@@ -77,36 +78,43 @@ object Importer
       output.comment("theory " + theory.name)
       output.nl
 
+      if (theory.name == Thy_Header.PURE) {
+        output.command(Prelude.typeD, notations)
+        output.command(Prelude.etaD, notations)
+      }
+
       for (a <- theory.classes) {
         if (verbose) progress.echo("  " + a.entity.toString)
-        output.command(Translate.class_decl(a.entity.name))
+        output.command(Translate.class_decl(a.entity.name), notations)
       }
 
       for (a <- theory.types) {
         if (verbose) progress.echo("  " + a.entity.toString)
-        output.command(Translate.type_decl(a.entity.name, a.args, a.abbrev))
+        output.command(Translate.type_decl(a.entity.name, a.args, a.abbrev, a.syntax), notations)
 
         if (a.entity.name == Pure_Thy.FUN ) {
-          output.command(Prelude.funN)
-          output.command(Prelude.funR)
+          output.command(Prelude.funR, notations)
         }
-        if (a.entity.name == Pure_Thy.PROP) output.command(Prelude.epsD)
+        if (a.entity.name == Pure_Thy.PROP) {
+          output.command(Prelude.epsD, notations)
+        }
       }
 
       for (a <- theory.consts) {
         if (verbose) progress.echo("  " + a.entity.toString)
-        output.command(Translate.const_decl(a.entity.name, a.typargs, a.typ, a.abbrev))
+        output.command(Translate.const_decl(a.entity.name, a.typargs, a.typ, a.abbrev, a.syntax), notations)
 
-        if (a.entity.name == Pure_Thy.ALL) output.command(Prelude.allR)
+        if (a.entity.name == Pure_Thy.ALL) {
+          output.command(Prelude.allR, notations)
+        }
         if (a.entity.name == Pure_Thy.IMP) {
-          output.command(Prelude.impN)
-          output.command(Prelude.impR)
+          output.command(Prelude.impR, notations);
         }
       }
 
       for (axm <- theory.axioms) {
         if (verbose) progress.echo("  " + axm.entity.toString)
-        output.command(Translate.stmt_decl(Prelude.axiom_kind(axm.entity.name), axm.prop, None))
+        output.command(Translate.stmt_decl(Prelude.axiom_kind(axm.entity.name), axm.prop, None), notations)
       }
 
       for (thm <- theory.thms) {
@@ -119,9 +127,9 @@ object Importer
           }
 
           exported_proofs += id.serial
-          output.command(Translate.stmt_decl(Prelude.proof_kind(id.serial), prf.prop, Some(prf.proof)))
+          output.command(Translate.stmt_decl(Prelude.proof_kind(id.serial), prf.prop, Some(prf.proof)), notations)
         }
-        output.command(Translate.stmt_decl(Prelude.thm_kind(thm.entity.name), thm.prop, Some(thm.proof)))
+        output.command(Translate.stmt_decl(Prelude.thm_kind(thm.entity.name), thm.prop, Some(thm.proof)), notations)
       }
     }
 
@@ -132,13 +140,11 @@ object Importer
 
     using(store.open_database(session))(db =>
     {
-      def import_theory_by_name(name: String, syntax: AbstractWriter)
+      def import_theory_by_name(name: String, syntax: AbstractWriter, notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation],
+      )
       {
         if (name == Thy_Header.PURE) {
-          syntax.command(Prelude.typeD)
-          syntax.command(Prelude.etaD)
-
-          import_theory(syntax,
+          import_theory(syntax, notations,
             Export_Theory.read_pure_theory(store, cache = term_cache),
             Export.Provider.none)
         }
@@ -146,9 +152,10 @@ object Importer
           val provider = Export.Provider.database(db, store.cache, session, name)
           val theory = Export_Theory.read_theory(provider, session, name, cache = term_cache)
 
-          import_theory(syntax, theory, provider)
+          import_theory(syntax, notations, theory, provider)
         }
       }
+      val notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation] = collection.mutable.Map()
 
       val ext = output_file.get_ext
       ext match {
@@ -158,10 +165,10 @@ object Importer
           {
             val syntax = new DKWriter(partwriter)
             for (name <- all_theories)
-              import_theory_by_name(name.theory, syntax)
+              import_theory_by_name(name.theory, syntax, notations)
           })
 
-        /*case "lp" =>
+        case "lp" =>
           def theory_file(theory_name: String) =
             output_file.dir + Path.explode(theory_name + ".lp")
 
@@ -177,7 +184,7 @@ object Importer
                 if req != name.theory
               } syntax.require_open(req)
 
-              import_theory_by_name(name.theory, syntax)
+              import_theory_by_name(name.theory, syntax, notations)
             })
 
           // write one file that loads all the other ones
@@ -185,7 +192,7 @@ object Importer
           {
             val syntax = new LPWriter(output_file.dir, output)
             all_theories.foreach(name => syntax.require_open(name.theory))
-          })*/
+          })
 
         case ext => error("Unknown output format " + ext)
       }
