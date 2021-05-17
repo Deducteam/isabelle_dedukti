@@ -7,3 +7,5 @@ gradle_project/
 isabelle_dedukti_test
 *~
 *.class
+
+*.lp
