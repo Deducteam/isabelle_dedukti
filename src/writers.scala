@@ -260,10 +260,9 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer) extends
             val not = Syntax.appNotation
             val force_no = pre_spine.isEmpty
             block_if(not, prevNot, right, force_no)({
-              write("@")
-              ident(op)
+              block(ident(op))
               for ((arg, impl) <- pre_spine) {
-                if (false && impl) {
+                if (impl) {
                 space(); write("{"); term(arg, notations, Syntax.justHadPars, no_impl, right = true); write("}")
                 } else {
                 space(); term(arg, notations, not, no_impl, right = true)
