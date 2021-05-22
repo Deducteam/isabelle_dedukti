@@ -163,7 +163,7 @@ object Translate
         Syntax.Var(var_ident(x))
       case Term.Var(xi, _) => error("Illegal schematic variable " + xi.toString)
       case Term.Bound(i) =>
-        try Syntax.Var(bounds.get_trm(i))
+        try Syntax.Var(var_ident(bounds.get_trm(i)))
         catch { case _: IndexOutOfBoundsException => isabelle.error("Loose bound variable " + i) }
       case Term.Abs(x, ty, b) =>
         Syntax.Abst(bound_argument(x, ty), term(b, bounds.add_trm(x)))
@@ -180,7 +180,7 @@ object Translate
   def proof(prf: Term.Proof, bounds: Bounds): Syntax.Term = {
     prf match {
       case Term.PBound(i) =>
-        try Syntax.Var(bounds.get_prf(i))
+        try Syntax.Var(var_ident(bounds.get_prf(i)))
         catch { case _: IndexOutOfBoundsException => isabelle.error("Loose bound variable (proof) " + i) }
       case Term.Abst(x, ty, b) =>
         Syntax.Abst(bound_argument(x, ty), proof(b, bounds.add_trm(x)))
