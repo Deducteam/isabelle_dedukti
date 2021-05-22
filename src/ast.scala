@@ -27,7 +27,16 @@ object Syntax
 
   def arrow(ty: Typ, tm: Term): Term = Prod(BoundArg(None, Some(ty)), tm)
 
-  def appls(head: Term, spine: List[Term], impl: Boolean = false): Term = spine.foldLeft(head)(Appl(_, _, impl))
+  // No fold_left2, no recursive destructuring on function arguments... Better off doing it manually
+  @tailrec
+  def appls(head: Term, spine: List[Term], impl: List[Boolean]): Term =
+  (spine, impl) match {
+    case (Nil, Nil) => head
+    case (arg :: spine, impl :: impls) => appls(Appl(head, arg, impl), spine, impls)
+    case (Nil, _) => isabelle.error("Implicit list too long")
+    case (_, Nil) => isabelle.error("Implicit list too short")
+  }
+
   def arrows(tys: List[Typ], tm: Term): Term = tys.foldRight(tm)(arrow)
 
   @tailrec

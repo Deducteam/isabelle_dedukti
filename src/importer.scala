@@ -117,7 +117,7 @@ object Importer
 
       for (axm <- theory.axioms) {
         if (verbose) progress.echo("  " + axm.toString)
-        output.command(Translate.stmt_decl(Prelude.axiom_kind(axm.name), axm.the_content.prop, None), notations)
+        output.command(Translate.stmt_decl(Prelude.axiom_ident(axm.name), axm.the_content.prop, None), notations)
       }
 
       for (thm <- theory.thms) {
@@ -130,9 +130,9 @@ object Importer
           }
 
           exported_proofs += id.serial
-          output.command(Translate.stmt_decl(Prelude.proof_kind(id.serial), prf.prop, Some(prf.proof)), notations)
+          output.command(Translate.stmt_decl(Prelude.proof_ident(id.serial), prf.prop, Some(prf.proof)), notations)
         }
-        output.command(Translate.stmt_decl(Prelude.thm_kind(thm.name),
+        output.command(Translate.stmt_decl(Prelude.thm_ident(thm.name),
           thm.the_content.prop, Some(thm.the_content.proof)), notations)
       }
     }
