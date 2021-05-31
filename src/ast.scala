@@ -31,10 +31,10 @@ object Syntax
   @tailrec
   def appls(head: Term, spine: List[Term], impl: List[Boolean]): Term =
   (spine, impl) match {
-    case (Nil, Nil) => head
+    case (Nil, impl) if impl.exists(identity) => isabelle.error("Missing implicit argument")
+    case (Nil, _) => head
     case (arg :: spine, impl :: impls) => appls(Appl(head, arg, impl), spine, impls)
-    case (Nil, _) => isabelle.error("Implicit list too long")
-    case (_, Nil) => isabelle.error("Implicit list too short")
+    case (spine, Nil) => spine.foldLeft(head)(Appl(_, _))
   }
 
   def arrows(tys: List[Typ], tm: Term): Term = tys.foldRight(tm)(arrow)
