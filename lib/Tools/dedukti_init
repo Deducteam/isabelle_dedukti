@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+#
+# DESCRIPTION: create gradle project (e.g. for IntelliJ IDEA)
+
+declare -a SOURCES=(
+  src/importer.scala
+  src/ast.scala
+  src/writers.scala
+  src/translate.scala
+  src/tools.scala
+)
+
+GRADLE_PROJECT="$ISABELLE_DEDUKTI_HOME/gradle_project"
+rm -rf "$GRADLE_PROJECT"
+isabelle scala_project -L "$GRADLE_PROJECT"
+mkdir -p "$GRADLE_PROJECT/src/main/scala/isabelle.dedukti"
+
+for SRC in "${SOURCES[@]}"
+do
+  ln -s "$ISABELLE_DEDUKTI_HOME/$SRC" "$GRADLE_PROJECT/src/main/scala/isabelle.dedukti"
+done
+ 
