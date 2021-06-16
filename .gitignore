@@ -1,7 +1,10 @@
 lib/classes/dedukti.jar
 output.lp
 gradle_project/
-
+.vscode/**
+.metals/**
+.idea/**
+isabelle_dedukti_test
 *~
 *.class
 

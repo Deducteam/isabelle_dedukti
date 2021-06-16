@@ -11,7 +11,7 @@ object Importer
 {
   /* importer */
 
-  val default_output_file: Path = Path.explode("output.dk")
+  val default_output_file: Path = Path.explode("main.lp")
 
   def importer(
     options: Options,
@@ -19,7 +19,8 @@ object Importer
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
     fresh_build: Boolean = false,
-    output_file: Path = default_output_file,
+    use_notations: Boolean = false,
+    output_file: Path,
     verbose: Boolean = false)
   {
     /* build session with exports */
@@ -41,7 +42,7 @@ object Importer
 
     val session_info =
       base_info.sessions_structure.get(session) match {
-        case Some(info) if info.parent == Some(Thy_Header.PURE) => info
+        case Some(info) if info.parent.contains(Thy_Header.PURE) => info
         case Some(_) => error("Parent session needs to be Pure")
         case None => error("Bad session " + quote(session))
       }
@@ -67,7 +68,8 @@ object Importer
       catch { case ERROR(msg) => error(msg + "\nin " + thm.entity) }
 
     def import_theory(
-      output: LambdaPiWriter,
+      output: AbstractWriter,
+      notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation],
       theory: Export_Theory.Theory,
       provider: Export.Provider)
     {
@@ -77,30 +79,43 @@ object Importer
       output.comment("theory " + theory.name)
       output.nl
 
+      if (theory.name == Thy_Header.PURE) {
+        output.command(Prelude.typeD, notations)
+        output.command(Prelude.etaD, notations)
+      }
+
       for (a <- theory.classes) {
         if (verbose) progress.echo("  " + a.entity.toString)
-        output.write(Translate.class_decl(a.entity.name))
+        output.command(Translate.class_decl(a.entity.name), notations)
       }
 
       for (a <- theory.types) {
         if (verbose) progress.echo("  " + a.entity.toString)
-        output.write(Translate.type_decl(a.entity.name, a.args, a.abbrev))
+        output.command(Translate.type_decl(a.entity.name, a.args, a.abbrev, a.syntax), notations)
 
-        if (a.entity.name == Pure_Thy.FUN ) output.write(Prelude.funR)
-        if (a.entity.name == Pure_Thy.PROP) output.write(Prelude.epsD)
+        if (a.entity.name == Pure_Thy.FUN ) {
+          output.command(Prelude.funR, notations)
+        }
+        if (a.entity.name == Pure_Thy.PROP) {
+          output.command(Prelude.epsD, notations)
+        }
       }
 
       for (a <- theory.consts) {
         if (verbose) progress.echo("  " + a.entity.toString)
-        output.write(Translate.const_decl(a.entity.name, a.typargs, a.typ, a.abbrev))
+        output.command(Translate.const_decl(a.entity.name, a.typargs, a.typ, a.abbrev, a.syntax), notations)
 
-        if (a.entity.name == Pure_Thy.ALL) output.write(Prelude.allR)
-        if (a.entity.name == Pure_Thy.IMP) output.write(Prelude.impR)
+        if (a.entity.name == Pure_Thy.ALL) {
+          output.command(Prelude.allR, notations)
+        }
+        if (a.entity.name == Pure_Thy.IMP) {
+          output.command(Prelude.impR, notations);
+        }
       }
 
       for (axm <- theory.axioms) {
         if (verbose) progress.echo("  " + axm.entity.toString)
-        output.write(Translate.stmt_decl(Prelude.axiom_kind(axm.entity.name), axm.prop, None))
+        output.command(Translate.stmt_decl(Prelude.axiom_ident(axm.entity.name), axm.prop, None), notations)
       }
 
       for (thm <- theory.thms) {
@@ -113,9 +128,9 @@ object Importer
           }
 
           exported_proofs += id.serial
-          output.write(Translate.stmt_decl(Prelude.proof_kind(id.serial), prf.prop, Some(prf.proof)))
+          output.command(Translate.stmt_decl(Prelude.proof_ident(id.serial), prf.prop, Some(prf.proof)), notations)
         }
-        output.write(Translate.stmt_decl(Prelude.thm_kind(thm.entity.name), thm.prop, Some(thm.proof)))
+        output.command(Translate.stmt_decl(Prelude.thm_ident(thm.entity.name), thm.prop, Some(thm.proof)), notations)
       }
     }
 
@@ -126,13 +141,11 @@ object Importer
 
     using(store.open_database(session))(db =>
     {
-      def import_theory_by_name(name: String, syntax: LambdaPiWriter)
+      def import_theory_by_name(name: String, syntax: AbstractWriter, notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation],
+      )
       {
         if (name == Thy_Header.PURE) {
-          syntax.write(Prelude.typeD)
-          syntax.write(Prelude.etaD)
-
-          import_theory(syntax,
+          import_theory(syntax, notations,
             Export_Theory.read_pure_theory(store, cache = term_cache),
             Export.Provider.none)
         }
@@ -140,9 +153,10 @@ object Importer
           val provider = Export.Provider.database(db, store.cache, session, name)
           val theory = Export_Theory.read_theory(provider, session, name, cache = term_cache)
 
-          import_theory(syntax, theory, provider)
+          import_theory(syntax, notations, theory, provider)
         }
       }
+      val notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation] = collection.mutable.Map()
 
       val ext = output_file.get_ext
       ext match {
@@ -152,7 +166,7 @@ object Importer
           {
             val syntax = new DKWriter(partwriter)
             for (name <- all_theories)
-              import_theory_by_name(name.theory, syntax)
+              import_theory_by_name(name.theory, syntax, notations)
           })
 
         case "lp" =>
@@ -163,21 +177,21 @@ object Importer
           for (name <- all_theories)
             using(new PartWriter(theory_file(name.theory)))(partwriter =>
             {
-              val syntax = new LPWriter(partwriter)
-              syntax.eta_equality
+              val syntax = new LPWriter(output_file.dir, use_notations, partwriter)
+              syntax.eta_equality()
 
               for {
                 req <- dependencies.theory_graph.all_preds(List(name)).reverse.map(_.theory)
                 if req != name.theory
               } syntax.require_open(req)
 
-              import_theory_by_name(name.theory, syntax)
+              import_theory_by_name(name.theory, syntax, notations)
             })
 
           // write one file that loads all the other ones
           using(new PartWriter(output_file))(output =>
           {
-            val syntax = new LPWriter(output)
+            val syntax = new LPWriter(output_file.dir, use_notations, output)
             all_theories.foreach(name => syntax.require_open(name.theory))
           })
 
@@ -189,13 +203,14 @@ object Importer
 
   /* Isabelle tool wrapper */
 
-  val isabelle_tool =
+  val isabelle_tool: Isabelle_Tool =
     Isabelle_Tool("dedukti_import", "import theory content into Dedukti", Scala_Project.here,
       args =>
     {
       var output_file = default_output_file
       var dirs: List[Path] = Nil
       var fresh_build = false
+      var use_notations = false
       var options = Options.init()
       var verbose = false
 
@@ -206,6 +221,7 @@ Usage: isabelle dedukti_import [OPTIONS] SESSION
     -O FILE      output file for Dedukti theory in dk or lp syntax (default: """ + default_output_file + """)
     -d DIR       include session directory
     -f           fresh build
+    -n           use lambdapi notations
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
     -v           verbose mode
 
@@ -214,6 +230,7 @@ Usage: isabelle dedukti_import [OPTIONS] SESSION
       "O:" -> (arg => output_file = Path.explode(arg)),
       "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
       "f" -> (_ => fresh_build = true),
+      "n" -> (_ => use_notations = true),
       "o:" -> (arg => { options += arg }),
       "v" -> (_ => verbose = true))
 
@@ -236,6 +253,7 @@ Usage: isabelle dedukti_import [OPTIONS] SESSION
             progress = progress,
             dirs = dirs,
             fresh_build = fresh_build,
+            use_notations = use_notations,
             output_file = output_file,
             verbose = verbose)
         }
