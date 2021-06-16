@@ -1,9 +1,9 @@
 session Dedukti_Base in "Ex/Base" = Pure +
   sessions
-    "HOL-Isar_Examples"
+    "Pure-Examples"
   theories
-    "HOL-Isar_Examples.First_Order_Logic"
-    "HOL-Isar_Examples.Higher_Order_Logic"
+    "Pure-Examples.First_Order_Logic"
+    "Pure-Examples.Higher_Order_Logic"
 
 session Dedukti_Import in "Ex/Import" = Pure +
   options [export_theory, export_proofs, record_proofs = 2]
