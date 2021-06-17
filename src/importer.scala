@@ -20,7 +20,7 @@ object Importer
     dirs: List[Path] = Nil,
     fresh_build: Boolean = false,
     output_file: Path = default_output_file,
-    verbose: Boolean = false)
+    verbose: Boolean = false): Unit =
   {
     /* build session with exports */
 
@@ -69,13 +69,13 @@ object Importer
     def import_theory(
       output: LambdaPiWriter,
       theory: Export_Theory.Theory,
-      provider: Export.Provider)
+      provider: Export.Provider): Unit =
     {
       progress.echo("Importing theory " + theory.name)
 
-      output.nl
+      output.nl()
       output.comment("theory " + theory.name)
-      output.nl
+      output.nl()
 
       for (a <- theory.classes) {
         if (verbose) progress.echo("  " + a.entity.toString)
@@ -126,7 +126,7 @@ object Importer
 
     using(store.open_database(session))(db =>
     {
-      def import_theory_by_name(name: String, syntax: LambdaPiWriter)
+      def import_theory_by_name(name: String, syntax: LambdaPiWriter): Unit =
       {
         if (name == Thy_Header.PURE) {
           syntax.write(Prelude.typeD)
@@ -164,7 +164,7 @@ object Importer
             using(new PartWriter(theory_file(name.theory)))(partwriter =>
             {
               val syntax = new LPWriter(partwriter)
-              syntax.eta_equality
+              syntax.eta_equality()
 
               for {
                 req <- dependencies.theory_graph.all_preds(List(name)).reverse.map(_.theory)
