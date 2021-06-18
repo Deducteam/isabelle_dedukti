@@ -10,6 +10,7 @@ import isabelle._
 
 
 import java.io.{FileOutputStream, OutputStreamWriter, BufferedWriter, Writer}
+import java.nio.file.{Files, StandardCopyOption}
 
 
 class PartWriter(file: Path) extends Writer
@@ -26,7 +27,7 @@ class PartWriter(file: Path) extends Writer
   def close(): Unit =
   {
     w.close()
-    File.move(file_part, file)
+    Files.move(file_part.file.toPath, file.file.toPath, StandardCopyOption.REPLACE_EXISTING)
   }
 }
 
