@@ -4,11 +4,10 @@
   see https://github.com/Deducteam/lambdapi/blob/master/doc/syntax.bnf
 */
 
+package isabelle.dedukti
 
-package lambdapi
+import isabelle._
 
-import isabelle.{File, Exn, Library, Path, Symbol, UTF8}
-import lambdapi._
 
 import java.io.{FileOutputStream, OutputStreamWriter, BufferedWriter, Writer}
 

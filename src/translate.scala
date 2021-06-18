@@ -4,7 +4,6 @@
 package isabelle.dedukti
 
 import isabelle._
-import lambdapi._
 
 
 // preludes for minimal Higher-order Logic (Isabelle/Pure)

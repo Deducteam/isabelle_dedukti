@@ -35,9 +35,9 @@ isabelle_scala scalac $SCALAC_OPTIONS "${SOURCES[@]}"
 
 # make jar
 cd "$TARGET_DIR"
-isabelle_jdk jar cf "$TARGET" isabelle/dedukti/*.class lambdapi/*.class
+isabelle_jdk jar cf "$TARGET" isabelle/dedukti/*.class
 
-rm -rf isabelle lambdapi
+rm -rf isabelle
 
 # create gradle project (e.g. for IntelliJ IDEA)
 GRADLE_PROJECT="$ISABELLE_DEDUKTI_HOME/gradle_project"
