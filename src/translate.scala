@@ -51,10 +51,10 @@ object Prelude
       Syntax.arrow(etaeps_a, etaeps_b))
   }
 
-  val funR = rule_distr(etaT, Syntax.Symb(type_kind(Pure_Thy.FUN)))
-  val impR = rule_distr(epsT, Syntax.Symb(const_kind(Pure_Thy.IMP)))
+  val funR: Syntax.Command = rule_distr(etaT, Syntax.Symb(type_kind(Pure_Thy.FUN)))
+  val impR: Syntax.Command = rule_distr(epsT, Syntax.Symb(const_kind(Pure_Thy.IMP)))
 
-  val epsD =
+  val epsD: Syntax.Declaration =
   {
     val prop = Syntax.Symb(type_kind(Pure_Thy.PROP))
     val eta_prop = Syntax.Appl(etaT, prop)
@@ -62,7 +62,7 @@ object Prelude
   }
 
   // rule eps ({|Pure.all|const|} &a &b) → ∀ (x : eta &a), eps (&b x)
-  val allR =
+  val allR: Syntax.Rewrite =
   {
     val all = Syntax.Symb(const_kind(Pure_Thy.ALL))
     val a  = Syntax.BVar(0)
@@ -88,7 +88,7 @@ object Translate
   def TypeB(name: String)(bounds: Bounds): (Bounds, Syntax.Arg) =
     (bounds.add(name), TypeA(name))
 
-  def etaA(name: String, ty: Term.Typ, bounds: Bounds = Bounds()) =
+  def etaA(name: String, ty: Term.Typ, bounds: Bounds = Bounds()): Syntax.Arg =
     Syntax.Arg(Some(name), Some(eta_ty(ty, bounds)))
 
   def etaB(name: String, ty: Term.Typ)(bounds: Bounds = Bounds()): (Bounds, Syntax.Arg) =

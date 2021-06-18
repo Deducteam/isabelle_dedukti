@@ -13,26 +13,26 @@ import java.io.{FileOutputStream, OutputStreamWriter, BufferedWriter, Writer}
 import java.nio.file.{Files, StandardCopyOption}
 
 
-class PartWriter(file: Path) extends Writer
+class Part_Writer(file: Path) extends Writer
 {
   private val file_part = file.ext("part")
 
-  private val w =
+  private val writer =
     new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file_part.file), UTF8.charset))
 
-  def write(c: Char): Unit = { w.write(c) }
-  def write(a: Array[Char], off: Int, len: Int): Unit = { w.write(a, off, len) }
-  def flush(): Unit = { w.flush() }
+  def write(c: Char): Unit = writer.write(c)
+  def write(a: Array[Char], off: Int, len: Int): Unit = writer.write(a, off, len)
+  def flush(): Unit = writer.flush()
 
   def close(): Unit =
   {
-    w.close()
+    writer.close()
     Files.move(file_part.file.toPath, file.file.toPath, StandardCopyOption.REPLACE_EXISTING)
   }
 }
 
 
-trait IdentWriter
+trait Ident_Writer
 {
   val reserved: Set[String]
 
@@ -51,7 +51,7 @@ trait IdentWriter
 }
 
 
-abstract class LambdaPiWriter(writer: Writer) extends IdentWriter
+abstract class LambdaPi_Writer(writer: Writer) extends Ident_Writer
 {
   def write(c: Char): Unit = writer.write(c)
   def write(s: String): Unit = writer.write(s)
@@ -95,7 +95,7 @@ abstract class LambdaPiWriter(writer: Writer) extends IdentWriter
 }
 
 
-class LPWriter(writer: Writer) extends LambdaPiWriter(writer)
+class LP_Writer(writer: Writer) extends LambdaPi_Writer(writer)
 {
   val reserved =
     Set(
@@ -223,7 +223,7 @@ class LPWriter(writer: Writer) extends LambdaPiWriter(writer)
 }
 
 
-class DKWriter(writer: Writer) extends LambdaPiWriter(writer)
+class DK_Writer(writer: Writer) extends LambdaPi_Writer(writer)
 {
   val reserved =
     Set(
@@ -274,7 +274,7 @@ class DKWriter(writer: Writer) extends LambdaPiWriter(writer)
   {
     c match {
       case Syntax.Rewrite(vars, lhs, rhs) =>
-        if (!vars.isEmpty) write("[" + vars.mkString(sep = ", ") + "] ")
+        if (vars.nonEmpty) write("[" + vars.mkString(sep = ", ") + "] ")
         term(lhs, vars)
         rew()
         term(rhs, vars)

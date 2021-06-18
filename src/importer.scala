@@ -66,7 +66,7 @@ object Importer
       catch { case ERROR(msg) => error(msg + "\nin " + thm.entity) }
 
     def import_theory(
-      output: LambdaPiWriter,
+      output: LambdaPi_Writer,
       theory: Export_Theory.Theory,
       provider: Export.Provider): Unit =
     {
@@ -125,7 +125,7 @@ object Importer
 
     using(store.open_database(session))(db =>
     {
-      def import_theory_by_name(name: String, syntax: LambdaPiWriter): Unit =
+      def import_theory_by_name(name: String, syntax: LambdaPi_Writer): Unit =
       {
         if (name == Thy_Header.PURE) {
           syntax.write(Prelude.typeD)
@@ -147,22 +147,23 @@ object Importer
       ext match {
         case "dk" =>
           // write into a single file
-          using(new PartWriter(output_file))(partwriter =>
+          using(new Part_Writer(output_file))(writer =>
           {
-            val syntax = new DKWriter(partwriter)
-            for (name <- all_theories)
+            val syntax = new DK_Writer(writer)
+            for (name <- all_theories) {
               import_theory_by_name(name.theory, syntax)
+            }
           })
 
         case "lp" =>
-          def theory_file(theory_name: String) =
+          def theory_file(theory_name: String): Path =
             output_file.dir + Path.explode(theory_name + ".lp")
 
           // write one file per theory
-          for (name <- all_theories)
-            using(new PartWriter(theory_file(name.theory)))(partwriter =>
+          for (name <- all_theories) {
+            using(new Part_Writer(theory_file(name.theory)))(writer =>
             {
-              val syntax = new LPWriter(partwriter)
+              val syntax = new LP_Writer(writer)
               syntax.eta_equality()
 
               for {
@@ -172,11 +173,12 @@ object Importer
 
               import_theory_by_name(name.theory, syntax)
             })
+          }
 
           // write one file that loads all the other ones
-          using(new PartWriter(output_file))(output =>
+          using(new Part_Writer(output_file))(output =>
           {
-            val syntax = new LPWriter(output)
+            val syntax = new LP_Writer(output)
             all_theories.foreach(name => syntax.require_open(name.theory))
           })
 
