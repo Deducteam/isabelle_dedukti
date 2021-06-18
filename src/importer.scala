@@ -57,13 +57,16 @@ object Importer
 
     var exported_proofs = Set.empty[Long]
 
-    def proof_boxes(thm: Export_Theory.Thm, provider: Export.Provider) =
+    def proof_boxes(thm: Export_Theory.Thm, provider: Export.Provider)
+      : List[(Export_Theory.Thm_Id, Export_Theory.Proof)] =
+    {
       try {
         Export_Theory.read_proof_boxes(
           store, provider, thm.proof,
           suppress = id => exported_proofs(id.serial), cache = term_cache)
       }
       catch { case ERROR(msg) => error(msg + "\nin " + thm.entity) }
+    }
 
     def import_theory(
       output: LambdaPi_Writer,
