@@ -6,7 +6,7 @@ Isabelle component for dedukti.
 ## Prerequisites
 
   * Isabelle:
-  
+
       - Download Isabelle2021-1-RC1 
         https://isabelle.sketis.net/website-Isabelle2021-1-RC1
 
@@ -21,7 +21,7 @@ Isabelle component for dedukti.
 
           + or: insert the absolute path of the Isabelle `bin`
             directory in $PATH
-          
+
           + or: install references to the Isabelle executables in
             another directory mentioned in $PATH, e.g. as follows:
 
@@ -30,7 +30,7 @@ Isabelle component for dedukti.
   * Isabelle/Dedukti:
 
       - Clone the repository:
-      
+
           git clone https://github.com/Deducteam/isabelle_dedukti.git
 
       - Register it to Isabelle as a user component, by providing a
@@ -55,15 +55,13 @@ Isabelle component for dedukti.
         git checkout 38e0c57c2e29fce9c483fc679e5e3943522f536a
         make && make install
 
-    - Lambdapi version:
+    - Lambdapi version (needs opam):
 
-        git clone https://github.com/Deducteam/lambdapi.git
-        cd lambdapi
-        git checkout 72d3a1889a9afb7b560c96924236bc63d4cfc141
-        make && make install
+        opam pin add https://gihub.com/Deducteam/lambdapi
+        opam install lambdapi
 
 
-## Build and test
+## Build and test (lambdapi output)
 
 ```
 isabelle scala_build && isabelle dedukti_test

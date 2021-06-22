@@ -38,8 +38,8 @@ trait Ident_Writer
 
   def is_regular_identifier(name: String): Boolean =
     name.nonEmpty &&
-    { val c = name(0); Symbol.is_ascii_letter(c) || c == '_' } &&
-    name.forall(c => Symbol.is_ascii_letter(c) || Symbol.is_ascii_digit(c) || c == '_')
+    { val c = name(0); Symbol.is_ascii_letter(c) || c == '_' || c == '\'' } &&
+    name.forall(c => Symbol.is_ascii_letter(c) || Symbol.is_ascii_digit(c) || c == '_' || c == '+' || c == '\'') // TODO: Tidy it up
 
   def escape(name: String): String =
     if (name.containsSlice("|}")) Exn.error("Bad name: " + Library.quote(name))
@@ -182,6 +182,12 @@ class LP_Writer(root_path: Path, writer: Writer) extends LambdaPi_Writer(writer)
     t match {
       case Syntax.TYPE =>
         write("TYPE")
+      case Syntax.Symb("const_Pure+all") =>
+        write("∀")
+      case Syntax.Symb("type_fun") =>
+        bg; write("⤳"); en
+      case Syntax.Symb("const_Pure+imp") =>
+        bg; write("⟹"); en
       case Syntax.Symb(id) =>
         name(id)
       case Syntax.FVar(id) =>
@@ -192,18 +198,42 @@ class LP_Writer(root_path: Path, writer: Writer) extends LambdaPi_Writer(writer)
       case Syntax.Appl(t1, t2) =>
         block_if(atomic) {
           val (head, spine) = Syntax.dest_appls(t1, List(t2))
-          term(head, bounds, atomic = true)
-          for (s <- spine) { space(); term(s, bounds, atomic = true) }
+          (head, spine) match {
+            case (Syntax.Symb("type_fun"), t1 :: t2 :: Nil) =>
+              term(t1, bounds, atomic = true); write(" ⤳ "); term(t2, bounds, atomic = true)
+            case (Syntax.Symb("const_Pure+imp"), t1 :: t2 :: Nil) =>
+              term(t1, bounds, atomic = true); write(" ⟹ "); term(t2, bounds, atomic = true)
+            // case (Syntax.Symb("const_Pure+eq"), ty :: t1 :: t2 :: Nil) =>
+            //   term(t1, bounds, atomic = true); write(" ⩵ "); term(t2, bounds, atomic = true)
+            case _ =>
+              term(head, bounds, atomic = true)
+              for (s <- spine) { space(); term(s, bounds, atomic = true) }
+          }
         }
       case Syntax.Abst(a, t) =>
         block_if(atomic) { lambda(); block { arg(a, bounds) }; comma(); term(t, bind(a, bounds)) }
+      case Syntax.Prod(Syntax.Arg(None, Some(t1)), t2) =>
+        block_if(atomic) { term(t1, bounds, atomic = true); arrow(); term(t2, bounds, atomic = true) }
       case Syntax.Prod(a, t) =>
         block_if(atomic) { pi();     block { arg(a, bounds) }; comma(); term(t, bind(a, bounds)) }
     }
   }
 
-  def comment(c: String): Unit =
-  {
+  def notationArg(arg: Syntax.NotationArg): Unit = {
+    arg match {
+      case Syntax.Quantifier() =>
+        write("quantifier")
+      case Syntax.Prefix(n) =>
+        write("prefix " + n.toString)
+      case Syntax.InfixLeft(n) =>
+        write("infix left " + n.toString)
+      case Syntax.InfixRight(n) =>
+        write("infix right " + n.toString)
+    }
+  }
+
+
+  def comment(c: String): Unit = {
     write("// " + c)
     nl()
   }
@@ -217,10 +247,27 @@ class LP_Writer(root_path: Path, writer: Writer) extends LambdaPi_Writer(writer)
         term(lhs, pat_vars)
         hook_arrow()
         term(rhs, pat_vars)
+      case Syntax.Notation(id, arg) =>
+        write ("notation ")
+        id match {
+          case "type_fun" => write("⤳")
+          case "const_Pure+imp" => write("⟹")
+          // case "const_Pure+eq" => write("⩵")
+          case "const_Pure+all" => write("∀")
+          case _ => name(id)
+        }
+        space
+        notationArg(arg)
       case Syntax.Declaration(id, args, ty, const) =>
         if (const) write("constant ")
         write("symbol ")
-        name(id)
+        id match {
+          case "type_fun" => write("⤳")
+          case "const_Pure+imp" => write("⟹")
+          // case "const_Pure+eq" => write("⩵")
+          case "const_Pure+all" => write("∀")
+          case _ => name(id)
+        }
         for (a <- args) { space(); block { arg(a) } }
         colon()
         term(ty)
@@ -232,7 +279,7 @@ class LP_Writer(root_path: Path, writer: Writer) extends LambdaPi_Writer(writer)
         colon_equal()
         term(tm)
       case Syntax.Theorem(id, args, ty, prf) =>
-        write("symbol ");
+        write("opaque symbol ");
         name(id)
         for (a <- args) { space(); block { arg(a) } }
         colon(); term(ty)
@@ -312,6 +359,9 @@ class DK_Writer(writer: Writer) extends LambdaPi_Writer(writer)
         term(lhs, vars)
         rew()
         term(rhs, vars)
+      case Syntax.Notation(id, arg) =>
+        // TODO: Deal with this at some point
+        return
       case Syntax.Declaration(id, args, ty, const) =>
         if (!const) write("def ")
         name(id)

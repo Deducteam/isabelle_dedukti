@@ -88,7 +88,10 @@ object Importer
         if (verbose) progress.echo("  " + a.toString)
         output.write(Translate.type_decl(a.name, a.the_content.args, a.the_content.abbrev))
 
-        if (a.name == Pure_Thy.FUN ) output.write(Prelude.funR)
+        if (a.name == Pure_Thy.FUN ) {
+          output.write(Prelude.funN)
+          output.write(Prelude.funR)
+        }
         if (a.name == Pure_Thy.PROP) output.write(Prelude.epsD)
       }
 
@@ -97,7 +100,10 @@ object Importer
         output.write(Translate.const_decl(a.name, a.the_content.typargs, a.the_content.typ, a.the_content.abbrev))
 
         if (a.name == Pure_Thy.ALL) output.write(Prelude.allR)
-        if (a.name == Pure_Thy.IMP) output.write(Prelude.impR)
+        if (a.name == Pure_Thy.IMP) {
+          output.write(Prelude.impN)
+          output.write(Prelude.impR)
+        }
       }
 
       for (axm <- theory.axioms) {

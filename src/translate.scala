@@ -24,7 +24,7 @@ object Prelude
 
   /* kinds */
 
-  def kind(a: String, k: String): String = a + "|" + k
+  def kind(a: String, k: String): String = k + "_" + a.replace('.', '+') // a + "|" + k
 
   def class_kind(a: String): String = kind(a, Markup.CLASS)
   def type_kind(a: String): String = kind(a, Export_Theory.Kind.TYPE)
@@ -51,6 +51,12 @@ object Prelude
       Syntax.arrow(etaeps_a, etaeps_b))
   }
 
+  def infix_right(name: String): Syntax.Command = {
+    Syntax.Notation(name, Syntax.InfixRight(5))
+  }
+
+  val funN: Syntax.Command = infix_right(type_kind(Pure_Thy.FUN))
+  val impN: Syntax.Command = infix_right(const_kind(Pure_Thy.IMP))
   val funR: Syntax.Command = rule_distr(etaT, Syntax.Symb(type_kind(Pure_Thy.FUN)))
   val impR: Syntax.Command = rule_distr(epsT, Syntax.Symb(const_kind(Pure_Thy.IMP)))
 
