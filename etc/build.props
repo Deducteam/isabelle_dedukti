@@ -5,7 +5,7 @@ requirements = \
   env:ISABELLE_SCALA_JAR
 sources = \
   src/importer.scala \
-  src/lambdapi.scala \
+  src/ast.scala \
   src/tools.scala \
   src/translate.scala \
   src/writers.scala
