@@ -166,7 +166,7 @@ object Importer
           for (name <- all_theories) {
             using(new Part_Writer(theory_file(name.theory)))(writer =>
             {
-              val syntax = new LP_Writer(writer)
+              val syntax = new LP_Writer(output_file.dir, writer)
               syntax.eta_equality()
 
               for {
@@ -181,7 +181,7 @@ object Importer
           // write one file that loads all the other ones
           using(new Part_Writer(output_file))(output =>
           {
-            val syntax = new LP_Writer(output)
+            val syntax = new LP_Writer(output_file.dir, output)
             all_theories.foreach(name => syntax.require_open(name.theory))
           })
 
