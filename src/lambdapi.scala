@@ -33,8 +33,15 @@ object Syntax
       case t => (t, args)
     }
 
+  sealed abstract class NotationArg
+  case class Prefix(priority: Number) extends NotationArg
+  case class InfixLeft(priority: Number) extends NotationArg
+  case class InfixRight(priority: Number) extends NotationArg
+  case class Quantifier() extends NotationArg
+
   sealed abstract class Command
   case class Rewrite(vars: List[Ident], lhs: Term, rhs: Term) extends Command
+  case class Notation(id: Ident, arg: NotationArg) extends Command
   case class Declaration(id: Ident, args: List[Arg], ty: Typ, const: Boolean = true) extends Command
   case class Definition(id: Ident, args: List[Arg], ty: Option[Typ], tm: Term) extends Command
   case class Theorem(id: Ident, args: List[Arg], ty: Typ, prf: Term) extends Command
