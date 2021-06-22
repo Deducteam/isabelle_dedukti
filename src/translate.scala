@@ -14,6 +14,9 @@ import scala.annotation.tailrec
 
 object Prelude
 {
+
+  /* Name disabiguation (as little invasive as possible) */
+
   var namesSet: Set[String] = Set()
   var namesMap: Map[String, String] = Map()
 
@@ -49,8 +52,6 @@ object Prelude
 
   /* kinds */
 
-  // def kind(a: String, k: Export_Theory.Kind.Value): String = a + "|" + k.toString
-
   def class_ident(a: String): String = name_get(a, Export_Theory.Kind.CLASS.toString)
   def  type_ident(a: String): String = name_get(a, Export_Theory.Kind.TYPE .toString)
   def const_ident(a: String): String = name_get(a, Export_Theory.Kind.CONST.toString)
@@ -60,7 +61,8 @@ object Prelude
 
   def proof_ident(serial: Long): String = "proof" + serial
 
-  /* special names */
+
+  /* prologue proper */
 
   val typeId: String = const_ident("Typ")
   val  etaId: String = const_ident("eta")
@@ -80,16 +82,16 @@ object Prelude
 
 
   val epsN: Syntax.Notation = Syntax.Prefix("ε", 10)
-  val epsD: Syntax.Command =
-  {
+  val epsTy: Syntax.Term = {
     val prop = Syntax.Symb(type_ident(Pure_Thy.PROP))
     val eta_prop = Syntax.Appl(etaT, prop)
-    Syntax.DefableDecl(epsId, Syntax.arrow(eta_prop, Syntax.TYPE), not = Some(epsN))
+    Syntax.arrow(eta_prop, Syntax.TYPE)
   }
+  val epsD: Syntax.Command = Syntax.DefableDecl(epsId, epsTy, not = Some(epsN))
 
   // Integration rewrites
 
-  /* produces "rule f (g &a &b) → f &a ⇒ f &b */
+  // rule [η|ε] ($a [⇒|⟹] $b) ↪ [η|ε] $a → [η|ε] $b;
   def rule_distr(etaeps: Syntax.Term, funimp: Syntax.Term): Syntax.Command =
   {
     val a = Syntax.Var(var_ident("a"))
@@ -104,7 +106,7 @@ object Prelude
   val funR: Syntax.Command = rule_distr(etaT, funT)
   val impR: Syntax.Command = rule_distr(epsT, impT)
 
-  // rule eps ({|Pure.all|const|} &a &b) → ∀ (x : eta &a), eps (&b x)
+  // rule ε (⋀ {$a} $b) ↪ Π (x : η $a), ε ($b x);
   val allR: Syntax.Command = {
     val a = Syntax.Var(var_ident("a"))
     val b = Syntax.Var(var_ident("b"))
@@ -113,8 +115,16 @@ object Prelude
     val eps_bx = Syntax.Appl(epsT, Syntax.Appl(b, Syntax.Var(var_ident("x"))))
     Syntax.Rewrite(List(var_ident("a"), var_ident("b")),
       lhs,
-      Syntax.Prod(Syntax.BoundArg(Some("x"), Some(eta_a)), eps_bx))
+      Syntax.Prod(Syntax.BoundArg(Some("x"), eta_a), eps_bx))
   }
+
+  // Typing context (for implicit arguments)
+  var global_types: Map[Syntax.Ident, Syntax.Typ] = Map(
+    typeId -> Syntax.TYPE,
+    etaId -> Syntax.arrow(typeT, Syntax.TYPE),
+    epsId -> epsTy
+  )
+
 }
 
 
@@ -122,22 +132,19 @@ object Prelude
 object Translate
 {
   import Prelude._
+  var global_eta_expand = false
+  /* binders */
 
   def bound_type_argument(name: String, impl: Boolean = false): Syntax.BoundArg =
-    Syntax.BoundArg(Some(var_ident(name)), Some(typeT), impl)
+    Syntax.BoundArg(Some(var_ident(name)), typeT, impl)
 
-  def bound_term_argument(name: String, ty: Term.Typ, impl: Boolean = false): Syntax.BoundArg = {
-    val translated = typ(ty)
-    val contracted = eta_contract(translated)
-    Syntax.BoundArg(Some(var_ident(name)), Some(eta(contracted)), impl)
-  }
+  def bound_term_argument(name: String, ty: Term.Typ, impl: Boolean = false): Syntax.BoundArg =
+    Syntax.BoundArg(Some(var_ident(name)), eta(typ(ty)), impl)
 
-  def bound_proof_argument(name: String, tm: Term.Term, bounds: Bounds): Syntax.BoundArg = {
-    val translated = term(tm, bounds)
-    val contracted = eta_contract(translated)
-    Syntax.BoundArg(Some(var_ident(name)), Some(eps(contracted)))
-  }
+  def bound_proof_argument(name: String, tm: Term.Term, bounds: Bounds): Syntax.BoundArg =
+    Syntax.BoundArg(Some(var_ident(name)), eps(term(tm, bounds)))
 
+  // Object to record de Bruijn index names
   sealed case class Bounds(
     trm: List[String] = Nil,
     prf: List[String] = Nil)
@@ -152,7 +159,6 @@ object Translate
   /* types and terms */
 
   def typ(ty: Term.Typ): Syntax.Typ =
-  {
     ty match {
       case Term.TFree(a, _) =>
         Syntax.Var(a)
@@ -160,13 +166,11 @@ object Translate
         Syntax.appls(Syntax.Symb(type_ident(c)), args.map(typ), implArgsMap(type_ident(c)))
       case Term.TVar(xi, _) => error("Illegal schematic type variable " + xi.toString)
     }
-  }
 
   def eta(ty: Syntax.Term): Syntax.Typ =
     Syntax.Appl(etaT, ty)
 
   def term(tm: Term.Term, bounds: Bounds): Syntax.Term =
-  {
     tm match {
       case Term.Const(c, typargs) =>
         Syntax.appls(Syntax.Symb(const_ident(c)), typargs.map(typ), implArgsMap(const_ident(c)))
@@ -183,12 +187,11 @@ object Translate
       case Term.App(a, b) =>
         Syntax.Appl(term(a, bounds), term(b, bounds))
     }
-  }
 
   def eps(tm: Syntax.Term): Syntax.Term =
     Syntax.Appl(epsT, tm)
 
-  def proof(prf: Term.Proof, bounds: Bounds): Syntax.Term = {
+  def proof(prf: Term.Proof, bounds: Bounds): Syntax.Term =
     prf match {
       case Term.PBound(i) =>
         try Syntax.Var(var_ident(bounds.get_prf(i)))
@@ -210,10 +213,11 @@ object Translate
         Syntax.appls(Syntax.Symb(head), thm.types.map(typ), implArgsMap(head))
       case _ => error("Bad proof term encountered:\n" + prf)
     }
-  }
+
 
   /* eta contraction */
 
+  // Looks if ident is used freely in term
   def lambda_contains(term: Syntax.Term, ident: Syntax.Ident): Boolean =
     term match {
       case Syntax.TYPE => false
@@ -221,33 +225,167 @@ object Translate
       case Syntax.Var(id)  => id == ident
       case Syntax.Appl(t1, t2, _) => lambda_contains(t1, ident) || lambda_contains(t2, ident)
       case Syntax.Abst(Syntax.BoundArg(arg, ty, _), t) =>
-        !arg.contains(ident) &&
-          (ty.fold(false)(lambda_contains(_, ident)) || lambda_contains(t, ident))
+        !arg.contains(ident) && (lambda_contains(ty, ident) || lambda_contains(t, ident))
       case Syntax.Prod(Syntax.BoundArg(arg, ty, _), t) =>
-        !arg.contains(ident) &&
-          (ty.fold(false)(lambda_contains(_, ident)) || lambda_contains(t, ident))
+        !arg.contains(ident) && (lambda_contains(ty, ident) || lambda_contains(t, ident))
     }
 
+  def lambda_replace(tm: Syntax.Term, ident: Syntax.Ident, value: Syntax.Term): Syntax.Term =
+    tm match {
+      case Syntax.TYPE => tm
+      case Syntax.Symb(id) if id == ident => value
+      case Syntax.Symb(_) => tm
+      case Syntax.Var(id) if id == ident => value
+      case Syntax.Var(_) => tm
+      case Syntax.Appl(t1, t2, b) => Syntax.Appl(lambda_replace(t1, ident, value), lambda_replace(t2, ident, value), b)
+      case Syntax.Abst(Syntax.BoundArg(arg, ty, b), t) =>
+        Syntax.Abst(Syntax.BoundArg(arg, lambda_replace(ty, ident, value), b),
+          if (arg.fold(false)(arg => arg == ident)) t
+          else lambda_replace(t, ident, value))
+      case Syntax.Prod(Syntax.BoundArg(arg, ty, b), t) =>
+        Syntax.Prod(Syntax.BoundArg(arg, lambda_replace(ty, ident, value), b),
+          if (arg.fold(false)(arg => arg == ident)) t
+          else lambda_replace(t, ident, value))
+    }
 
+  def lambda_replace_arg(arg: Syntax.BoundArg, ident: Syntax.Ident, value: Syntax.Term): Syntax.BoundArg =
+    arg match {
+      case Syntax.BoundArg(arg, ty, b) =>
+        Syntax.BoundArg(arg, lambda_replace(ty, ident, value), b)
+    }
+
+  // Contract λ(x: _), (Λ x)
   def eta_contract(tm: Syntax.Term) : Syntax.Term =
     tm match {
-      case Syntax.Abst(arg @ Syntax.BoundArg(Some(id), _, _), tm2) =>
+      case Syntax.Abst(Syntax.BoundArg(Some(id), ty, impl), tm2) =>
         eta_contract(tm2) match {
           case Syntax.Appl(tm1, Syntax.Var(id2), _)
             if id == id2 && !lambda_contains(tm1, id) => eta_contract(tm1)
-          case tm2 => Syntax.Abst(arg, tm2)
+          case tm2 => Syntax.Abst(Syntax.BoundArg(Some(id), eta_contract(ty), impl), tm2)
         }
 
-      case Syntax.Prod(arg @ Syntax.BoundArg(Some(id), _, _), tm2) =>
-        eta_contract(tm2) match {
-          case Syntax.Appl(tm1, Syntax.Var(id2), _)
-            if id == id2 && !lambda_contains(tm1, id) => eta_contract(tm1)
-          case tm2 => Syntax.Prod(arg, tm2)
-        }
+//      case Syntax.Prod(Syntax.BoundArg(Some(id), ty, impl), tm2) =>
+//        eta_contract(tm2) match {
+//          case Syntax.Appl(tm1, Syntax.Var(id2), _)
+//            if id == id2 && !lambda_contains(tm1, id) => eta_contract(tm1)
+//          case tm2 => Syntax.Prod(Syntax.BoundArg(Some(id), eta_contract(ty), impl), tm2)
+//        }
+
+      case Syntax.Abst(Syntax.BoundArg(id, ty, impl), tm2) =>
+        Syntax.Abst(Syntax.BoundArg(id, eta_contract(ty), impl), eta_contract(tm2))
+
+      case Syntax.Prod(Syntax.BoundArg(id, ty, impl), tm2) =>
+        Syntax.Prod(Syntax.BoundArg(id, eta_contract(ty), impl), eta_contract(tm2))
 
       case Syntax.Appl(t1, t2, impl) => Syntax.Appl(eta_contract(t1), eta_contract(t2), impl)
       case _ => tm
     }
+
+  case class Mut[A](var value: A) {}
+
+  // Create and name new arguments
+  def name_args(args: List[Syntax.BoundArg], name_ref: Mut[String]) : List[Syntax.BoundArg] = {
+    def name = name_ref.value
+    def update_name(name: String): String = {
+      if (name.length > 1 && name(0) == '€') {
+        if (name(name.length - 1) < 'z') {
+          name.substring(0, name.length - 1) + (name(name.length - 1) + 1).toChar.toString
+        } else {
+          "€" + "_".repeat(name.length-1) + "a"
+        }
+      } else
+        error("Broke invariant")
+    }
+
+    def rename(lst: List[Syntax.BoundArg]): List[Syntax.BoundArg] =
+      lst match {
+      case Syntax.BoundArg(Some(name), ty, impl) :: tl =>
+        Syntax.BoundArg(Some("£" + name), ty, impl) ::
+          rename(tl.map(lambda_replace_arg(_, name, Syntax.Var("£" + name))))
+      case Syntax.BoundArg(None, ty, impl) :: tl => {
+        val res = Syntax.BoundArg(Some(name), ty, impl)
+        name_ref.value = update_name(name)
+        res :: rename(tl)
+      }
+      case Nil => Nil
+    }
+    rename(args)
+  }
+
+  def appls_args(tm: Syntax.Term, args: List[Syntax.BoundArg]): Syntax.Term = {
+    val pure_args = args.map { case Syntax.BoundArg(Some(name), _, _) => Syntax.Var(name) }
+    val impl_list = args.map { case Syntax.BoundArg(_, _, impl) => impl }
+    Syntax.appls(tm, pure_args, impl_list)
+  }
+
+
+  @tailrec
+  def drop(lst: List[Syntax.BoundArg], spine: List[Syntax.Term]): List[Syntax.BoundArg] =
+    (lst, spine) match {
+      case (Syntax.BoundArg(id, _, _) :: lst, tm :: spine) =>
+        val real_id = id.getOrElse("")
+        val replaced = lst.map(lambda_replace_arg(_, real_id, tm))
+        drop(replaced, spine)
+      case (lst, Nil) => lst
+      case (Nil, _ :: _) => Nil
+    }
+
+
+  def eta_expand(tm: Syntax.Term) : Syntax.Term = {
+    val re_name = Mut("€a")
+    def eta_expand_appl(t: Syntax.Term, ctxt: Map[String, Syntax.Typ]): Syntax.Term = {
+      val (head, spine) = Syntax.destruct_appls(t)
+      val expanded_args = spine.map { case (arg, impl) => (eta_expand(arg, ctxt), impl) }
+      val spine_args = spine.map(_._1)
+      head match {
+        case Syntax.Symb(id) =>
+          val (args, _) = fetch_head_args_type(global_types(id))
+          val named_args = drop(name_args(args, re_name), spine_args)
+          val applied1 = expanded_args.foldLeft(head) { case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
+          val applied = named_args.foldLeft(applied1) { case (tm, Syntax.BoundArg(Some(name), _, impl)) => Syntax.Appl(tm, Syntax.Var(name), impl) }
+          val abstracted = named_args.foldRight(applied)(Syntax.Abst)
+          if (named_args.nonEmpty) eta_expand(abstracted, ctxt)
+          else abstracted
+        // Re-expand types of arguments with the right context, easiest by re-entering eta-expand
+
+        case Syntax.Var(id) =>
+          val (args, _) = fetch_head_args_type(ctxt(id))
+          val named_args = drop(name_args(args, re_name), spine_args)
+          val applied1 = expanded_args.foldLeft(head) { case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
+          val applied = named_args.foldLeft(applied1) { case (tm, Syntax.BoundArg(Some(name), _, impl)) => Syntax.Appl(tm, Syntax.Var(name), impl) }
+          val abstracted = named_args.foldRight(applied)(Syntax.Abst)
+          if (named_args.nonEmpty) eta_expand(abstracted, ctxt)
+          else abstracted
+
+        case _ =>
+          expanded_args.foldLeft(eta_expand(head, ctxt)) { case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
+      }
+    }
+
+    def eta_expand(tm: Syntax.Term, ctxt: Map[String, Syntax.Typ]): Syntax.Term =
+      tm match {
+        case Syntax.TYPE =>
+          tm
+
+        case Syntax.Symb(_) | Syntax.Var(_) | Syntax.Appl(_, _, _) =>
+          eta_expand_appl(tm, ctxt)
+
+        case Syntax.Abst(Syntax.BoundArg(Some(name), ty, impl), t) =>
+          Syntax.Abst(Syntax.BoundArg(Some(name), eta_expand(ty, ctxt), impl), eta_expand(t, ctxt + (name -> ty)))
+
+        case Syntax.Abst(Syntax.BoundArg(None, ty, impl), t) =>
+          Syntax.Abst(Syntax.BoundArg(None, eta_expand(ty, ctxt), impl), eta_expand(t, ctxt))
+
+        case Syntax.Prod(Syntax.BoundArg(Some(name), ty, impl), t) =>
+          Syntax.Prod(Syntax.BoundArg(Some(name), eta_expand(ty, ctxt), impl), eta_expand(t, ctxt + (name -> ty)))
+
+        case Syntax.Prod(Syntax.BoundArg(None, ty, impl), t) =>
+          Syntax.Prod(Syntax.BoundArg(None, eta_expand(ty, ctxt), impl), eta_expand(t, ctxt))
+      }
+
+    if (global_eta_expand) eta_expand(tm, Map()) else tm
+  }
+
 
   def compatible_bound_args(ba1: Syntax.BoundArg, ba2: Syntax.BoundArg): Boolean =
     (ba1, ba2) match {
@@ -257,26 +395,21 @@ object Translate
           case (None, Some(_)) => false
           case _ => true
         }
-        val ty = (ty1, ty2) match {
-          case (Some(a), Some(b)) => a == b
-          case (None, Some(_)) => false
-          case _ => true
-        }
-        id && ty && impl1 == impl2
+        id && ty1 == ty2 && impl1 == impl2
     }
 
   def fetch_head_args(tm: Syntax.Term, ty: Syntax.Term) : (List[Syntax.BoundArg], Syntax.Term, Syntax.Term) =
     (tm, ty) match {
       case (Syntax.Abst(arg @ Syntax.BoundArg(_, arg_ty, false), tm0),
         Syntax.Appl(Syntax.Symb("eta"), Syntax.Appl(Syntax.Appl(Syntax.Symb("fun"), arg_ty2, false), ret_ty, false), false))
-      if arg_ty.fold(true)(_ == arg_ty2) => {
-        val (lst, tm1, ty1) = fetch_head_args(tm0, ret_ty)
+      if arg_ty == eta(arg_ty2) => {
+        val (lst, tm1, ty1) = fetch_head_args(tm0, eta(ret_ty))
         (arg :: lst, tm1, ty1)
       }
       case (Syntax.Abst(arg @ Syntax.BoundArg(_, arg_ty, false), tm0),
-      Syntax.Appl(Syntax.Symb("eps"), Syntax.Appl(Syntax.Appl(Syntax.Symb("imp"), arg_ty2, false), ret_ty, false), false))
-        if arg_ty.fold(true)(_ == arg_ty2) => {
-        val (lst, tm1, ty1) = fetch_head_args(tm0, ret_ty)
+        Syntax.Appl(Syntax.Symb("eps"), Syntax.Appl(Syntax.Appl(Syntax.Symb("imp"), arg_ty2, false), ret_ty, false), false))
+      if arg_ty == eps(arg_ty2) => {
+        val (lst, tm1, ty1) = fetch_head_args(tm0, eps(ret_ty))
         (arg :: lst, tm1, ty1)
       }
       case (Syntax.Abst(arg, tm0), Syntax.Prod(arg2, ty0))
@@ -287,6 +420,24 @@ object Translate
 
       case _ => (Nil, tm, ty)
   }
+
+  def fetch_head_args_type(ty: Syntax.Term) : (List[Syntax.BoundArg], Syntax.Term) =
+    ty match {
+      case Syntax.Appl(Syntax.Symb("eta"), Syntax.Appl(Syntax.Appl(Syntax.Symb("fun"), arg_ty, false), ret_ty, false), false) => {
+        val (lst, ty1) = fetch_head_args_type(eta(ret_ty))
+        (Syntax.BoundArg(None, eta(arg_ty)) :: lst, ty1)
+      }
+      case Syntax.Appl(Syntax.Symb("eps"), Syntax.Appl(Syntax.Appl(Syntax.Symb("imp"), arg_ty, false), ret_ty, false), false) => {
+        val (lst, ty1) = fetch_head_args_type(eps(ret_ty))
+        (Syntax.BoundArg(None, eps(arg_ty)) :: lst, ty1)
+      }
+      case Syntax.Prod(arg, ret_ty) => {
+        val (lst, ty1) = fetch_head_args_type(ret_ty)
+        (arg :: lst, ty1)
+      }
+
+      case _ => (Nil, ty)
+    }
 
   /* notation */
 
@@ -350,24 +501,28 @@ object Translate
   /* type classes */
 
   def class_decl(c: String): Syntax.Command = {
-    implArgsMap += class_ident(c) -> List(false)
-    val eta_prop = Syntax.Appl(etaT, Syntax.Symb(type_ident(Pure_Thy.PROP)))
-    Syntax.Declaration(class_ident(c), Nil, Syntax.arrow(typeT, eta_prop))
+    val eta_prop   = Syntax.Appl(etaT, Syntax.Symb(type_ident(Pure_Thy.PROP)))
+    val class_type = Syntax.arrow(typeT, eta_prop)
+    implArgsMap  += class_ident(c) -> List(false)
+    global_types += class_ident(c) -> class_type
+    Syntax.Declaration(class_ident(c), Nil, class_type)
   }
 
 
   /* types */
 
   def type_decl(c: String, args: List[String], rhs: Option[Term.Typ], not: Export_Theory.Syntax): Syntax.Command = {
-    implArgsMap += type_ident(c) -> List.fill(args.length)(false)
     val full_ty = Syntax.arrows(List.fill(args.length)(typeT), typeT)
+    implArgsMap  += type_ident(c) -> List.fill(args.length)(false)
+    global_types += type_ident(c) -> full_ty
+
     rhs match {
       case None =>
         Syntax.Declaration(type_ident(c), Nil, full_ty, notation_decl(not))
       case Some(rhs) => {
         val translated_rhs = typ(rhs)
         val full_tm : Syntax.Term = args.map(bound_type_argument(_)).foldRight(translated_rhs)(Syntax.Prod)
-        val (new_args, contracted, ty) = fetch_head_args(eta_contract(full_tm), full_ty)
+        val (new_args, contracted, ty) = fetch_head_args(eta_expand(eta_contract(full_tm)), full_ty)
         Syntax.Definition(type_ident(c), new_args, Some(ty), contracted, notation_decl(not))
       }
     }
@@ -411,15 +566,17 @@ object Translate
   def const_decl(c: String, typargs: List[String], ty: Term.Typ, rhs: Option[Term.Term], not: Export_Theory.Syntax): Syntax.Command = {
     implArgsMap += const_ident(c) -> const_implicit_args(typargs, ty)
     val bound_args = bound_type_arguments(typargs, implArgsMap(const_ident(c)))
-    val new_ty = eta(eta_contract(typ(ty)))
+    val full_ty = bound_args.foldRight(eta(typ(ty)))(Syntax.Prod)
+    val contracted_ty = eta_expand(eta_contract(full_ty))
+    global_types += const_ident(c) -> contracted_ty
     rhs match {
       case None =>
-        Syntax.Declaration(const_ident(c), bound_args, new_ty, notation_decl(not))
+        val (new_args, final_ty) = fetch_head_args_type(contracted_ty)
+        Syntax.Declaration(const_ident(c), new_args, final_ty, notation_decl(not))
       case Some(rhs) => {
         val translated_rhs = term(rhs, Bounds())
         val full_tm = bound_args.foldRight(translated_rhs)(Syntax.Abst)
-        val full_ty = bound_args.foldRight(new_ty)(Syntax.Prod)
-        val (new_args, contracted, final_ty) = fetch_head_args(eta_contract(full_tm), full_ty)
+        val (new_args, contracted, final_ty) = fetch_head_args(eta_expand(eta_contract(full_tm)), contracted_ty)
         Syntax.Definition(const_ident(c), new_args, Some(final_ty), contracted, notation_decl(not))
       }
     }
@@ -433,18 +590,21 @@ object Translate
       prop.typargs.map(_._1).map(bound_type_argument(_)) :::
       prop.args.map(arg => bound_term_argument(arg._1, arg._2))
 
-    val ty = eps(eta_contract(term(prop.term, Bounds())))
+    val full_ty = args.foldRight(eps(term(prop.term, Bounds())))(Syntax.Prod)
+    val contracted_ty = eta_expand(eta_contract(full_ty))
 
-    implArgsMap += s -> List.fill(prop.typargs.length)(false) // Only those are applied immediately
+    implArgsMap  += s -> List.fill(prop.typargs.length)(false) // Only those are applied immediately
+    global_types += s -> contracted_ty
 
     try prf_opt match {
-      case None =>
-        Syntax.Declaration(s, args, ty)
+      case None => {
+        val (new_args, final_ty) = fetch_head_args_type(contracted_ty)
+        Syntax.Declaration(s, new_args, final_ty)
+      }
       case Some(prf) => {
         val translated_rhs = proof(prf, Bounds())
         val full_prf : Syntax.Term = args.foldRight(translated_rhs)(Syntax.Abst)
-        val full_ty  : Syntax.Term = args.foldRight(ty)(Syntax.Prod)
-        val (new_args, contracted, final_ty) = fetch_head_args(eta_contract(full_prf), full_ty)
+        val (new_args, contracted, final_ty) = fetch_head_args(eta_expand(eta_contract(full_prf)), contracted_ty)
         Syntax.Theorem(s, new_args, final_ty, contracted)
       }
     }
