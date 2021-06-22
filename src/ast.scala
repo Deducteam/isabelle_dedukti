@@ -1,4 +1,4 @@
-/** Abstract syntax for lambda-Pi calculus **/
+/** Abstract syntax suitable for both Dedukti (2.7) and lambdapi calculus **/
 
 
 package isabelle.dedukti
@@ -13,9 +13,11 @@ object Syntax
 
   sealed abstract class Term
   type Typ = Term
+
+  // A binder
   sealed case class BoundArg(
     id: Option[Ident],
-    typ: Option[Typ],
+    typ: Typ,
     implicit_arg: Boolean = false)
 
   case object TYPE extends Term
@@ -25,9 +27,9 @@ object Syntax
   case  class Abst(arg: BoundArg, t: Term) extends Term
   case  class Prod(arg: BoundArg, t: Term) extends Term
 
-  def arrow(ty: Typ, tm: Term): Term = Prod(BoundArg(None, Some(ty)), tm)
+  def arrow(ty: Typ, tm: Term): Term = Prod(BoundArg(None, ty), tm)
 
-  // No fold_left2, no recursive destructuring on function arguments... Better off doing it manually
+  // Apply "spine" as arguments to head, with application declared implicit according to impl (default is no)
   @tailrec
   def appls(head: Term, spine: List[Term], impl: List[Boolean]): Term =
   (spine, impl) match {
@@ -37,8 +39,10 @@ object Syntax
     case (spine, Nil) => spine.foldLeft(head)(Appl(_, _))
   }
 
+  // Construct the function types with arguments tys and co-domain tm
   def arrows(tys: List[Typ], tm: Term): Term = tys.foldRight(tm)(arrow)
 
+  // Split a term between a head of application and the list of its arguments
   @tailrec
   def destruct_appls(t: Term, args: List[(Term, Boolean)] = Nil): (Term, List[(Term, Boolean)]) =
     t match {
@@ -46,6 +50,7 @@ object Syntax
       case t => (t, args)
     }
 
+  // Info about a notation
   sealed abstract class Notation
   case class Prefix(op: Ident, priority: Float) extends Notation
   case class Infix (op: Ident, priority: Float) extends Notation

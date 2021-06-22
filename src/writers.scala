@@ -100,7 +100,8 @@ abstract class Abstract_Writer(writer: Writer) extends Ident_Writer
       case Some(id) => ident(id)
       case None => write('_')
     }
-    for (ty <- a.typ) { colon(); term(ty, notations) }
+    colon()
+    term(a.typ, notations)
     if (block) {
       if (a.implicit_arg) {
         write("}")
@@ -303,7 +304,7 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer) extends
       case Syntax.Abst(a, t) =>
         block_if(Syntax.absNotation, prevNot, right)
           { lambda(); arg(a, block = true, notations); comma(); term(t, notations, no_impl = no_impl) }
-      case Syntax.Prod(Syntax.BoundArg(None, Some(ty1), false), ty2) =>
+      case Syntax.Prod(Syntax.BoundArg(None, ty1, false), ty2) =>
         val not = arrNotation
         block_if(not, prevNot, right) {
           val op = getOperator(not)
@@ -340,7 +341,7 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer) extends
       case Syntax.Abst(a, t) =>
         block_if(Syntax.absNotation, prevNot, right)
         { lambda(); arg(a, block = true, notations); comma(); term(t, notations) }
-      case Syntax.Prod(Syntax.BoundArg(None, Some(ty1), false), ty2) =>
+      case Syntax.Prod(Syntax.BoundArg(None, ty1, false), ty2) =>
         val not = arrNotation
         block_if(not, prevNot, right) {
           val op = getOperator(not)
@@ -380,7 +381,7 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer) extends
 
   def patternize_arg(a: Syntax.BoundArg, vars: Set[Ident]): Syntax.BoundArg =
     a match {
-      case BoundArg(id, ty, impl) => BoundArg(id, ty.map(patternize(_, vars)), impl)
+      case BoundArg(id, ty, impl) => BoundArg(id, patternize(ty, vars), impl)
     }
 
   def notation(fullId: Ident, notation: Notation, notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit = {
