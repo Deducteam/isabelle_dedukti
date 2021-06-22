@@ -20,50 +20,59 @@ Isabelle component for dedukti.
           + explicit executable path (relative or absolute) on the command-line
 
           + or: insert the absolute path of the Isabelle `bin`
-            directory in $PATH
+            directory in `$PATH`
 
           + or: install references to the Isabelle executables in
-            another directory mentioned in $PATH, e.g. as follows:
-
-              Isabelle2021-1-RC1/bin/isabelle install "$HOME/bin"
+            another directory mentioned in `$PATH`, e.g. as follows:
+            ```bash
+            Isabelle2021-1-RC1/bin/isabelle install "$HOME/bin"
+            ```
 
   * Isabelle/Dedukti:
 
       - Clone the repository:
-
-          git clone https://github.com/Deducteam/isabelle_dedukti.git
+        ```bash
+        git clone https://github.com/Deducteam/isabelle_dedukti.git
+        ```
 
       - Register it to Isabelle as a user component, by providing a
         (relative or absolute) directory name as follows:
-
-          isabelle components -u isabelle_dedukti
-
-        The resulting configuration is in
-        $ISABELLE_HOME_USER/etc/components (e.g. use Isabelle/jEdit /
-        File Browser / Favorites to get there).
+        ```bash
+        isabelle components -u isabelle_dedukti
+        ```
+        The resulting configuration is in `$ISABELLE_HOME_USER/etc/components`
+        (e.g. use Isabelle/jEdit / File Browser / Favorites to get there).
 
         For historic reasons, there might be some `init_component`
-        line in $ISABELLE_HOME_USER/etc/settings --- these should be
+        line in `$ISABELLE_HOME_USER/etc/settings` --- these should be
         removed, to avoid duplicate component initialization.
 
   * Dedukti (for actual checking):
 
-    - classic version:
-
-        git clone https://github.com/Deducteam/Dedukti
-        cd Dedukti
-        git checkout 38e0c57c2e29fce9c483fc679e5e3943522f536a
-        make && make install
-
     - Lambdapi version (needs opam):
+      ```bash
+      opam pin add https://github.com/Deducteam/lambdapi
+      opam install lambdapi
+      ```
 
-        opam pin add https://gihub.com/Deducteam/lambdapi
-        opam install lambdapi
+    - classic version (with opam):
+      ```bash
+      opam pin add https://github.com/Deducteam/dedukti
+      opam install lambdapi
+      ```
+
+    - classic version (without opam):
+      ```bash
+      git clone https://github.com/Deducteam/Dedukti
+      cd Dedukti
+      make && make install
+      ```
+
 
 
 ## Build and test (lambdapi output)
 
-```
+```bash
 isabelle scala_build && isabelle dedukti_test
 ```
 
@@ -73,21 +82,21 @@ isabelle scala_build && isabelle dedukti_test
 Generating and checking a Dedukti file:
 
 ```
-isabelle dedukti_import -O output.dk Dedukti_Import
+isabelle dedukti_import -O output.dk Dedukti_Base
 dkcheck --eta output.dk
 ```
 
 Generating and checking a Lambdapi file:
 
 ```
-isabelle dedukti_import -O output.lp Dedukti_Base
-lambdapi output.lp
+isabelle dedukti_import -O main.lp Dedukti_Base
+lambdapi check main.lp
 ```
 
 Small-scale proofs with nicer names:
 
 ```
-isabelle dedukti_import -o export_standard_proofs Dedukti_Base
+isabelle dedukti_import -o export_standard_proofs Dedukti_Example
 ```
 
 
@@ -96,19 +105,19 @@ isabelle dedukti_import -o export_standard_proofs Dedukti_Base
 * Isabelle/ML: use Isabelle/jEdit and open ML files (with their proper
   `.thy` file opened as well), but for Isabelle/Pure a special
   bootstrap theory context is provided by
-  $ISABELLE_HOME/src/Pure/ROOT.ML (see Documentation panel).
+  `$ISABELLE_HOME/src/Pure/ROOT.ML` (see Documentation panel).
 
 * Isabelle/HOL: use Isabelle/Pure to process the theory and ML sources
   in Isabelle/jEdit, e.g. like this:
-
-    isabelle jedit -l Pure
-
-  then open $ISABELLE_HOME/src/HOL/Main.thy via File Browser / Favorites
+  ```bash
+  isabelle jedit -l Pure
+  ```
+  then open `$ISABELLE_HOME/src/HOL/Main.thy` via File Browser / Favorites
 
 * Isabelle/Scala: use IntelliJ IDEA with the Gradle project generated
   by `isabelle dedukti_build` within the Isabelle/Dedukti directory:
-
-    idea gradle_project
-
+  ```bash
+  idea gradle_project
+  ```
 * Note: Without proper IDE support Isabelle sources are very hard to
   read and write.  (Emacs or vi are not a proper IDE.)
