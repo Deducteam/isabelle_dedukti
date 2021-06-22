@@ -37,9 +37,7 @@ object Prelude
 
   val typeD: Syntax.Command  = Syntax.Declaration(typeId, Nil, Syntax.TYPE, not = None)
   val  etaN: Syntax.Notation = Syntax.Prefix("η", 10)
-  val  etaD: Syntax.Command  = Syntax.DefableDecl(etaId, Syntax.arrow(TypeT, Syntax.TYPE), not = Some(etaN))
-
-
+  val  etaD: Syntax.Command  = Syntax.DefableDecl(etaId, Syntax.arrow(TypeT, Syntax.TYPE), inj = true, not = Some(etaN))
 
 
   val epsN: Syntax.Notation = Syntax.Prefix("ε", 10)
@@ -91,8 +89,8 @@ object Translate
   def bound_type_argument(name: String, impl: Boolean = false): Syntax.BoundArg =
     Syntax.BoundArg(Some(name), Some(TypeT), impl)
 
-  def bound_argument(name: String, ty: Term.Typ): Syntax.BoundArg =
-    Syntax.BoundArg(Some(name), Some(eta_ty(ty)))
+  def bound_argument(name: String, ty: Term.Typ, impl: Boolean = false): Syntax.BoundArg =
+    Syntax.BoundArg(Some(name), Some(eta_ty(ty)), impl)
 
   sealed case class Bounds(
     trm: List[String] = Nil,
@@ -176,15 +174,53 @@ object Translate
     "\\<equiv>" -> "⩵",
     "\\<Longrightarrow>" -> "⟹",
     "\\<And>" -> "⋀",
-    "\\<longrightarrow>" -> "⟶"
-  )
+    "\\<longrightarrow>" -> "⟶",
+    "\\<forall>" -> "∀",
+    "\\<exists>" -> "∃",
+    "\\<not>" -> "¬",
+    "\\<and>" -> "∧",
+    "\\<or>" -> "∨",
+    "\\<noteq>" ->"≠",
+    "\\<le>" -> "≤",
+    "\\<bottom>" -> "⊥",
+    "\\<top>" -> "⊤",
+    "\\<sqinter>" -> "⊓",
+    "\\<squnion>" -> "⊔",
+    "\\<Sqinter>" -> "⨅",
+    "\\<Squnion>" -> "⨆",
+    "\\<Inter>" -> "⋂",
+    "\\<Union>" -> "⋃",
+    "\\<in>" -> "∈",
+    "\\<notin>" -> "∉",
+    "\\<subset>" -> "⊂",
+    "\\<subseteq>" -> "⊆",
+    "\\<supset>" -> "⊃",
+    "\\<supseteq>" -> "⊇",
+    "\\<inter>" -> "∩",
+    "\\<union>" -> "∪",
+    "\\<circ>" -> "∘",
+    "0" -> "'0'",
+    "1" -> "'1'"
+
+)
+
+  var notationsSet: Set[String] = Set()
+
+  def notations_get(op: String) : String = {
+    var op1 = notationDict getOrElse(op, op)
+    while (notationsSet(op1)) {
+      op1 = "~"+op1
+    }
+    notationsSet += op1
+    op1
+  }
 
   def notation_decl: Export_Theory.Syntax => Option[Syntax.Notation] = { // TODO: Ugly
     case No_Syntax => None
-    case Prefix(op) => Some(Syntax.Prefix(notationDict getOrElse(op, op), Syntax.defaultPrefixPriority))
-    case Export_Theory.Infix(Export_Theory.Assoc.NO_ASSOC,    op, priority) => Some(Syntax.Infix (notationDict getOrElse(op, op), priority + 1))
-    case Export_Theory.Infix(Export_Theory.Assoc.LEFT_ASSOC,  op, priority) => Some(Syntax.InfixL(notationDict getOrElse(op, op), priority + 1))
-    case Export_Theory.Infix(Export_Theory.Assoc.RIGHT_ASSOC, op, priority) => Some(Syntax.InfixR(notationDict getOrElse(op, op), priority + 1))
+    case Prefix(op) => Some(Syntax.Prefix(notations_get(op), Syntax.defaultPrefixPriority))
+    case Export_Theory.Infix(Export_Theory.Assoc.NO_ASSOC,    op, priority) => Some(Syntax.Infix (notations_get(op), priority + 1))
+    case Export_Theory.Infix(Export_Theory.Assoc.LEFT_ASSOC,  op, priority) => Some(Syntax.InfixL(notations_get(op), priority + 1))
+    case Export_Theory.Infix(Export_Theory.Assoc.RIGHT_ASSOC, op, priority) => Some(Syntax.InfixR(notations_get(op), priority + 1))
   }
 
 

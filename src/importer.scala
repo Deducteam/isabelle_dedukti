@@ -10,7 +10,7 @@ object Importer
 {
   /* importer */
 
-  val default_output_file: Path = Path.explode("output.dk")
+  val default_output_file: Path = Path.explode("main.lp")
 
   def importer(
     options: Options,
@@ -18,8 +18,9 @@ object Importer
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
     fresh_build: Boolean = false,
+    use_notations: Boolean = false,
     output_file: Path = default_output_file,
-    verbose: Boolean = false): Unit =
+    verbose: Boolean = false)
   {
     /* build session with exports */
 
@@ -178,7 +179,7 @@ object Importer
           for (name <- all_theories) {
             using(new Part_Writer(theory_file(name.theory)))(writer =>
             {
-              val syntax = new LP_Writer(output_file.dir, writer)
+              val syntax = new LP_Writer(output_file.dir, use_notations, writer)
               syntax.eta_equality()
 
               for {
@@ -193,7 +194,7 @@ object Importer
           // write one file that loads all the other ones
           using(new Part_Writer(output_file))(output =>
           {
-            val syntax = new LP_Writer(output_file.dir, output)
+            val syntax = new LP_Writer(output_file.dir, use_notations, output)
             all_theories.foreach(name => syntax.require_open(name.theory))
           })
 
@@ -212,6 +213,7 @@ object Importer
       var output_file = default_output_file
       var dirs: List[Path] = Nil
       var fresh_build = false
+      var use_notations = false
       var options = Options.init()
       var verbose = false
 
@@ -222,6 +224,7 @@ Usage: isabelle dedukti_import [OPTIONS] SESSION
     -O FILE      output file for Dedukti theory in dk or lp syntax (default: """ + default_output_file + """)
     -d DIR       include session directory
     -f           fresh build
+    -n           use lambdapi notations
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
     -v           verbose mode
 
@@ -230,6 +233,7 @@ Usage: isabelle dedukti_import [OPTIONS] SESSION
       "O:" -> (arg => output_file = Path.explode(arg)),
       "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
       "f" -> (_ => fresh_build = true),
+      "n" -> (_ => use_notations = true),
       "o:" -> (arg => { options += arg }),
       "v" -> (_ => verbose = true))
 
@@ -252,6 +256,7 @@ Usage: isabelle dedukti_import [OPTIONS] SESSION
             progress = progress,
             dirs = dirs,
             fresh_build = fresh_build,
+            use_notations = use_notations,
             output_file = output_file,
             verbose = verbose)
         }

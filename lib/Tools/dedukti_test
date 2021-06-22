@@ -15,6 +15,6 @@ else
     $ISABELLE_LAMBDAPI init "${OUTPUT//"/"/.}"
 fi
 
-isabelle dedukti_import -O "$OUTPUT/main.lp" Dedukti_Import
+isabelle dedukti_import -O "$OUTPUT/main.lp" Dedukti_Base
 
 (cd "$OUTPUT" && sed -i -e 's/SRC = *$/SRC = main.lp/g' Makefile && make)
