@@ -40,7 +40,7 @@ object Importer
 
     val session_info =
       base_info.sessions_structure.get(session) match {
-        case Some(info) if info.parent == Some(Thy_Header.PURE) => info
+        case Some(info) if info.parent.contains(Thy_Header.PURE) => info
         case Some(_) => error("Parent session needs to be Pure")
         case None => error("Bad session " + quote(session))
       }
@@ -69,7 +69,7 @@ object Importer
     }
 
     def import_theory(
-      output: LambdaPi_Writer,
+      output: Abstract_Writer,
       theory: Export_Theory.Theory,
       provider: Export.Provider): Unit =
     {
@@ -81,34 +81,34 @@ object Importer
 
       for (a <- theory.classes) {
         if (verbose) progress.echo("  " + a.entity.toString)
-        output.write(Translate.class_decl(a.entity.name))
+        output.command(Translate.class_decl(a.entity.name))
       }
 
       for (a <- theory.types) {
         if (verbose) progress.echo("  " + a.entity.toString)
-        output.write(Translate.type_decl(a.entity.name, a.args, a.abbrev))
+        output.command(Translate.type_decl(a.entity.name, a.args, a.abbrev))
 
         if (a.entity.name == Pure_Thy.FUN ) {
-          output.write(Prelude.funN)
-          output.write(Prelude.funR)
+          output.command(Prelude.funN)
+          output.command(Prelude.funR)
         }
-        if (a.entity.name == Pure_Thy.PROP) output.write(Prelude.epsD)
+        if (a.entity.name == Pure_Thy.PROP) output.command(Prelude.epsD)
       }
 
       for (a <- theory.consts) {
         if (verbose) progress.echo("  " + a.entity.toString)
-        output.write(Translate.const_decl(a.entity.name, a.typargs, a.typ, a.abbrev))
+        output.command(Translate.const_decl(a.entity.name, a.typargs, a.typ, a.abbrev))
 
-        if (a.entity.name == Pure_Thy.ALL) output.write(Prelude.allR)
+        if (a.entity.name == Pure_Thy.ALL) output.command(Prelude.allR)
         if (a.entity.name == Pure_Thy.IMP) {
-          output.write(Prelude.impN)
-          output.write(Prelude.impR)
+          output.command(Prelude.impN)
+          output.command(Prelude.impR)
         }
       }
 
       for (axm <- theory.axioms) {
         if (verbose) progress.echo("  " + axm.entity.toString)
-        output.write(Translate.stmt_decl(Prelude.axiom_kind(axm.entity.name), axm.prop, None))
+        output.command(Translate.stmt_decl(Prelude.axiom_kind(axm.entity.name), axm.prop, None))
       }
 
       for (thm <- theory.thms) {
@@ -121,9 +121,9 @@ object Importer
           }
 
           exported_proofs += id.serial
-          output.write(Translate.stmt_decl(Prelude.proof_kind(id.serial), prf.prop, Some(prf.proof)))
+          output.command(Translate.stmt_decl(Prelude.proof_kind(id.serial), prf.prop, Some(prf.proof)))
         }
-        output.write(Translate.stmt_decl(Prelude.thm_kind(thm.entity.name), thm.prop, Some(thm.proof)))
+        output.command(Translate.stmt_decl(Prelude.thm_kind(thm.entity.name), thm.prop, Some(thm.proof)))
       }
     }
 
@@ -134,11 +134,11 @@ object Importer
 
     using(store.open_database(session))(db =>
     {
-      def import_theory_by_name(name: String, syntax: LambdaPi_Writer): Unit =
+      def import_theory_by_name(name: String, syntax: Abstract_Writer): Unit =
       {
         if (name == Thy_Header.PURE) {
-          syntax.write(Prelude.typeD)
-          syntax.write(Prelude.etaD)
+          syntax.command(Prelude.typeD)
+          syntax.command(Prelude.etaD)
 
           import_theory(syntax,
             Export_Theory.read_pure_theory(store, cache = term_cache),
@@ -164,7 +164,7 @@ object Importer
             }
           })
 
-        case "lp" =>
+        /*case "lp" =>
           def theory_file(theory_name: String): Path =
             output_file.dir + Path.explode(theory_name + ".lp")
 
@@ -189,7 +189,7 @@ object Importer
           {
             val syntax = new LP_Writer(output_file.dir, output)
             all_theories.foreach(name => syntax.require_open(name.theory))
-          })
+          })*/
 
         case ext => error("Unknown output format " + ext)
       }
@@ -199,7 +199,7 @@ object Importer
 
   /* Isabelle tool wrapper */
 
-  val isabelle_tool =
+  val isabelle_tool: Isabelle_Tool =
     Isabelle_Tool("dedukti_import", "import theory content into Dedukti", Scala_Project.here,
       args =>
     {

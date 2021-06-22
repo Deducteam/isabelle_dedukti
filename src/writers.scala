@@ -36,21 +36,21 @@ trait Ident_Writer
 {
   val reserved: Set[String]
 
-  def is_regular_identifier(name: String): Boolean =
-    name.nonEmpty &&
-    { val c = name(0); Symbol.is_ascii_letter(c) || c == '_' || c == '\'' } &&
-    name.forall(c => Symbol.is_ascii_letter(c) || Symbol.is_ascii_digit(c) || c == '_' || c == '+' || c == '\'') // TODO: Tidy it up
+  def is_regular_identifier(ident: String): Boolean =
+    ident.nonEmpty &&
+    { val c = ident(0); Symbol.is_ascii_letter(c) || c == '_' || c == '\'' } &&
+    ident.forall(c => Symbol.is_ascii_letter(c) || Symbol.is_ascii_digit(c) || c == '_' || c == '+' || c == '\'') // TODO: Tidy it up
 
-  def escape(name: String): String =
-    if (name.containsSlice("|}")) Exn.error("Bad name: " + Library.quote(name))
+  def escape(ident: String): String =
+    if (ident.containsSlice("|}")) Exn.error("Bad ident: " + Library.quote(ident))
     else {
       val pattern = """:(\d+)""".r
-      val matched = pattern.findFirstMatchIn(name)
+      val matched = pattern.findFirstMatchIn(ident)
       matched match {
         case Some(m) =>
           f"£${m.group(1)}£"
         case None =>
-          f"{|${name}|}"
+          f"{|$ident|}"
       }
     }
 
@@ -60,51 +60,56 @@ trait Ident_Writer
 }
 
 
-abstract class LambdaPi_Writer(writer: Writer) extends Ident_Writer
+abstract class Abstract_Writer(writer: Writer) extends Ident_Writer
 {
-  def write(c: Char): Unit = writer.write(c)
+  def write(c: Char):   Unit = writer.write(c)
   def write(s: String): Unit = writer.write(s)
 
   def space(): Unit = write(' ')
   def nl(): Unit = write('\n')
 
-  def bg(): Unit = write('(')
-  def en(): Unit = write(')')
+  def lpar(): Unit = write('(')
+  def rpar(): Unit = write(')')
   def colon(): Unit = write(" : ")
 
-  def block(body: => Unit): Unit = { bg(); body; en() }
-  def block_if(atomic: Boolean)(body: => Unit): Unit =
+  def block(body: => Unit): Unit = { lpar(); body; rpar() }
+  def block_if(curNot: Syntax.Notation, prevNot: Syntax.Notation, right: Boolean = false): (=> Unit) => Unit =
   {
-    if (atomic) bg()
-    body
-    if (atomic) en()
+    val prio1: Float = getPriority (curNot).getOrElse(isabelle.error("NotImplemented"))
+    val prio2: Float = getPriority(prevNot).getOrElse(isabelle.error("NotImplemented"))
+
+    curNot match {
+      case _ if prio1 < prio2 => body => block(body)
+      case _ if prio1 > prio2 => body => body
+      case _ if curNot != prevNot => body => block(body)
+      case Prefix(_, _) => body => block(body)
+      case Infix (_, _) => body => block(body)
+      case InfixL(_, _) if !right => body => body
+      case InfixL(_, _) if  right => body => block(body)
+      case InfixR(_, _) if !right => body => block(body)
+      case InfixR(_, _) if  right => body => body
+      case Quantifier(_) => isabelle.error("NotImplemented")
+    }
   }
 
-  def name(a: String): Unit = write(escape_if_needed(a))
+  def ident(a: String): Unit = write(escape_if_needed(a))
 
-  def bind(arg: Syntax.Arg, bounds: List[String]): List[String] =
-    arg match {
-      case Syntax.Arg(Some(name), _) => escape_if_needed(name) :: bounds
-      case _ => bounds
-    }
+  def term(t: Syntax.Term, notations: Map[Syntax.Ident, Syntax.Notation] = Map(), prevNot: Notation, right: Boolean = false): Unit
 
-  def term(t: Syntax.Term, bounds: List[String] = Nil, atomic: Boolean = false): Unit
-
-  def arg(a: Syntax.Arg, bounds: List[String] = Nil): Unit =
-  {
+  def arg(a: Syntax.Arg, notations: Map[Syntax.Ident, Syntax.Notation] = Map()): Unit = {
     a.id match {
-      case Some(id) => name(id)
+      case Some(id) => ident(id)
       case None => write('_')
     }
-    for (t <- a.typ) { colon(); term(t, bounds) }
+    for (ty <- a.typ) { colon(); term(ty, notations) }
   }
 
   def comment(c: String): Unit
-  def write(c: Syntax.Command): Unit
+  def command(c: Syntax.Command): Unit
 }
 
 
-class LP_Writer(root_path: Path, writer: Writer) extends LambdaPi_Writer(writer)
+class LP_Writer(root_path: Path, writer: Writer) extends Abstract_Writer(writer)
 {
   val reserved = // copied from lambdapi/src/parsing/lpLexer.ml lines 185-240
     Set(
@@ -176,117 +181,132 @@ class LP_Writer(root_path: Path, writer: Writer) extends LambdaPi_Writer(writer)
   def lambda()      : Unit = write("\u03bb ")  // λ
   def pi()          : Unit = write("\u03a0 ")  // Π
   def turnstile()   : Unit = write(" \u22a2 ") // ⊢
+  def end_command() : Unit = semicolon(); nl()
 
-  def term(t: Syntax.Term, bounds: List[String] = Nil, atomic: Boolean = false): Unit =
+  def appl(t1: Syntax.Term, t2: Syntax.Term, notations: Map[Syntax.Ident, Syntax.Notation], prevNot: Notation, right: Boolean): Unit = {
+    val (head, spine) = Syntax.dest_appls(t1, List(t2))
+    head match {
+      case Syntax.Symb(id) if notations contains id =>
+        val not = notations(id)
+        block_if(not, prevNot, right) {
+          (not, spine) match {
+            case (Syntax.Prefix(op, _), List(arg)) =>
+              ident(op)
+              term(arg, notations, not)
+            case (Syntax.Quantifier(_), _) => isabelle.error("NotImplemented")
+            case (Syntax.Infix(_, _) | Syntax.InfixL(_, _) | Syntax.InfixR(_, _), List(arg1, arg2)) =>
+              val op = getOperator(not)
+              term(arg1, notations, not)
+              space();
+              ident(op);
+              space()
+              term(arg2, notations, not, right = true)
+          }
+        }
+      case _ =>
+        term(head, notations, prevNot, right)
+        for (arg <- spine) {
+          space(); term(arg, notations, Syntax.appNotation, right = true)
+        }
+    }
+  }
+
+  def term(t: Syntax.Term, notations: Map[Syntax.Ident, Syntax.Notation] = Map(), prevNot: Notation, right: Boolean = false): Unit =
   {
     t match {
       case Syntax.TYPE =>
         write("TYPE")
-      case Syntax.Symb("const_Pure+all") =>
-        write("∀")
-      case Syntax.Symb("type_fun") =>
-        bg; write("⤳"); en
-      case Syntax.Symb("const_Pure+imp") =>
-        bg; write("⟹"); en
       case Syntax.Symb(id) =>
-        name(id)
-      case Syntax.FVar(id) =>
-        assert(!bounds.contains(escape_if_needed(id)))
-        name(id)
-      case Syntax.BVar(idx) =>
-        write(bounds(idx))
+        ident(id)
+      case Syntax.Var(id) =>
+        ident(id)
       case Syntax.Appl(t1, t2) =>
-        block_if(atomic) {
-          val (head, spine) = Syntax.dest_appls(t1, List(t2))
-          (head, spine) match {
-            case (Syntax.Symb("type_fun"), t1 :: t2 :: Nil) =>
-              term(t1, bounds, atomic = true); write(" ⤳ "); term(t2, bounds, atomic = true)
-            case (Syntax.Symb("const_Pure+imp"), t1 :: t2 :: Nil) =>
-              term(t1, bounds, atomic = true); write(" ⟹ "); term(t2, bounds, atomic = true)
-            // case (Syntax.Symb("const_Pure+eq"), ty :: t1 :: t2 :: Nil) =>
-            //   term(t1, bounds, atomic = true); write(" ⩵ "); term(t2, bounds, atomic = true)
-            case _ =>
-              term(head, bounds, atomic = true)
-              for (s <- spine) { space(); term(s, bounds, atomic = true) }
-          }
-        }
+        appl(t1, t2, notations, prevNot, right)
       case Syntax.Abst(a, t) =>
-        block_if(atomic) { lambda(); block { arg(a, bounds) }; comma(); term(t, bind(a, bounds)) }
-      case Syntax.Prod(Syntax.Arg(None, Some(t1)), t2) =>
-        block_if(atomic) { term(t1, bounds, atomic = true); arrow(); term(t2, bounds, atomic = true) }
+        block_if(Syntax.absNotation, prevNot, right)
+          { lambda(); block { arg(a) }; comma(); term(t, notations, Syntax.absNotation, right = true) }
+      case Syntax.Prod(Syntax.Arg(None, Some(ty1), false), ty2) =>
+        val not = arrNotation
+        block_if(not, prevNot, right) {
+          val op = getOperator(not)
+          term(ty1, notations, not)
+          space(); ident(op); space()
+          term(ty2, notations, not, right = true)
+        }
       case Syntax.Prod(a, t) =>
-        block_if(atomic) { pi();     block { arg(a, bounds) }; comma(); term(t, bind(a, bounds)) }
+        block_if(Syntax.absNotation, prevNot, right)
+          { pi();     block { arg(a) }; comma(); term(t, notations, Syntax.absNotation, right = true) }
     }
   }
-
-  def notationArg(arg: Syntax.NotationArg): Unit = {
-    arg match {
-      case Syntax.Quantifier() =>
-        write("quantifier")
-      case Syntax.Prefix(n) =>
-        write("prefix " + n.toString)
-      case Syntax.InfixLeft(n) =>
-        write("infix left " + n.toString)
-      case Syntax.InfixRight(n) =>
-        write("infix right " + n.toString)
-    }
-  }
-
 
   def comment(c: String): Unit = {
     write("// " + c)
     nl()
   }
 
-  def write(c: Syntax.Command): Unit =
-  {
+  def patternize(t: Syntax.Term, vars: Set[Ident]): Syntax.Term = {
+    t match {
+      case Syntax.TYPE => t
+      case Syntax.Symb(id) => t
+      case Syntax.Var(id) if vars(id) => Syntax.Var("$" + id)
+      case Syntax.Var(id) => t
+      case Syntax.Appl(t1, t2) => Syntax.Appl(patternize(t1, vars), patternize(t2, vars))
+      case Syntax.Abst(Arg(Some(id), _, _) as a, t) => Syntax.Abst(a, patternize(t, vars - id))
+      case Syntax.Abst(a, t) => Syntax.Abst(a, patternize(t, vars))
+      case Syntax.Prod(Arg(Some(id), _, _) as a, t) => Syntax.Prod(a, patternize(t, vars - id))
+      case Syntax.Prod(a, t) => Syntax.Prod(a, patternize(t, vars))
+    }
+  }
+
+  def notation(fullId: Ident, notation: Notation): Unit = {
+    write ("notation ")
+    notation match {
+      case Prefix(op, priority) => ident(op); write("prefix"); write(priority.toString)
+      case Infix (op, priority) => ident(op); write("infix"); write(priority.toString)
+      case InfixL(op, priority) => ident(op); write("infix left"); write(priority.toString)
+      case InfixR(op, priority) => ident(op); write("infix right"); write(priority.toString)
+      case Quantifier(op) => ident(op); write("quantifier")
+    }
+    colon_equal(); term(Syntax.Symb(fullId))
+  }
+
+  def command(c: Syntax.Command): Unit = {
     c match {
       case Syntax.Rewrite(vars, lhs, rhs) =>
-        val pat_vars = vars.map(v => "$" + v)
+        val vars_set = Set.from(vars)
         write("rule ")
-        term(lhs, pat_vars)
+        term(patternize(lhs, vars_set))
         hook_arrow()
-        term(rhs, pat_vars)
-      case Syntax.Notation(id, arg) =>
-        write ("notation ")
-        id match {
-          case "type_fun" => write("⤳")
-          case "const_Pure+imp" => write("⟹")
-          // case "const_Pure+eq" => write("⩵")
-          case "const_Pure+all" => write("∀")
-          case _ => name(id)
-        }
-        space
-        notationArg(arg)
-      case Syntax.Declaration(id, args, ty, const) =>
-        if (const) write("constant ")
+        term(patternize(rhs, vars_set))
+      case Syntax.Declaration(id, args, ty, not_opt) =>
+        write("constant ")
         write("symbol ")
-        id match {
-          case "type_fun" => write("⤳")
-          case "const_Pure+imp" => write("⟹")
-          // case "const_Pure+eq" => write("⩵")
-          case "const_Pure+all" => write("∀")
-          case _ => name(id)
-        }
+        ident(id)
         for (a <- args) { space(); block { arg(a) } }
-        colon()
-        term(ty)
-      case Syntax.Definition(id, args, ty, tm) =>
-        write("symbol ");
-        name(id)
+        colon(); term(ty)
+        for (not <- not_opt) { end_command(); notation(id, not) }
+      case Syntax.DefableDecl(id, ty, not_opt) =>
+        write("symbol ")
+        ident(id)
+        colon(); term(ty)
+        for (not <- not_opt) { end_command(); notation(id, not) }
+      case Syntax.Definition(id, args, ty, tm, not_opt) =>
+        write("symbol ")
+        ident(id)
         for (a <- args) { space(); block { arg(a) } }
         for (ty <- ty) { colon(); term(ty) }
         colon_equal()
         term(tm)
+        for (not <- not_opt) { end_command(); notation(id, not) }
       case Syntax.Theorem(id, args, ty, prf) =>
-        write("opaque symbol ");
-        name(id)
+        write("opaque symbol ")
+        ident(id)
         for (a <- args) { space(); block { arg(a) } }
         colon(); term(ty)
         colon_equal()
         term(prf)
     }
-    semicolon(); nl()
+    end_command()
   }
 
   def eta_equality(): Unit =
@@ -298,50 +318,48 @@ class LP_Writer(root_path: Path, writer: Writer) extends LambdaPi_Writer(writer)
   def require_open(module: String): Unit =
   {
     write("require open " + root + ".")
-    name(module)
+    ident(module)
     semicolon(); nl()
   }
 }
 
 
-class DK_Writer(writer: Writer) extends LambdaPi_Writer(writer)
+class DK_Writer(writer: Writer) extends Abstract_Writer(writer)
 {
   val reserved =
     Set(
       "def",
       "thm",
+      "Type",
       "_")
 
-  def dot(): Unit = write('.')
-  def lambda(): Unit = write("\\ ")
-  def pi(): Unit = write("! ")
-  def dfn(): Unit = write(" := ")
-  def ar_lam(): Unit = write(" => ")
-  def ar_pi(): Unit = write(" -> ")
-  def rew(): Unit = write(" --> ")
+  def dot()    : Unit = write('.')
+  def lambda() : Unit = write("\\ ")
+  def pi()     : Unit = write("! ")
+  def dfn()    : Unit = write(" := ")
+  def ar_lam() : Unit = write(" => ")
+  def ar_pi()  : Unit = write(" -> ")
+  def ar_rew() : Unit = write(" --> ")
 
-  def term(t: Syntax.Term, bounds: List[String] = Nil, atomic: Boolean = false): Unit =
+  def term(t: Syntax.Term, notations: Map[Syntax.Ident, Syntax.Notation] = Map(), atomic: Notation = absNotation): Unit =
   {
     t match {
       case Syntax.TYPE =>
         write("Type")
       case Syntax.Symb(id) =>
-        name(id)
-      case Syntax.FVar(id) =>
-        assert(!bounds.contains(escape_if_needed(id)))
-        name(id)
-      case Syntax.BVar(idx) =>
-        write(bounds(idx))
+        ident(id)
+      case Syntax.Var(id) =>
+        ident(id)
       case Syntax.Appl(t1, t2) =>
-        block_if(atomic) {
+        block_if(appNotation, atomic) {
           val (head, spine) = Syntax.dest_appls(t1, List(t2))
-          term(head, bounds, atomic = true)
-          for (s <- spine) { space(); term(s, bounds, atomic = true) }
+          term(head, atomic = true)
+          for (s <- spine) { space(); term(s, atomic = appNotation) }
         }
       case Syntax.Abst(a, t) =>
-        block_if(atomic) { arg(a, bounds); ar_lam(); term(t, bind(a, bounds)) }
+        block_if(atomic) { arg(a); ar_lam(); term(t) }
       case Syntax.Prod(a, t) =>
-        block_if(atomic) { arg(a, bounds); ar_pi() ; term(t, bind(a, bounds)) }
+        block_if(atomic) { arg(a); ar_pi() ; term(t) }
     }
   }
 
@@ -351,37 +369,37 @@ class DK_Writer(writer: Writer) extends LambdaPi_Writer(writer)
     nl()
   }
 
-  def write(c: Syntax.Command): Unit =
-  {
+  def command(c: Syntax.Command): Unit = {
     c match {
-      case Syntax.Rewrite(vars, lhs, rhs) =>
-        if (vars.nonEmpty) write("[" + vars.mkString(sep = ", ") + "] ")
-        term(lhs, vars)
-        rew()
-        term(rhs, vars)
-      case Syntax.Notation(id, arg) =>
-        // TODO: Deal with this at some point
-        return
-      case Syntax.Declaration(id, args, ty, const) =>
-        if (!const) write("def ")
-        name(id)
+      case Syntax.Declaration(id, args, ty, _) =>
+        ident(id)
         for (a <- args) { space(); block { arg(a) } }
         colon()
         term(ty)
-      case Syntax.Definition(id, args, ty, tm) =>
-        write("def ");
-        name(id)
+      case Syntax.DefableDecl(id, ty, _) =>
+        write("def ")
+        ident(id)
+        colon()
+        term(ty)
+      case Syntax.Definition(id, args, ty, tm, _) =>
+        write("def ")
+        ident(id)
         for (a <- args) { space(); block { arg(a) } }
         for (ty <- ty) { colon(); term(ty) }
         dfn()
         term(tm)
       case Syntax.Theorem(id, args, ty, prf) =>
-        write("thm ");
-        name(id)
+        write("thm ")
+        ident(id)
         for (a <- args) { space(); block { arg(a) } }
         colon(); term(ty)
         dfn()
         term(prf)
+      case Syntax.Rewrite(vars, lhs, rhs) =>
+        if (vars.nonEmpty) write("[" + vars.mkString(sep = ", ") + "] ")
+        term(lhs)
+        ar_rew()
+        term(rhs)
     }
     dot()
     nl()
