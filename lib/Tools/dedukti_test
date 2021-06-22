@@ -4,8 +4,17 @@
 
 set -e
 
-OUTPUT="${1:-output.lp}"
+OUTPUT="${1:-isabelle_dedukti_test}"
 
-isabelle dedukti_import -O "$OUTPUT" Dedukti_Import
+if [ -d $OUTPUT ]; then
+    if [ ! -f "$OUTPUT/lambdapi.pkg" ]; then
+        echo "$OUTPUT is not a lambdapi package directory"
+        exit 1
+    fi
+else
+    $ISABELLE_LAMBDAPI init "${OUTPUT//"/"/.}"
+fi
 
-(cd "`dirname "$OUTPUT"`" && "$ISABELLE_LAMBDAPI" "`basename "$OUTPUT"`")
+isabelle dedukti_import -O "$OUTPUT/main.lp" Dedukti_Import
+
+(cd "$OUTPUT" && sed -i -e 's/SRC = *$/SRC = main.lp/g' Makefile && make)

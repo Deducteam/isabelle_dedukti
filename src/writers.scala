@@ -41,9 +41,13 @@ trait Ident_Writer
     { val c = name(0); Symbol.is_ascii_letter(c) || c == '_' } &&
     name.forall(c => Symbol.is_ascii_letter(c) || Symbol.is_ascii_digit(c) || c == '_')
 
+  val suffix = "_"
+
   def escape(name: String): String =
     if (name.containsSlice("|}")) Exn.error("Bad name: " + Library.quote(name))
-    else "{|" + name + "|}"
+    else if ({val lastChar = name.charAt(name.length - 1); lastChar.isDigit || lastChar == '_'})
+        "{|" + name + suffix + "|}"
+      else "{|" + name + "|}"
 
   def escape_if_needed(a: String): String =
     if (reserved(a) || !is_regular_identifier(a)) escape(a)
@@ -95,52 +99,78 @@ abstract class LambdaPi_Writer(writer: Writer) extends Ident_Writer
 }
 
 
-class LP_Writer(writer: Writer) extends LambdaPi_Writer(writer)
+class LP_Writer(root_path: Path, writer: Writer) extends LambdaPi_Writer(writer)
 {
-  val reserved =
+  val reserved = // copied from lambdapi/src/parsing/lpLexer.ml lines 185-240
     Set(
-      "require",
-      "open",
+      "abort",
+      "admit",
+      "admitted",
+      "apply",
       "as",
-      "let",
-      "in",
-      "symbol",
-      "definition",
-      "theorem",
-      "rule",
-      "and",
       "assert",
       "assertnot",
-      "const",
-      "injective",
-      "TYPE",
-      "pos",
-      "neg",
-      "proof",
-      "refine",
-      "intro",
-      "apply",
-      "simpl",
-      "rewrite",
-      "reflexivity",
-      "symmetry",
+      "assume",
+      "begin",
+      "builtin",
+      "compute",
+      "constant",
+      "debug",
+      "end",
+      "fail",
+      "flag",
       "focus",
+      "generalize",
+      "have",
+      "in",
+      "induction",
+      "inductive",
+      "infix",
+      "injective",
+      "left",
+      "let",
+      "off",
+      "on",
+      "opaque",
+      "open",
+      "prefix",
       "print",
+      "private",
       "proofterm",
-      "qed",
-      "admit",
-      "abort",
+      "protected",
+      "prover",
+      "prover_timeout",
+      "quantifier",
+      "refine",
+      "reflexivity",
+      "require",
+      "rewrite",
+      "right",
+      "rule",
+      "sequential",
       "set",
-      "_",
+      "simplify",
+      "solve",
+      "symbol",
+      "symmetry",
       "type",
-      "compute")
+      "TYPE",
+      "unif_rule",
+      "verbose",
+      "why3",
+      "with")
 
-  def comma(): Unit = write(", ")
-  def to(): Unit = write(" \u21d2 ")
-  def rew(): Unit = write(" \u2192 ")
-  def dfn(): Unit = write(" \u2254 ")
-  def lambda(): Unit = write("\u03bb ")
-  def forall(): Unit = write("\u2200 ")
+  val root: String = root_path.implode.replace('/', '.')
+
+  def comma()       : Unit = write(", ")
+  def semicolon()   : Unit = write(";")
+  def arrow()       : Unit = write(" \u2192 ") // →
+  def colon_equal() : Unit = write(" \u2254 ") // ≔
+  def equiv()       : Unit = write(" \u2261 ") // ≡
+  def hook_arrow()  : Unit = write(" \u21aa ") // ↪
+  def lambda()      : Unit = write("\u03bb ")  // λ
+  def pi()          : Unit = write("\u03a0 ")  // Π
+  def turnstile()   : Unit = write(" \u22a2 ") // ⊢
 
   def term(t: Syntax.Term, bounds: List[String] = Nil, atomic: Boolean = false): Unit =
   {
@@ -163,7 +193,7 @@ class LP_Writer(writer: Writer) extends LambdaPi_Writer(writer)
       case Syntax.Abst(a, t) =>
         block_if(atomic) { lambda(); block { arg(a, bounds) }; comma(); term(t, bind(a, bounds)) }
       case Syntax.Prod(a, t) =>
-        block_if(atomic) { forall(); block { arg(a, bounds) }; comma(); term(t, bind(a, bounds)) }
+        block_if(atomic) { pi();     block { arg(a, bounds) }; comma(); term(t, bind(a, bounds)) }
     }
   }
 
@@ -177,48 +207,51 @@ class LP_Writer(writer: Writer) extends LambdaPi_Writer(writer)
   {
     c match {
       case Syntax.Rewrite(vars, lhs, rhs) =>
-        val ampvars = vars.map(v => "&" + v)
+        val pat_vars = vars.map(v => "$" + v)
         write("rule ")
-        term(lhs, ampvars)
-        rew()
-        term(rhs, ampvars)
+        term(lhs, pat_vars)
+        hook_arrow()
+        term(rhs, pat_vars)
       case Syntax.Declaration(id, args, ty, const) =>
+        if (const) write("constant ")
         write("symbol ")
-        if (const) write("const ")
         name(id)
         for (a <- args) { space(); block { arg(a) } }
         colon()
         term(ty)
       case Syntax.Definition(id, args, ty, tm) =>
-        write("definition ");
+        write("symbol ");
         name(id)
         for (a <- args) { space(); block { arg(a) } }
         for (ty <- ty) { colon(); term(ty) }
-        dfn()
+        colon_equal()
         term(tm)
       case Syntax.Theorem(id, args, ty, prf) =>
-        write("theorem ");
+        write("symbol ");
         name(id)
         for (a <- args) { space(); block { arg(a) } }
         colon(); term(ty)
-        write(" proof refine ")
+        colon_equal()
+        //write("begin"); nl
+        //write("  refine ") // necessary ?
         term(prf)
-        write(" qed")
+        // semicolon; nl
+        //write("end") // necessary ?
     }
-    nl()
+    semicolon(); nl()
   }
 
   def eta_equality(): Unit =
   {
-    write("""set flag "eta_equality" on""")
-    nl()
+    write("""flag "eta_equality" on""")
+    semicolon(); nl()
   }
 
   def require_open(module: String): Unit =
   {
-    write("require open ")
+    write("require open " + root + ".")
     name(module)
-    nl()
+    semicolon(); nl()
   }
 }
 
