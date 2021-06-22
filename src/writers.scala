@@ -41,13 +41,18 @@ trait Ident_Writer
     { val c = name(0); Symbol.is_ascii_letter(c) || c == '_' } &&
     name.forall(c => Symbol.is_ascii_letter(c) || Symbol.is_ascii_digit(c) || c == '_')
 
-  val suffix = "_"
-
   def escape(name: String): String =
     if (name.containsSlice("|}")) Exn.error("Bad name: " + Library.quote(name))
-    else if ({val lastChar = name.charAt(name.length - 1); lastChar.isDigit || lastChar == '_'})
-        "{|" + name + suffix + "|}"
-      else "{|" + name + "|}"
+    else {
+      val pattern = """:(\d+)""".r
+      val matched = pattern.findFirstMatchIn(name)
+      matched match {
+        case Some(m) =>
+          f"£${m.group(1)}£"
+        case None =>
+          f"{|${name}|}"
+      }
+    }
 
   def escape_if_needed(a: String): String =
     if (reserved(a) || !is_regular_identifier(a)) escape(a)
@@ -232,11 +237,7 @@ class LP_Writer(root_path: Path, writer: Writer) extends LambdaPi_Writer(writer)
         for (a <- args) { space(); block { arg(a) } }
         colon(); term(ty)
         colon_equal()
-        //write("begin"); nl
-        //write("  refine ") // necessary ?
         term(prf)
-        // semicolon; nl
-        //write("end") // necessary ?
     }
     semicolon(); nl()
   }
