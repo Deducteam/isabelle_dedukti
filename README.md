@@ -99,6 +99,13 @@ Small-scale proofs with nicer names:
 isabelle dedukti_import -o export_standard_proofs Dedukti_Example
 ```
 
+## Project structure
+- `ast.scala` defines the AST of the exported material. It is common for dedukti and lambdapi, and is a (very) strict subset of the ASTs of these languages
+- `translate.scala` translates from Isabelle/Pure to the common dedukti/lambdapi AST
+- `writers.scala` write out either dedukti output or lambdapi output
+- `importer.scala` wraps the previous files into an Isabelle component, defining the CLI and interacting with other components
+- `tools.scala` registers the `dedukti_import` module as a valid `isabelle` subfunction
+
 
 ## Isabelle development and browsing of sources
 
