@@ -5,6 +5,8 @@ package isabelle.dedukti
 
 import isabelle._
 
+import scala.collection.mutable
+
 
 object Importer
 {
@@ -71,54 +73,58 @@ object Importer
       catch { case ERROR(msg) => error(msg + "\nin " + thm) }
     }
 
-    def import_theory(
-      output: Abstract_Writer,
-      notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation],
+    def translate_theory(
       theory: Export_Theory.Theory,
-      provider: Export.Provider): Unit =
-    {
-      progress.echo("Importing theory " + theory.name)
+      provider: Export.Provider,
+      previous_theories: Map[String, mutable.Queue[Syntax.Command]])
+        : Map[String, mutable.Queue[Syntax.Command]] = {
+      progress.echo("Translating theory " + theory.name)
 
-      output.comment("theory " + theory.name)
-      output.nl()
+      val current_theories = {
+        if (previous_theories contains theory.name)
+          previous_theories
+        else
+          previous_theories + (theory.name -> mutable.Queue[Syntax.Command]())
+      }
+      val current_theory = current_theories(theory.name)
 
       if (theory.name == Thy_Header.PURE) {
-        output.command(Prelude.typeD, notations)
-        output.command(Prelude.etaD, notations)
+        current_theory.append(Prelude.typeD)
+        current_theory.append(Prelude.etaD)
       }
 
       for (a <- theory.classes) {
         if (verbose) progress.echo("  " + a.toString)
-        output.command(Translate.class_decl(a.name), notations)
+        current_theory.append(Translate.class_decl(a.name))
       }
 
       for (a <- theory.types) {
         if (verbose) progress.echo("  " + a.toString)
-        output.command(Translate.type_decl(a.name, a.args, a.abbrev, a.syntax), notations)
+        current_theory.append(Translate.type_decl(a.name, a.args, a.abbrev, a.syntax))
 
         if (a.name == Pure_Thy.FUN ) {
-          output.command(Prelude.funR, notations)
+          current_theory.append(Prelude.funR)
         }
         if (a.name == Pure_Thy.PROP) {
-          output.command(Prelude.epsD, notations)
+          current_theory.append(Prelude.epsD)
         }
       }
 
       for (a <- theory.consts) {
         if (verbose) progress.echo("  " + a.toString)
-        output.command(Translate.const_decl(a.name, a.typargs, a.typ, a.abbrev, a.syntax), notations)
+        current_theory.append(Translate.const_decl(a.name, a.typargs, a.typ, a.abbrev, a.syntax))
 
         if (a.name == Pure_Thy.ALL) {
-          output.command(Prelude.allR, notations)
+          current_theory.append(Prelude.allR)
         }
         if (a.name == Pure_Thy.IMP) {
-          output.command(Prelude.impR, notations);
+          current_theory.append(Prelude.impR);
         }
       }
 
       for (axm <- theory.axioms) {
         if (verbose) progress.echo("  " + axm.toString)
-        output.command(Translate.stmt_decl(Prelude.axiom_ident(axm.name), axm.the_content.prop, None), notations)
+        current_theory.append(Translate.stmt_decl(Prelude.axiom_ident(axm.name), axm.prop, None))
       }
 
       for (thm <- theory.thms) {
@@ -131,10 +137,27 @@ object Importer
           }
 
           exported_proofs += id.serial
-          output.command(Translate.stmt_decl(Prelude.proof_ident(id.serial), prf.prop, Some(prf.proof)), notations)
+          current_theories(id.theory_name).append(Translate.stmt_decl(Prelude.proof_ident(id.serial), prf.prop, Some(prf.proof)))
         }
-        output.command(Translate.stmt_decl(Prelude.thm_ident(thm.name),
-          thm.the_content.prop, Some(thm.the_content.proof)), notations)
+        current_theory.append(Translate.stmt_decl(Prelude.thm_ident(thm.name), thm.prop, Some(thm.proof)))
+      }
+      current_theories
+    }
+
+
+    def write_theory(
+      theory_name: String,
+      output: Abstract_Writer,
+      notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation],
+      theory: List[Syntax.Command]): Unit =
+    {
+      progress.echo("Writing theory " + theory_name)
+
+      output.comment("theory " + theory_name)
+      output.nl()
+
+      for (command <- theory) {
+        output.command(command, notations)
       }
     }
 
@@ -145,20 +168,24 @@ object Importer
 
     using(store.open_database(session))(db =>
     {
-      def import_theory_by_name(name: String, syntax: Abstract_Writer, notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation]): Unit =
-      {
+      def translate_theory_by_name(name: String, previous_theories: Map[String, mutable.Queue[Syntax.Command]]): Map[String, mutable.Queue[Syntax.Command]] = {
         if (name == Thy_Header.PURE) {
-          import_theory(syntax, notations,
-            Export_Theory.read_pure_theory(store, cache = term_cache),
-            Export.Provider.none)
+          translate_theory(Export_Theory.read_pure_theory(store, cache = term_cache),
+            Export.Provider.none, previous_theories)
         }
         else {
           val provider = Export.Provider.database(db, store.cache, session, name)
           val theory = Export_Theory.read_theory(provider, session, name, cache = term_cache)
 
-          import_theory(syntax, notations, theory, provider)
+          translate_theory(theory, provider, previous_theories)
         }
       }
+
+      val translated_theories =
+        all_theories
+          .foldLeft(Map[String, mutable.Queue[Syntax.Command]]())((n, m) => translate_theory_by_name(m.theory, n))
+          .view.mapValues(_.toList).toMap
+
       val notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation] = collection.mutable.Map()
       Translate.global_eta_expand = eta_expand
 
@@ -170,7 +197,7 @@ object Importer
           {
             val syntax = new DK_Writer(writer)
             for (name <- all_theories)
-              import_theory_by_name(name.theory, syntax, notations)
+              write_theory(name.theory, syntax, notations, translated_theories(name.theory))
           })
 
         case "lp" =>
@@ -189,7 +216,7 @@ object Importer
                 if req != name.theory
               } syntax.require_open(req)
 
-              import_theory_by_name(name.theory, syntax, notations)
+              write_theory(name.theory, syntax, notations, translated_theories(name.theory))
             })
           }
 
