@@ -257,18 +257,18 @@ object Translate
   // Contract λ(x: _), (Λ x)
   def eta_contract(tm: Syntax.Term) : Syntax.Term =
     tm match {
-      case Syntax.Abst(Syntax.BoundArg(Some(id), ty, impl), tm2) =>
+      case Syntax.Abst(Syntax.BoundArg(Some(id), ty, false), tm2) =>
         eta_contract(tm2) match {
           case Syntax.Appl(tm1, Syntax.Var(id2), _)
             if id == id2 && !lambda_contains(tm1, id) => eta_contract(tm1)
-          case tm2 => Syntax.Abst(Syntax.BoundArg(Some(id), eta_contract(ty), impl), tm2)
+          case tm2 => Syntax.Abst(Syntax.BoundArg(Some(id), eta_contract(ty), implicit_arg = false), tm2)
         }
 
-//      case Syntax.Prod(Syntax.BoundArg(Some(id), ty, impl), tm2) =>
+//      case Syntax.Prod(Syntax.BoundArg(Some(id), ty, false), tm2) =>
 //        eta_contract(tm2) match {
 //          case Syntax.Appl(tm1, Syntax.Var(id2), _)
 //            if id == id2 && !lambda_contains(tm1, id) => eta_contract(tm1)
-//          case tm2 => Syntax.Prod(Syntax.BoundArg(Some(id), eta_contract(ty), impl), tm2)
+//          case tm2 => Syntax.Prod(Syntax.BoundArg(Some(id), eta_contract(ty), implicit_arg = false), tm2)
 //        }
 
       case Syntax.Abst(Syntax.BoundArg(id, ty, impl), tm2) =>
