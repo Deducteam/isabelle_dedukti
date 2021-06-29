@@ -571,7 +571,7 @@ object Translate
     global_types += const_ident(c) -> contracted_ty
     rhs match {
       case None =>
-        val (new_args, final_ty) = fetch_head_args_type(contracted_ty)
+        val (new_args, final_ty) = (Nil, contracted_ty) // fetch_head_args_type(contracted_ty)
         Syntax.Declaration(const_ident(c), new_args, final_ty, notation_decl(not))
       case Some(rhs) => {
         val translated_rhs = term(rhs, Bounds())
@@ -598,7 +598,7 @@ object Translate
 
     try prf_opt match {
       case None => {
-        val (new_args, final_ty) = fetch_head_args_type(contracted_ty)
+        val (new_args, final_ty) = (Nil, contracted_ty) // fetch_head_args_type(contracted_ty)
         Syntax.Declaration(s, new_args, final_ty)
       }
       case Some(prf) => {
