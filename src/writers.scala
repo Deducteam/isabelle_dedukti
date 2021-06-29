@@ -101,7 +101,7 @@ abstract class Abstract_Writer(writer: Writer) extends Ident_Writer
       case None => write('_')
     }
     colon()
-    term(a.typ, notations)
+    term(a.typ, notations, prevNot = justHadPars)
     if (block) {
       if (a.implicit_arg) {
         write("}")
@@ -475,7 +475,7 @@ class DK_Writer(writer: Writer) extends Abstract_Writer(writer)
   def ar_rew() : Unit = write(" --> ")
 
   def term(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation] = MutableMap(),
-           prevNot: Notation = absNotation, no_impl: Boolean = false, right: Boolean = false): Unit =
+           prevNot: Notation = justHadPars, no_impl: Boolean = false, right: Boolean = false): Unit =
     t match {
       case Syntax.TYPE =>
         write("Type")
@@ -491,6 +491,13 @@ class DK_Writer(writer: Writer) extends Abstract_Writer(writer)
         }
       case Syntax.Abst(a, t) =>
         block_if(absNotation, prevNot, right) { arg(a, block = false, notations); ar_lam(); term(t) }
+      case Syntax.Prod(Syntax.BoundArg(None, ty1, false), ty2) =>
+        val not = arrNotation
+        block_if(not, prevNot, right) {
+          term(ty1, notations, not)
+          ar_pi()
+          term(ty2, notations, not, right = true)
+        }
       case Syntax.Prod(a, t) =>
         block_if(absNotation, prevNot, right) { arg(a, block = false, notations); ar_pi() ; term(t) }
     }
