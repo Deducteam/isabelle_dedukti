@@ -62,6 +62,7 @@ abstract class Abstract_Writer(writer: Writer) extends Ident_Writer
   def colon() : Unit = write(" : ")
 
   def block(body: => Unit): Unit = { lpar(); body; rpar() }
+  // Determine whether wrapping [body] in parentheses is needed
   def block_if(curNot: Syntax.Notation, prevNot: Syntax.Notation, right: Boolean = false, force_no: Boolean = false)(body: => Unit): Unit =
   {
     val prio1: Float = getPriority (curNot).getOrElse(isabelle.error("NotImplemented"))
@@ -204,6 +205,7 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer) extends
     ident.nonEmpty &&
       ident.forall(c => !" ,;\r\t\n(){}[]:.`\"".contains(c))
 
+  // Manually escape the name given to unnamed lambda abstraction arguments which doesn't fit lambdapi's rules, even when escaping
   override def escape(ident: String): String = {
     val pattern = """:(\d+)""".r
     val matched = pattern.findFirstMatchIn(ident)
@@ -221,15 +223,16 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer) extends
 
   def comma()       : Unit = write(", ")
   def semicolon()   : Unit = write(";")
-  def arrow()       : Unit = write(" \u2192 ") // →
-  def colon_equal() : Unit = write(" \u2254 ") // ≔
-  def equiv()       : Unit = write(" \u2261 ") // ≡
-  def hook_arrow()  : Unit = write(" \u21aa ") // ↪
-  def lambda()      : Unit = write("\u03bb ")  // λ
-  def pi()          : Unit = write("\u03a0 ")  // Π
-  def turnstile()   : Unit = write(" \u22a2 ") // ⊢
+  def arrow()       : Unit = write(" → ")
+  def colon_equal() : Unit = write(" ≔ ")
+  def equiv()       : Unit = write(" ≡ ")
+  def hook_arrow()  : Unit = write(" ↪ ")
+  def lambda()      : Unit = write("λ ")
+  def pi()          : Unit = write("Π ")
+  def turnstile()   : Unit = write(" ⊢ ")
   def end_command() : Unit = { semicolon(); nl() }
 
+  // Terms that are applications (can be a head only), pretty-prints infix operators
   def appl(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation],
            prevNot: Notation, no_impl: Boolean = false, right: Boolean): Unit = {
     val (head, pre_spine) = Syntax.destruct_appls(t)
@@ -396,6 +399,10 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer) extends
     }
   }
 
+  def ident_or_notation(id: Syntax.Ident, not: Option[Syntax.Notation]): Unit = {
+    not.fold(ident(id))(not => ident(getOperator(not))) // Ugly
+  }
+
   def command(c: Syntax.Command, notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit = {
     c match {
       case Syntax.Rewrite(vars, lhs, rhs) =>
@@ -408,7 +415,7 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer) extends
         val not_opt: Option[Notation] = if (use_notations) not else None
         write("constant ")
         write("symbol ")
-        not_opt.fold(ident(id))(not => ident(getOperator(not))) // ident(id) TODO: Ugly
+        ident_or_notation(id, not_opt)
         for (a <- args) { space(); arg(a, block = true, notations) }
         colon(); term(ty, notations)
         for (not <- not_opt) { end_command(); notation(id, not, notations) }
@@ -416,13 +423,13 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer) extends
         val not_opt: Option[Notation] = if (use_notations) not else None
         if (inj) { write("injective ") }
         write("symbol ")
-        not_opt.fold(ident(id))(not => ident(getOperator(not))) // ident(id) TODO: Ugly
+        ident_or_notation(id, not_opt)
         colon(); term(ty, notations)
         for (not <- not_opt) { end_command(); notation(id, not, notations) }
       case Syntax.Definition(id, args, ty, tm, not) =>
         val not_opt: Option[Notation] = if (use_notations) not else None
         write("symbol ")
-        not_opt.fold(ident(id))(not => ident(getOperator(not))) // ident(id) TODO: Ugly
+        ident_or_notation(id, not_opt)
         for (a <- args) { space(); arg(a, block = true, notations) }
         for (ty <- ty) { colon(); term(ty, notations) }
         colon_equal(); term(tm, notations)
@@ -440,14 +447,14 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer) extends
   def eta_equality(): Unit =
   {
     write("""flag "eta_equality" on""")
-    semicolon(); nl()
+    end_command()
   }
 
   def require_open(module: String): Unit =
   {
     write("require open " + root + ".")
     ident(module)
-    semicolon(); nl()
+    end_command()
   }
 }
 
