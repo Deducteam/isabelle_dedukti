@@ -230,6 +230,7 @@ object Translate
         !arg.contains(ident) && (lambda_contains(ty, ident) || lambda_contains(t, ident))
     }
 
+  // Replace all free uses of ident to value in tm
   def lambda_replace(tm: Syntax.Term, ident: Syntax.Ident, value: Syntax.Term): Syntax.Term =
     tm match {
       case Syntax.TYPE => tm
@@ -248,6 +249,7 @@ object Translate
           else lambda_replace(t, ident, value))
     }
 
+  // Same as above
   def lambda_replace_arg(arg: Syntax.BoundArg, ident: Syntax.Ident, value: Syntax.Term): Syntax.BoundArg =
     arg match {
       case Syntax.BoundArg(arg, ty, b) =>
@@ -312,6 +314,7 @@ object Translate
     rename(args)
   }
 
+  // Apply a list of arguments, given as lambda arguments
   def appls_args(tm: Syntax.Term, args: List[Syntax.BoundArg]): Syntax.Term = {
     val pure_args = args.map { case Syntax.BoundArg(Some(name), _, _) => Syntax.Var(name) }
     val impl_list = args.map { case Syntax.BoundArg(_, _, impl) => impl }
@@ -319,6 +322,8 @@ object Translate
   }
 
 
+  // Drop the first abstractions when there are arguments already, also replacing the abst argname with the argument proper
+  // Does not handle it when some abst argname and some arguments share free idents
   @tailrec
   def drop(lst: List[Syntax.BoundArg], spine: List[Syntax.Term]): List[Syntax.BoundArg] =
     (lst, spine) match {
@@ -330,9 +335,11 @@ object Translate
       case (Nil, _ :: _) => Nil
     }
 
-
+  // Expand all idents which have a function type, so that the number of arguments they accept is made clear
   def eta_expand(tm: Syntax.Term) : Syntax.Term = {
     val re_name = Mut("€a")
+
+    // Given an application, expand the head so that all the arguments are made clear, not just the ones present at the time
     def eta_expand_appl(t: Syntax.Term, ctxt: Map[String, Syntax.Typ]): Syntax.Term = {
       val (head, spine) = Syntax.destruct_appls(t)
       val expanded_args = spine.map { case (arg, impl) => (eta_expand(arg, ctxt), impl) }
@@ -386,7 +393,7 @@ object Translate
     if (global_eta_expand) eta_expand(tm, Map()) else tm
   }
 
-
+  // Return if the abstraction argument and the product argument can be unified as a declaration argument
   def compatible_bound_args(ba1: Syntax.BoundArg, ba2: Syntax.BoundArg): Boolean =
     (ba1, ba2) match {
       case (Syntax.BoundArg(id1, ty1, impl1), Syntax.BoundArg(id2, ty2, impl2)) =>
@@ -398,6 +405,7 @@ object Translate
         id && ty1 == ty2 && impl1 == impl2
     }
 
+  // Pop all compatible {abstraction, product} arguments and return their list and the remaining terms
   def fetch_head_args(tm: Syntax.Term, ty: Syntax.Term) : (List[Syntax.BoundArg], Syntax.Term, Syntax.Term) =
     (tm, ty) match {
       case (Syntax.Abst(arg @ Syntax.BoundArg(_, arg_ty, false), tm0),
@@ -421,6 +429,7 @@ object Translate
       case _ => (Nil, tm, ty)
   }
 
+  // Pop all product arguments and return their list and the remaining term
   def fetch_head_args_type(ty: Syntax.Term) : (List[Syntax.BoundArg], Syntax.Term) =
     ty match {
       case Syntax.Appl(Syntax.Symb("eta"), Syntax.Appl(Syntax.Appl(Syntax.Symb("fun"), arg_ty, false), ret_ty, false), false) => {
@@ -441,46 +450,12 @@ object Translate
 
   /* notation */
 
-  val notationDict = Map(
-    "_" -> "__",
-    "\\<Rightarrow>" -> "⇒",
-    "\\<equiv>" -> "⩵",
-    "\\<Longrightarrow>" -> "⟹",
-    "\\<And>" -> "⋀",
-    "\\<longrightarrow>" -> "⟶",
-    "\\<forall>" -> "∀",
-    "\\<exists>" -> "∃",
-    "\\<not>" -> "¬",
-    "\\<and>" -> "∧",
-    "\\<or>" -> "∨",
-    "\\<noteq>" ->"≠",
-    "\\<le>" -> "≤",
-    "\\<bottom>" -> "⊥",
-    "\\<top>" -> "⊤",
-    "\\<sqinter>" -> "⊓",
-    "\\<squnion>" -> "⊔",
-    "\\<Sqinter>" -> "⨅",
-    "\\<Squnion>" -> "⨆",
-    "\\<Inter>" -> "⋂",
-    "\\<Union>" -> "⋃",
-    "\\<in>" -> "∈",
-    "\\<notin>" -> "∉",
-    "\\<subset>" -> "⊂",
-    "\\<subseteq>" -> "⊆",
-    "\\<supset>" -> "⊃",
-    "\\<supseteq>" -> "⊇",
-    "\\<inter>" -> "∩",
-    "\\<union>" -> "∪",
-    "\\<circ>" -> "∘",
-    "0" -> "'0'",
-    "1" -> "'1'"
-
-)
-
   var notationsSet: Set[String] = Set()
 
+  // Make sure that there are no two notations with the same op string
+  // You can edit them here (eg. replace ≡ with ⩵ or _ with __ to avoid their escaping)
   def notations_get(op: String) : String = {
-    var op1 = notationDict getOrElse(op, op)
+    var op1 = Symbol.decode(op)
     while (notationsSet(op1)) {
       op1 = "~"+op1
     }
