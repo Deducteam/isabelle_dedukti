@@ -181,13 +181,14 @@ object Importer
         }
       }
 
+      Translate.global_eta_expand = eta_expand
+      
       val translated_theories =
         all_theories
           .foldLeft(Map[String, mutable.Queue[Syntax.Command]]())((n, m) => translate_theory_by_name(m.theory, n))
           .view.mapValues(_.toList).toMap
 
       val notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation] = collection.mutable.Map()
-      Translate.global_eta_expand = eta_expand
 
       val ext = output_file.get_ext
       ext match {

@@ -285,34 +285,68 @@ object Translate
 
   case class Mut[A](var value: A) {}
 
-  // Create and name new arguments
-  def name_args(args: List[Syntax.BoundArg], name_ref: Mut[String]) : List[Syntax.BoundArg] = {
-    def name = name_ref.value
-    def update_name(name: String): String = {
-      if (name.length > 1 && name(0) == '€') {
-        if (name(name.length - 1) < 'z') {
-          name.substring(0, name.length - 1) + (name(name.length - 1) + 1).toChar.toString
-        } else {
-          "€" + "_".repeat(name.length-1) + "a"
-        }
-      } else
-        error("Broke invariant")
+  def update_name(name: String): String = {
+    if (!(name.length > 1 && name(0) == '€'))
+      error("Broke invariant: " + name)
+    var last_non_z = name.length - 1
+    while (name(last_non_z) == 'z') {
+      last_non_z -= 1
+    }
+    if (last_non_z == 0) {
+      "€" + "a".repeat(name.length)
+    } else {
+      name.substring(0, last_non_z) + (name(last_non_z).toInt + 1).toChar.toString + "a".repeat(name.length - 1 - last_non_z)
+    }
+  }
+
+  // Escape default arguments
+  def alpha_escape(argnames: List[Syntax.BoundArg], ret_ty: Syntax.Typ) : (List[Syntax.BoundArg], Syntax.Typ) =
+    argnames match {
+      case Nil => (Nil, ret_ty)
+      case (arg @ Syntax.BoundArg(None, ty, impl)) :: tl => {
+        val (lst, new_ret_ty) = alpha_escape(tl, ret_ty)
+        (arg :: lst, new_ret_ty)
+      }
+      case Syntax.BoundArg(Some(name), ty, impl) :: tl => {
+        val new_name = "£" + name
+        val (lst, new_ret_ty) = alpha_escape(tl.map(lambda_replace_arg(_, name, Syntax.Var(new_name))), lambda_replace(ret_ty, name, Syntax.Var(new_name)))
+        (Syntax.BoundArg(Some(new_name), ty, impl) :: lst, new_ret_ty)
+      }
     }
 
-    def rename(lst: List[Syntax.BoundArg]): List[Syntax.BoundArg] =
-      lst match {
-      case Syntax.BoundArg(Some(name), ty, impl) :: tl =>
-        Syntax.BoundArg(Some("£" + name), ty, impl) ::
-          rename(tl.map(lambda_replace_arg(_, name, Syntax.Var("£" + name))))
-      case Syntax.BoundArg(None, ty, impl) :: tl => {
-        val res = Syntax.BoundArg(Some(name), ty, impl)
-        name_ref.value = update_name(name)
-        res :: rename(tl)
+  // Create and name new arguments, only if the spine does not provide them
+  def name_args_of_list(known_argnames: List[Syntax.BoundArg], spine: List[Syntax.Term], ctxt: Map[String, Syntax.Typ], name_ref: Mut[String], ret_type: Syntax.Typ) : List[Syntax.BoundArg] = {
+    (known_argnames, spine) match {
+      case (Syntax.BoundArg(id, _, _) :: tl, tm :: spine) => {
+        val real_id = id.getOrElse("")
+        val replaced = tl.map(lambda_replace_arg(_, real_id, tm))
+        name_args_of_list(replaced, spine, ctxt, name_ref, lambda_replace(ret_type, real_id, tm))
       }
-      case Nil => Nil
+      case (Syntax.BoundArg(Some(name), ty, impl) :: tl, Nil) => {
+        val exp_ty = eta_expand(ty, ctxt, Mut(name_ref.value))
+        val res = Syntax.BoundArg(Some(name), exp_ty, impl)
+        if (name(0) != '£') error("Invariant broken")
+        res :: name_args_of_list(tl, Nil, ctxt + (name -> exp_ty), name_ref, ret_type)
+      }
+      case (Syntax.BoundArg(None, ty, impl) :: tl, Nil) => {
+        val name = name_ref.value
+        val exp_ty = eta_expand(ty, ctxt, Mut(name))
+        val res = Syntax.BoundArg(Some(name), exp_ty, impl)
+        name_ref.value = update_name(name)
+        res :: name_args_of_list(tl, Nil, ctxt + (name -> exp_ty), name_ref, ret_type)
+      }
+      case (Nil, sp) => name_args(ret_type, spine, ctxt, name_ref)
     }
-    rename(args)
   }
+
+  def name_args(ty: Syntax.Typ, spine: List[Syntax.Term], ctxt: Map[String, Syntax.Typ], name_ref: Mut[String]) : List[Syntax.BoundArg] =
+    fetch_head_args_type(ty) match {
+      case (Nil, _) => Nil
+      case (lst, ty) => {
+        val (argnames, ret_ty) = alpha_escape(lst, ty)
+        name_args_of_list(argnames, spine, ctxt, name_ref, ret_ty)
+      }
+    }
 
   // Apply a list of arguments, given as lambda arguments
   def appls_args(tm: Syntax.Term, args: List[Syntax.BoundArg]): Syntax.Term = {
@@ -324,73 +358,67 @@ object Translate
 
   // Drop the first abstractions when there are arguments already, also replacing the abst argname with the argument proper
   // Does not handle it when some abst argname and some arguments share free idents
-  @tailrec
-  def drop(lst: List[Syntax.BoundArg], spine: List[Syntax.Term]): List[Syntax.BoundArg] =
-    (lst, spine) match {
-      case (Syntax.BoundArg(id, _, _) :: lst, tm :: spine) =>
-        val real_id = id.getOrElse("")
-        val replaced = lst.map(lambda_replace_arg(_, real_id, tm))
-        drop(replaced, spine)
-      case (lst, Nil) => lst
-      case (Nil, _ :: _) => Nil
+  // @tailrec
+  // def drop(lst: List[Syntax.BoundArg], spine: List[Syntax.Term]): List[Syntax.BoundArg] =
+  //   (lst, spine) match {
+  //     case (Syntax.BoundArg(id, _, _) :: lst, tm :: spine) =>
+  //       val real_id = id.getOrElse("")
+  //       val replaced = lst.map(lambda_replace_arg(_, real_id, tm))
+  //       drop(replaced, spine)
+  //     case (lst, Nil) => lst
+  //     case (Nil, _ :: _) => Nil
+  //   }
+
+
+  // Given an application, expand the head so that all the arguments are made clear, not just the ones present at the time
+  def eta_expand_appl(t: Syntax.Term, ctxt: Map[String, Syntax.Typ], name_ref: Mut[String]): Syntax.Term = {
+    val (head, spine) = Syntax.destruct_appls(t)
+    val expanded_args = spine.map { case (arg, impl) => (eta_expand(arg, ctxt, Mut(name_ref.value)), impl) }
+    val spine_args = expanded_args.map(_._1)
+    head match {
+      case Syntax.Symb(id) =>
+        val named_args = name_args(global_types(id), spine_args, ctxt, name_ref)
+        val applied1 = expanded_args.foldLeft(head) { case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
+        val applied = named_args.foldLeft(applied1) { case (tm, Syntax.BoundArg(Some(name), _, impl)) => Syntax.Appl(tm, Syntax.Var(name), impl) }
+        val abstracted = named_args.foldRight(applied)(Syntax.Abst)
+        abstracted
+
+      case Syntax.Var(id) =>
+        val named_args = name_args(ctxt(id), spine_args, ctxt, name_ref)
+        val applied1 = expanded_args.foldLeft(head) { case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
+        val applied = named_args.foldLeft(applied1) { case (tm, Syntax.BoundArg(Some(name), _, impl)) => Syntax.Appl(tm, Syntax.Var(name), impl) }
+        val abstracted = named_args.foldRight(applied)(Syntax.Abst)
+        abstracted
+
+      case _ =>
+        expanded_args.foldLeft(eta_expand(head, ctxt, name_ref)) { case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
     }
+  }
 
   // Expand all idents which have a function type, so that the number of arguments they accept is made clear
-  def eta_expand(tm: Syntax.Term) : Syntax.Term = {
-    val re_name = Mut("€a")
+  def eta_expand(tm: Syntax.Term, ctxt: Map[String, Syntax.Typ], name_ref: Mut[String]): Syntax.Term = {
+    tm match {
+      case Syntax.TYPE =>
+        tm
 
-    // Given an application, expand the head so that all the arguments are made clear, not just the ones present at the time
-    def eta_expand_appl(t: Syntax.Term, ctxt: Map[String, Syntax.Typ]): Syntax.Term = {
-      val (head, spine) = Syntax.destruct_appls(t)
-      val expanded_args = spine.map { case (arg, impl) => (eta_expand(arg, ctxt), impl) }
-      val spine_args = spine.map(_._1)
-      head match {
-        case Syntax.Symb(id) =>
-          val (args, _) = fetch_head_args_type(global_types(id))
-          val named_args = drop(name_args(args, re_name), spine_args)
-          val applied1 = expanded_args.foldLeft(head) { case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
-          val applied = named_args.foldLeft(applied1) { case (tm, Syntax.BoundArg(Some(name), _, impl)) => Syntax.Appl(tm, Syntax.Var(name), impl) }
-          val abstracted = named_args.foldRight(applied)(Syntax.Abst)
-          if (named_args.nonEmpty) eta_expand(abstracted, ctxt)
-          else abstracted
-        // Re-expand types of arguments with the right context, easiest by re-entering eta-expand
+      case Syntax.Symb(_) | Syntax.Var(_) | Syntax.Appl(_, _, _) =>
+        eta_expand_appl(tm, ctxt, name_ref)
 
-        case Syntax.Var(id) =>
-          val (args, _) = fetch_head_args_type(ctxt(id))
-          val named_args = drop(name_args(args, re_name), spine_args)
-          val applied1 = expanded_args.foldLeft(head) { case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
-          val applied = named_args.foldLeft(applied1) { case (tm, Syntax.BoundArg(Some(name), _, impl)) => Syntax.Appl(tm, Syntax.Var(name), impl) }
-          val abstracted = named_args.foldRight(applied)(Syntax.Abst)
-          if (named_args.nonEmpty) eta_expand(abstracted, ctxt)
-          else abstracted
+      case Syntax.Abst(Syntax.BoundArg(Some(name), ty, impl), t) =>
+        Syntax.Abst(Syntax.BoundArg(Some(name), eta_expand(ty, ctxt, Mut(name_ref.value)), impl), eta_expand(t, ctxt + (name -> ty), name_ref))
 
-        case _ =>
-          expanded_args.foldLeft(eta_expand(head, ctxt)) { case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
-      }
+      case Syntax.Abst(Syntax.BoundArg(None, ty, impl), t) =>
+        Syntax.Abst(Syntax.BoundArg(None, eta_expand(ty, ctxt, Mut(name_ref.value)), impl), eta_expand(t, ctxt, name_ref))
+
+      case Syntax.Prod(Syntax.BoundArg(Some(name), ty, impl), t) =>
+        Syntax.Prod(Syntax.BoundArg(Some(name), eta_expand(ty, ctxt, Mut(name_ref.value)), impl), eta_expand(t, ctxt + (name -> ty), name_ref))
+
+      case Syntax.Prod(Syntax.BoundArg(None, ty, impl), t) =>
+        Syntax.Prod(Syntax.BoundArg(None, eta_expand(ty, ctxt, Mut(name_ref.value)), impl), eta_expand(t, ctxt, name_ref))
     }
-
-    def eta_expand(tm: Syntax.Term, ctxt: Map[String, Syntax.Typ]): Syntax.Term =
-      tm match {
-        case Syntax.TYPE =>
-          tm
-
-        case Syntax.Symb(_) | Syntax.Var(_) | Syntax.Appl(_, _, _) =>
-          eta_expand_appl(tm, ctxt)
-
-        case Syntax.Abst(Syntax.BoundArg(Some(name), ty, impl), t) =>
-          Syntax.Abst(Syntax.BoundArg(Some(name), eta_expand(ty, ctxt), impl), eta_expand(t, ctxt + (name -> ty)))
-
-        case Syntax.Abst(Syntax.BoundArg(None, ty, impl), t) =>
-          Syntax.Abst(Syntax.BoundArg(None, eta_expand(ty, ctxt), impl), eta_expand(t, ctxt))
-
-        case Syntax.Prod(Syntax.BoundArg(Some(name), ty, impl), t) =>
-          Syntax.Prod(Syntax.BoundArg(Some(name), eta_expand(ty, ctxt), impl), eta_expand(t, ctxt + (name -> ty)))
-
-        case Syntax.Prod(Syntax.BoundArg(None, ty, impl), t) =>
-          Syntax.Prod(Syntax.BoundArg(None, eta_expand(ty, ctxt), impl), eta_expand(t, ctxt))
-      }
-
-    if (global_eta_expand) eta_expand(tm, Map()) else tm
+  }
+  def eta_expand(tm: Syntax.Term) : Syntax.Term = {
+    if (global_eta_expand) eta_expand(tm, Map(), Mut("€a")) else tm
   }
 
   // Return if the abstraction argument and the product argument can be unified as a declaration argument
@@ -430,7 +458,7 @@ object Translate
   }
 
   // Pop all product arguments and return their list and the remaining term
-  def fetch_head_args_type(ty: Syntax.Term) : (List[Syntax.BoundArg], Syntax.Term) =
+  def fetch_head_args_type(ty: Syntax.Typ) : (List[Syntax.BoundArg], Syntax.Typ) =
     ty match {
       case Syntax.Appl(Syntax.Symb("eta"), Syntax.Appl(Syntax.Appl(Syntax.Symb("fun"), arg_ty, false), ret_ty, false), false) => {
         val (lst, ty1) = fetch_head_args_type(eta(ret_ty))
@@ -456,6 +484,7 @@ object Translate
   // You can edit them here (eg. replace ≡ with ⩵ or _ with __ to avoid their escaping)
   def notations_get(op: String) : String = {
     var op1 = Symbol.decode(op)
+    if (op1 == "≡") op1 = "⩵"
     while (notationsSet(op1)) {
       op1 = "~"+op1
     }
