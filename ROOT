@@ -12,6 +12,12 @@ session Dedukti_Base in "Ex/Base" = Pure +
   theories
     HOL.Inductive
 
+session Dedukti_Min in "Ex/Min" = Pure +
+  options [export_theory, export_proofs, record_proofs = 2]
+  sessions HOL
+  theories
+    HOL.HOL
+
 session Dedukti_All in "Ex/All" = Pure +
   options [export_theory, export_proofs, record_proofs = 2]
   sessions HOL
