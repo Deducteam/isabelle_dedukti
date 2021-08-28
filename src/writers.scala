@@ -267,7 +267,7 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer) extends
               block(ident(op))
               for ((arg, impl) <- pre_spine) {
                 if (impl) {
-                space(); write("{"); term(arg, notations, Syntax.justHadPars, no_impl, right = true); write("}")
+                  if (no_impl || spine.isEmpty) { space(); write("{"); term(arg, notations, Syntax.justHadPars, no_impl, right = true); write("}") }
                 } else {
                 space(); term(arg, notations, not, no_impl, right = true)
                 }
@@ -281,7 +281,7 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer) extends
           term(head, notations, not, right)
           for ((arg, impl) <- pre_spine) {
             if (impl) {
-              space(); write("{"); term(arg, notations, Syntax.justHadPars, right = true); write("}")
+              if (no_impl || spine.isEmpty) { space(); write("{"); term(arg, notations, Syntax.justHadPars, right = true); write("}") }
             } else {
               space()
               term(arg, notations, not, right = true)
