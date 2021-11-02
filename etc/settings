@@ -4,12 +4,4 @@ ISABELLE_DEDUKTI_HOME="$COMPONENT"
 
 ISABELLE_TOOLS="$ISABELLE_TOOLS:$ISABELLE_DEDUKTI_HOME/lib/Tools"
 
-if [ -f "$ISABELLE_DEDUKTI_HOME/lib/classes/dedukti.jar" ]
-then
-  classpath "$ISABELLE_DEDUKTI_HOME/lib/classes/dedukti.jar"
-  isabelle_scala_service "isabelle.dedukti.Tools"
-else
-  echo "### Missing $ISABELLE_DEDUKTI_HOME/lib/classes/dedukti.jar"
-fi
-
 ISABELLE_LAMBDAPI="lambdapi"

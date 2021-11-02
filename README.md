@@ -7,10 +7,10 @@ Isabelle component for dedukti.
 
   * Isabelle:
   
-      - Download Isabelle2021 from the official website (or mirror)
-        https://isabelle.in.tum.de/website-Isabelle2021
+      - Download Isabelle2021-1-RC1 
+        https://isabelle.sketis.net/website-Isabelle2021-1-RC1
 
-      - Unpack and run `Isabelle2021/bin/isabelle jedit` at least
+      - Unpack and run `Isabelle2021-1-RC1/bin/isabelle jedit` at least
         once, to ensure that everything works (e.g. see Documentation
         panel with Examples).
 
@@ -25,7 +25,7 @@ Isabelle component for dedukti.
           + or: install references to the Isabelle executables in
             another directory mentioned in $PATH, e.g. as follows:
 
-              Isabelle2021/bin/isabelle install "$HOME/bin"
+              Isabelle2021-1-RC1/bin/isabelle install "$HOME/bin"
 
   * Isabelle/Dedukti:
 
@@ -66,7 +66,7 @@ Isabelle component for dedukti.
 ## Build and test
 
 ```
-isabelle dedukti_build && isabelle dedukti_test
+isabelle scala_build && isabelle dedukti_test
 ```
 
 

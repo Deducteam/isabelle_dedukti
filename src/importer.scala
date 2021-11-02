@@ -57,15 +57,15 @@ object Importer
 
     var exported_proofs = Set.empty[Long]
 
-    def proof_boxes(thm: Export_Theory.Thm, provider: Export.Provider)
+    def proof_boxes(thm: Export_Theory.Entity[Export_Theory.Thm], provider: Export.Provider)
       : List[(Export_Theory.Thm_Id, Export_Theory.Proof)] =
     {
       try {
         Export_Theory.read_proof_boxes(
-          store, provider, thm.proof,
+          store, provider, thm.the_content.proof,
           suppress = id => exported_proofs(id.serial), cache = term_cache)
       }
-      catch { case ERROR(msg) => error(msg + "\nin " + thm.entity) }
+      catch { case ERROR(msg) => error(msg + "\nin " + thm) }
     }
 
     def import_theory(
@@ -80,33 +80,33 @@ object Importer
       output.nl()
 
       for (a <- theory.classes) {
-        if (verbose) progress.echo("  " + a.entity.toString)
-        output.write(Translate.class_decl(a.entity.name))
+        if (verbose) progress.echo("  " + a.toString)
+        output.write(Translate.class_decl(a.name))
       }
 
       for (a <- theory.types) {
-        if (verbose) progress.echo("  " + a.entity.toString)
-        output.write(Translate.type_decl(a.entity.name, a.args, a.abbrev))
+        if (verbose) progress.echo("  " + a.toString)
+        output.write(Translate.type_decl(a.name, a.the_content.args, a.the_content.abbrev))
 
-        if (a.entity.name == Pure_Thy.FUN ) output.write(Prelude.funR)
-        if (a.entity.name == Pure_Thy.PROP) output.write(Prelude.epsD)
+        if (a.name == Pure_Thy.FUN ) output.write(Prelude.funR)
+        if (a.name == Pure_Thy.PROP) output.write(Prelude.epsD)
       }
 
       for (a <- theory.consts) {
-        if (verbose) progress.echo("  " + a.entity.toString)
-        output.write(Translate.const_decl(a.entity.name, a.typargs, a.typ, a.abbrev))
+        if (verbose) progress.echo("  " + a.toString)
+        output.write(Translate.const_decl(a.name, a.the_content.typargs, a.the_content.typ, a.the_content.abbrev))
 
-        if (a.entity.name == Pure_Thy.ALL) output.write(Prelude.allR)
-        if (a.entity.name == Pure_Thy.IMP) output.write(Prelude.impR)
+        if (a.name == Pure_Thy.ALL) output.write(Prelude.allR)
+        if (a.name == Pure_Thy.IMP) output.write(Prelude.impR)
       }
 
       for (axm <- theory.axioms) {
-        if (verbose) progress.echo("  " + axm.entity.toString)
-        output.write(Translate.stmt_decl(Prelude.axiom_kind(axm.entity.name), axm.prop, None))
+        if (verbose) progress.echo("  " + axm.toString)
+        output.write(Translate.stmt_decl(Prelude.axiom_kind(axm.name), axm.the_content.prop, None))
       }
 
       for (thm <- theory.thms) {
-        if (verbose) progress.echo("  " + thm.entity.toString)
+        if (verbose) progress.echo("  " + thm.toString)
 
         for ((id, prf) <- proof_boxes(thm, provider)) {
           if (verbose) {
@@ -117,7 +117,8 @@ object Importer
           exported_proofs += id.serial
           output.write(Translate.stmt_decl(Prelude.proof_kind(id.serial), prf.prop, Some(prf.proof)))
         }
-        output.write(Translate.stmt_decl(Prelude.thm_kind(thm.entity.name), thm.prop, Some(thm.proof)))
+        output.write(Translate.stmt_decl(Prelude.thm_kind(thm.name),
+          thm.the_content.prop, Some(thm.the_content.proof)))
       }
     }
 

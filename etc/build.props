@@ -1,0 +1,13 @@
+title = Isabelle/Scala/Dedukti
+module = $ISABELLE_DEDUKTI_HOME/lib/classes/dedukti.jar
+no_build = false
+requirements = \
+  env:ISABELLE_SCALA_JAR
+sources = \
+  src/importer.scala \
+  src/lambdapi.scala \
+  src/tools.scala \
+  src/translate.scala \
+  src/writers.scala
+services = \
+  isabelle.dedukti.Tools

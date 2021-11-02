@@ -24,12 +24,12 @@ object Prelude
 
   /* kinds */
 
-  def kind(a: String, k: Export_Theory.Kind.Value): String = a + "|" + k.toString
+  def kind(a: String, k: String): String = a + "|" + k
 
-  def class_kind(a: String): String = kind(a, Export_Theory.Kind.CLASS)
+  def class_kind(a: String): String = kind(a, Markup.CLASS)
   def type_kind(a: String): String = kind(a, Export_Theory.Kind.TYPE)
   def const_kind(a: String): String = kind(a, Export_Theory.Kind.CONST)
-  def axiom_kind(a: String): String = kind(a, Export_Theory.Kind.AXIOM)
+  def axiom_kind(a: String): String = kind(a, Markup.AXIOM)
   def thm_kind(a: String): String = kind(a, Export_Theory.Kind.THM)
 
   def proof_kind(serial: Long): String = "proof" + serial
