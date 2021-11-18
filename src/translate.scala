@@ -52,15 +52,17 @@ object Prelude
 
   /* kinds */
 
-  def class_ident(a: String): String = name_get(a, Export_Theory.Kind.CLASS.toString)
-  def  type_ident(a: String): String = name_get(a, Export_Theory.Kind.TYPE .toString)
-  def const_ident(a: String): String = name_get(a, Export_Theory.Kind.CONST.toString)
-  def axiom_ident(a: String): String = name_get(a, Export_Theory.Kind.AXIOM.toString)
-  def   thm_ident(a: String): String = name_get(a, Export_Theory.Kind.THM  .toString)
-  def   var_ident(a: String): String = name_get(a, "var")
+  def kind(a: String, k: String): String = a + "|" + k
+
+  def class_kind(a: String): String = kind(a, Markup.CLASS)
+  def type_kind(a: String): String = kind(a, Export_Theory.Kind.TYPE)
+  def const_kind(a: String): String = kind(a, Export_Theory.Kind.CONST)
+  def axiom_kind(a: String): String = kind(a, Markup.AXIOM)
+  def thm_kind(a: String): String = kind(a, Export_Theory.Kind.THM)
+
+  def var_ident(a: String): String = name_get(a, "var")
 
   def proof_ident(serial: Long): String = "proof" + serial
-
 
   /* prologue proper */
 

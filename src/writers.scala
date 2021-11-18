@@ -515,7 +515,7 @@ class DK_Writer(writer: Writer) extends Abstract_Writer(writer)
     nl()
   }
 
-  def command(c: Syntax.Command, notations: MutableMap[Syntax.Ident, Syntax.Notation] = MutableMap())
+  def command(c: Syntax.Command, notations: MutableMap[Syntax.Ident, Syntax.Notation] = MutableMap()) : Unit =
   {
     c match {
       case Syntax.Declaration(id, args, ty, _) =>

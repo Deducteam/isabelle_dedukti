@@ -6,11 +6,11 @@ Isabelle component for dedukti.
 ## Prerequisites
 
   * Isabelle:
+  
+      - Download Isabelle2021-1-RC1 
+        https://isabelle.sketis.net/website-Isabelle2021-1-RC1
 
-      - Download Isabelle2021 from the official website (or mirror)
-        https://isabelle.in.tum.de/website-Isabelle2021
-
-      - Unpack and run `Isabelle2021/bin/isabelle jedit` at least
+      - Unpack and run `Isabelle2021-1-RC1/bin/isabelle jedit` at least
         once, to ensure that everything works (e.g. see Documentation
         panel with Examples).
 
@@ -20,12 +20,9 @@ Isabelle component for dedukti.
           + explicit executable path (relative or absolute) on the command-line
 
           + or: insert the absolute path of the Isabelle `bin`
-            directory in `$PATH`
-
-          + or: install references to the Isabelle executables in
-            another directory mentioned in `$PATH`, e.g. as follows:
+            directory in `$PATH`, e.g.:
             ```bash
-            Isabelle2021/bin/isabelle install "$HOME/bin"
+            Isabelle2021-1-RC1/bin/isabelle install "$HOME/bin"
             ```
 
   * Isabelle/Dedukti:
@@ -57,7 +54,7 @@ Isabelle component for dedukti.
 
     - classic version (with opam):
       ```bash
-      opam pin add https://github.com/Deducteam/dedukti
+      opam pin add https://github.com/Deducteam/Dedukti
       opam install lambdapi
       ```
 
@@ -73,7 +70,7 @@ Isabelle component for dedukti.
 ## Build and test (lambdapi output)
 
 ```bash
-isabelle dedukti_build && isabelle dedukti_test
+isabelle scala_build && isabelle dedukti_test
 ```
 
 
