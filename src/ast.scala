@@ -52,13 +52,13 @@ object Syntax
 
   // Info about a notation
   sealed abstract class Notation
-  case class Prefix(op: Ident, priority: Float) extends Notation
-  case class Infix (op: Ident, priority: Float) extends Notation
-  case class InfixL(op: Ident, priority: Float) extends Notation
-  case class InfixR(op: Ident, priority: Float) extends Notation
+  case class Prefix(op: Ident, priority: Double) extends Notation
+  case class Infix (op: Ident, priority: Double) extends Notation
+  case class InfixL(op: Ident, priority: Double) extends Notation
+  case class InfixR(op: Ident, priority: Double) extends Notation
   case class Quantifier(op: Ident) extends Notation
 
-  def getPriority(not: Notation): Option[Float] =
+  def getPriority(not: Notation): Option[Double] =
     not match {
       case Prefix(_, priority) => Some(priority)
       case Infix (_, priority) => Some(priority)
@@ -76,11 +76,11 @@ object Syntax
       case Quantifier(op) => op
     }
 
-  val appNotation: Notation = InfixL(" ", Float.PositiveInfinity)
-  val justHadPars: Notation = Infix("()", Float.NegativeInfinity)
+  val appNotation: Notation = InfixL(" ", Double.PositiveInfinity)
+  val justHadPars: Notation = Infix("()", Double.NegativeInfinity)
   val arrNotation: Notation = InfixR("→", -2)
   val absNotation: Notation = InfixR("λ", -1)
-  val defaultPrefixPriority = 10
+  val defaultPrefixPriority = 10.0
 
   sealed abstract class Command
   case class Declaration(id: Ident, args: List[BoundArg], ty: Typ, not: Option[Notation] = None) extends Command

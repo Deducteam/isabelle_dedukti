@@ -65,8 +65,8 @@ abstract class Abstract_Writer(writer: Writer) extends Ident_Writer
   // Determine whether wrapping [body] in parentheses is needed
   def block_if(curNot: Syntax.Notation, prevNot: Syntax.Notation, right: Boolean = false, force_no: Boolean = false)(body: => Unit): Unit =
   {
-    val prio1: Float = getPriority (curNot).getOrElse(isabelle.error("NotImplemented"))
-    val prio2: Float = getPriority(prevNot).getOrElse(isabelle.error("NotImplemented"))
+    val prio1: Double = getPriority (curNot).getOrElse(isabelle.error("NotImplemented"))
+    val prio2: Double = getPriority(prevNot).getOrElse(isabelle.error("NotImplemented"))
 
     val doBlock = curNot match {
       case _ if prio1 < prio2 => true
@@ -247,7 +247,7 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer) extends
           case (Syntax.Prefix(op, _), List(arg)) if !(no_impl && contains_impl_arg) =>
           block_if(not, prevNot, right)({
             ident(op)
-            space
+            space()
             term(arg, notations, not, no_impl)
           })
           case (Syntax.Infix(_, _) | Syntax.InfixL(_, _) | Syntax.InfixR(_, _), List(arg1, arg2)) if !(no_impl && contains_impl_arg) =>
@@ -515,7 +515,7 @@ class DK_Writer(writer: Writer) extends Abstract_Writer(writer)
     nl()
   }
 
-  def command(c: Syntax.Command, notations: MutableMap[Syntax.Ident, Syntax.Notation] = MutableMap())
+  def command(c: Syntax.Command, notations: MutableMap[Syntax.Ident, Syntax.Notation] = MutableMap()): Unit =
   {
     c match {
       case Syntax.Declaration(id, args, ty, _) =>

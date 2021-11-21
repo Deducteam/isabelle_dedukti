@@ -57,7 +57,7 @@ Isabelle component for dedukti.
 
     - classic version (with opam):
       ```bash
-      opam pin add https://github.com/Deducteam/dedukti
+      opam pin add https://github.com/Deducteam/Dedukti
       opam install lambdapi
       ```
 

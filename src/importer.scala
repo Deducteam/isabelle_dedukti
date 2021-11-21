@@ -24,7 +24,7 @@ object Importer
     use_notations: Boolean = false,
     eta_expand: Boolean = false,
     output_file: Path = default_output_file,
-    verbose: Boolean = false)
+    verbose: Boolean = false): Unit =
   {
     /* build session with exports */
 
@@ -100,7 +100,7 @@ object Importer
 
       for (a <- theory.types) {
         if (verbose) progress.echo("  " + a.toString)
-        current_theory.append(Translate.type_decl(a.name, a.args, a.abbrev, a.syntax))
+        current_theory.append(Translate.type_decl(a.name, a.the_content.args, a.the_content.abbrev, a.the_content.syntax))
 
         if (a.name == Pure_Thy.FUN ) {
           current_theory.append(Prelude.funR)
@@ -112,7 +112,7 @@ object Importer
 
       for (a <- theory.consts) {
         if (verbose) progress.echo("  " + a.toString)
-        current_theory.append(Translate.const_decl(a.name, a.typargs, a.typ, a.abbrev, a.syntax))
+        current_theory.append(Translate.const_decl(a.name, a.the_content.typargs, a.the_content.typ, a.the_content.abbrev, a.the_content.syntax))
 
         if (a.name == Pure_Thy.ALL) {
           current_theory.append(Prelude.allR)
@@ -124,7 +124,7 @@ object Importer
 
       for (axm <- theory.axioms) {
         if (verbose) progress.echo("  " + axm.toString)
-        current_theory.append(Translate.stmt_decl(Prelude.axiom_ident(axm.name), axm.prop, None))
+        current_theory.append(Translate.stmt_decl(Prelude.axiom_ident(axm.name), axm.the_content.prop, None))
       }
 
       for (thm <- theory.thms) {
@@ -139,7 +139,8 @@ object Importer
           exported_proofs += id.serial
           current_theories(id.theory_name).append(Translate.stmt_decl(Prelude.proof_ident(id.serial), prf.prop, Some(prf.proof)))
         }
-        current_theory.append(Translate.stmt_decl(Prelude.thm_ident(thm.name), thm.prop, Some(thm.proof)))
+        current_theory.append(Translate.stmt_decl(Prelude.thm_ident(thm.name),
+          thm.the_content.prop, Some(thm.the_content.proof)))
       }
       current_theories
     }
@@ -182,7 +183,7 @@ object Importer
       }
 
       Translate.global_eta_expand = eta_expand
-      
+
       val translated_theories =
         all_theories
           .foldLeft(Map[String, mutable.Queue[Syntax.Command]]())((n, m) => translate_theory_by_name(m.theory, n))
