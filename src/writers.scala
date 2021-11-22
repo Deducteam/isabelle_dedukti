@@ -7,10 +7,11 @@
 package isabelle.dedukti
 
 import isabelle._
-
+import isabelle.dedukti.Syntax._
 
 import java.io.{FileOutputStream, OutputStreamWriter, BufferedWriter, Writer}
 import java.nio.file.{Files, StandardCopyOption}
+import scala.collection.mutable.{Map => MutableMap}
 
 
 class Part_Writer(file: Path) extends Writer
@@ -36,14 +37,11 @@ trait Ident_Writer
 {
   val reserved: Set[String]
 
-  def is_regular_identifier(name: String): Boolean =
-    name.nonEmpty &&
-    { val c = name(0); Symbol.is_ascii_letter(c) || c == '_' } &&
-    name.forall(c => Symbol.is_ascii_letter(c) || Symbol.is_ascii_digit(c) || c == '_')
+  def is_regular_identifier(ident: String): Boolean
 
-  def escape(name: String): String =
-    if (name.containsSlice("|}")) Exn.error("Bad name: " + Library.quote(name))
-    else "{|" + name + "|}"
+  def escape(ident: String): String =
+    if (ident.containsSlice("|}")) Exn.error("Bad ident: " + Library.quote(ident))
+    else f"{|$ident|}"
 
   def escape_if_needed(a: String): String =
     if (reserved(a) || !is_regular_identifier(a)) escape(a)
@@ -51,218 +49,465 @@ trait Ident_Writer
 }
 
 
-abstract class LambdaPi_Writer(writer: Writer) extends Ident_Writer
+abstract class Abstract_Writer(writer: Writer) extends Ident_Writer
 {
-  def write(c: Char): Unit = writer.write(c)
+  def write(c: Char):   Unit = writer.write(c)
   def write(s: String): Unit = writer.write(s)
 
-  def space(): Unit = write(' ')
-  def nl(): Unit = write('\n')
+  def space() : Unit = write(' ')
+  def nl()    : Unit = write('\n')
 
-  def bg(): Unit = write('(')
-  def en(): Unit = write(')')
-  def colon(): Unit = write(" : ")
+  def lpar()  : Unit = write('(')
+  def rpar()  : Unit = write(')')
+  def colon() : Unit = write(" : ")
 
-  def block(body: => Unit): Unit = { bg(); body; en() }
-  def block_if(atomic: Boolean)(body: => Unit): Unit =
+  def block(body: => Unit): Unit = { lpar(); body; rpar() }
+  // Determine whether wrapping [body] in parentheses is needed
+  def block_if(curNot: Syntax.Notation, prevNot: Syntax.Notation, right: Boolean = false, force_no: Boolean = false)(body: => Unit): Unit =
   {
-    if (atomic) bg()
-    body
-    if (atomic) en()
+    val prio1: Double = getPriority (curNot).getOrElse(isabelle.error("NotImplemented"))
+    val prio2: Double = getPriority(prevNot).getOrElse(isabelle.error("NotImplemented"))
+
+    val doBlock = curNot match {
+      case _ if prio1 < prio2 => true
+      case _ if prio1 > prio2 => false
+      case _ if curNot != prevNot => true
+      case Prefix(_, _) => true
+      case Infix (_, _) => true
+      case InfixL(_, _) => right
+      case InfixR(_, _) => !right
+      case Quantifier(_) => isabelle.error("NotImplemented")
+    }
+    if (doBlock && !force_no)
+      block(body)
+    else
+      body
   }
 
-  def name(a: String): Unit = write(escape_if_needed(a))
+  def ident(a: String): Unit = write(escape_if_needed(a))
 
-  def bind(arg: Syntax.Arg, bounds: List[String]): List[String] =
-    arg match {
-      case Syntax.Arg(Some(name), _) => escape_if_needed(name) :: bounds
-      case _ => bounds
+  def term(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation],
+           prevNot: Notation = absNotation, no_impl: Boolean = false, right: Boolean = false): Unit
+
+  def arg(a: Syntax.BoundArg, block: Boolean, notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit = {
+    if (block) {
+      if (a.implicit_arg) {
+        write("{")
+      } else {
+        write("(")
+      }
     }
-
-  def term(t: Syntax.Term, bounds: List[String] = Nil, atomic: Boolean = false): Unit
-
-  def arg(a: Syntax.Arg, bounds: List[String] = Nil): Unit =
-  {
     a.id match {
-      case Some(id) => name(id)
+      case Some(id) => ident(id)
       case None => write('_')
     }
-    for (t <- a.typ) { colon(); term(t, bounds) }
+    colon()
+    term(a.typ, notations, prevNot = justHadPars)
+    if (block) {
+      if (a.implicit_arg) {
+        write("}")
+      } else {
+        write(")")
+      }
+    }
   }
 
   def comment(c: String): Unit
-  def write(c: Syntax.Command): Unit
+  def command(c: Syntax.Command, notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit
 }
 
 
-class LP_Writer(writer: Writer) extends LambdaPi_Writer(writer)
+class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer) extends Abstract_Writer(writer)
 {
-  val reserved =
+  val reserved = // copied from lambdapi/src/parsing/lpLexer.ml lines 185-240
     Set(
-      "require",
-      "open",
+      "abort",
+      "admit",
+      "admitted",
+      "apply",
       "as",
-      "let",
-      "in",
-      "symbol",
-      "definition",
-      "theorem",
-      "rule",
-      "and",
       "assert",
       "assertnot",
-      "const",
-      "injective",
-      "TYPE",
-      "pos",
-      "neg",
-      "proof",
-      "refine",
-      "intro",
-      "apply",
-      "simpl",
-      "rewrite",
-      "reflexivity",
-      "symmetry",
+      "assume",
+      "begin",
+      "builtin",
+      "compute",
+      "constant",
+      "debug",
+      "end",
+      "fail",
+      "flag",
       "focus",
+      "generalize",
+      "have",
+      "in",
+      "induction",
+      "inductive",
+      "infix",
+      "injective",
+      "left",
+      "let",
+      "off",
+      "on",
+      "opaque",
+      "open",
+      "prefix",
       "print",
+      "private",
       "proofterm",
-      "qed",
-      "admit",
-      "abort",
+      "protected",
+      "prover",
+      "prover_timeout",
+      "quantifier",
+      "refine",
+      "reflexivity",
+      "require",
+      "rewrite",
+      "right",
+      "rule",
+      "sequential",
       "set",
-      "_",
+      "simplify",
+      "solve",
+      "symbol",
+      "symmetry",
       "type",
-      "compute")
+      "TYPE",
+      "unif_rule",
+      "verbose",
+      "why3",
+      "with",
+      "≔",
+      "→",
+      "`",
+      ",",
+      ":",
+      "≡",
+      "↪",
+      "λ",
+      "{",
+      "(",
+      "[",
+      "Π",
+      "}",
+      ")",
+      "]",
+      ";",
+      "⊢",
+      "|",
+      "_",
+      "?",
+      "$",
+      "@",
+    )
 
-  def comma(): Unit = write(", ")
-  def to(): Unit = write(" \u21d2 ")
-  def rew(): Unit = write(" \u2192 ")
-  def dfn(): Unit = write(" \u2254 ")
-  def lambda(): Unit = write("\u03bb ")
-  def forall(): Unit = write("\u2200 ")
+  def is_regular_identifier(ident: String): Boolean =
+    ident.nonEmpty &&
+      ident.forall(c => !" ,;\r\t\n(){}[]:.`\"".contains(c))
 
-  def term(t: Syntax.Term, bounds: List[String] = Nil, atomic: Boolean = false): Unit =
-  {
-    t match {
-      case Syntax.TYPE =>
-        write("TYPE")
-      case Syntax.Symb(id) =>
-        name(id)
-      case Syntax.FVar(id) =>
-        assert(!bounds.contains(escape_if_needed(id)))
-        name(id)
-      case Syntax.BVar(idx) =>
-        write(bounds(idx))
-      case Syntax.Appl(t1, t2) =>
-        block_if(atomic) {
-          val (head, spine) = Syntax.dest_appls(t1, List(t2))
-          term(head, bounds, atomic = true)
-          for (s <- spine) { space(); term(s, bounds, atomic = true) }
-        }
-      case Syntax.Abst(a, t) =>
-        block_if(atomic) { lambda(); block { arg(a, bounds) }; comma(); term(t, bind(a, bounds)) }
-      case Syntax.Prod(a, t) =>
-        block_if(atomic) { forall(); block { arg(a, bounds) }; comma(); term(t, bind(a, bounds)) }
+  // Manually escape the name given to unnamed lambda abstraction arguments which doesn't fit lambdapi's rules, even when escaping
+  override def escape(ident: String): String = {
+    val pattern = """:(\d+)""".r
+    val matched = pattern.findFirstMatchIn(ident)
+    matched match {
+      case Some(m) =>
+        f"🖇${m.group(1)}🖇"
+      case None =>
+        super.escape(ident)
     }
   }
 
-  def comment(c: String): Unit =
-  {
+
+
+  val root: String = root_path.implode.replace('/', '.')
+
+  def comma()       : Unit = write(", ")
+  def semicolon()   : Unit = write(";")
+  def arrow()       : Unit = write(" → ")
+  def colon_equal() : Unit = write(" ≔ ")
+  def equiv()       : Unit = write(" ≡ ")
+  def hook_arrow()  : Unit = write(" ↪ ")
+  def lambda()      : Unit = write("λ ")
+  def pi()          : Unit = write("Π ")
+  def turnstile()   : Unit = write(" ⊢ ")
+  def end_command() : Unit = { semicolon(); nl() }
+
+  // Terms that are applications (can be a head only), pretty-prints infix operators
+  def appl(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation],
+           prevNot: Notation, no_impl: Boolean = false, right: Boolean): Unit = {
+    val (head, pre_spine) = Syntax.destruct_appls(t)
+    val spine = pre_spine.filter(!_._2).map(_._1)
+    val contains_impl_arg = pre_spine.exists(_._2)
+    head match {
+      case Syntax.Symb(id) if notations contains id =>
+        val not = notations(id)
+        val op = getOperator(not)
+        (not, spine) match {
+          case (Syntax.Quantifier(_), _) => isabelle.error("NotImplemented")
+          case (Syntax.Prefix(op, _), List(arg)) if !(no_impl && contains_impl_arg) =>
+          block_if(not, prevNot, right)({
+            ident(op)
+            space()
+            term(arg, notations, not, no_impl)
+          })
+          case (Syntax.Infix(_, _) | Syntax.InfixL(_, _) | Syntax.InfixR(_, _), List(arg1, arg2)) if !(no_impl && contains_impl_arg) =>
+            block_if(not, prevNot, right)({
+              val op = getOperator(not) // Ugly Scala where I can't get that from the pattern
+              term(arg1, notations, not, no_impl)
+              space()
+              ident(op)
+              space()
+              term(arg2, notations, not, no_impl, right = true)
+            })
+          case _ =>
+            // val op = getOperator(not) Incomprehensible Scala to disallow this
+            val not = Syntax.appNotation
+            val force_no = pre_spine.isEmpty
+            block_if(not, prevNot, right, force_no)({
+              block(ident(op))
+              for ((arg, impl) <- pre_spine) {
+                if (impl) {
+                  if (no_impl || spine.isEmpty) { space(); write("{"); term(arg, notations, Syntax.justHadPars, no_impl, right = true); write("}") }
+                } else {
+                space(); term(arg, notations, not, no_impl, right = true)
+                }
+              }
+            })
+          }
+      case _ =>
+        val not = appNotation
+        val force_no = pre_spine.isEmpty
+        block_if(not, prevNot, right, force_no)({
+          term(head, notations, not, right)
+          for ((arg, impl) <- pre_spine) {
+            if (impl) {
+              if (no_impl || spine.isEmpty) { space(); write("{"); term(arg, notations, Syntax.justHadPars, right = true); write("}") }
+            } else {
+              space()
+              term(arg, notations, not, right = true)
+            }
+          }
+        })
+    }
+  }
+
+  def term_notation(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation],
+           prevNot: Notation = justHadPars, no_impl: Boolean = false, right: Boolean = false): Unit =
+    t match {
+      case Syntax.TYPE =>
+        write("TYPE")
+      case Syntax.Symb(id) if notations contains id =>
+        appl(t, notations, prevNot, no_impl, right)
+      case Syntax.Symb(id) =>
+        ident(id)
+      case Syntax.Var(id) =>
+        ident(id)
+      case Syntax.Appl(_, _, _) =>
+        appl(t, notations, prevNot, no_impl, right)
+      case Syntax.Abst(a, t) =>
+        block_if(Syntax.absNotation, prevNot, right)
+          { lambda(); arg(a, block = true, notations); comma(); term(t, notations, no_impl = no_impl) }
+      case Syntax.Prod(Syntax.BoundArg(None, ty1, false), ty2) =>
+        val not = arrNotation
+        block_if(not, prevNot, right) {
+          val op = getOperator(not)
+          term(ty1, notations, not, no_impl)
+          space(); write(op); space() // write should be ident, but we allow escaping
+          term(ty2, notations, not, no_impl, right = true)
+        }
+      case Syntax.Prod(a, t) =>
+        block_if(Syntax.absNotation, prevNot, right)
+          { pi(); arg(a, block = true, notations); comma(); term(t, notations, absNotation, no_impl) }
+    }
+
+  def term_no_notation(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation],
+                       prevNot: Notation = justHadPars, no_impl: Boolean = false, right: Boolean = false): Unit =
+    t match {
+      case Syntax.TYPE =>
+        write("TYPE")
+      case Syntax.Symb(id) if notations contains id =>
+        error("There should be no notations in this mode")
+      case Syntax.Symb(id) =>
+        ident(id)
+      case Syntax.Var(id) =>
+        ident(id)
+      case Syntax.Appl(t1, t2, isImplicit) =>
+        val not = appNotation
+        block_if(not, prevNot, right) {
+          term(t1, notations, not)
+          space()
+          val newNot = if (isImplicit) justHadPars else appNotation
+          if (isImplicit) write("{")
+          term(t2, notations, newNot, right = true)
+          if (isImplicit) write("}")
+        }
+      case Syntax.Abst(a, t) =>
+        block_if(Syntax.absNotation, prevNot, right)
+        { lambda(); arg(a, block = true, notations); comma(); term(t, notations) }
+      case Syntax.Prod(Syntax.BoundArg(None, ty1, false), ty2) =>
+        val not = arrNotation
+        block_if(not, prevNot, right) {
+          val op = getOperator(not)
+          term(ty1, notations, not)
+          space(); write(op); space() // write should be ident, but we allow escaping
+          term(ty2, notations, not, right = true)
+        }
+      case Syntax.Prod(a, t) =>
+        block_if(Syntax.absNotation, prevNot, right)
+          { pi(); arg(a, block = true, notations); comma(); term(t, notations, absNotation) }
+    }
+
+  def term(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation],
+           prevNot: Notation = justHadPars, no_impl: Boolean = false, right: Boolean = false): Unit =
+    if (use_notations)
+      term_notation(t, notations, prevNot, no_impl, right)
+    else
+      term_no_notation(t, notations, prevNot, no_impl, right)
+
+  def comment(c: String): Unit = {
     write("// " + c)
     nl()
   }
 
-  def write(c: Syntax.Command): Unit =
-  {
+  def patternize(t: Syntax.Term, vars: Set[Ident]): Syntax.Term =
+    t match {
+      case Syntax.TYPE => t
+      case Syntax.Symb(_) => t
+      case Syntax.Var(id) if vars(id) => Syntax.Var("$" + id)
+      case Syntax.Var(_) => t
+      case Syntax.Appl(t1, t2, b) => Syntax.Appl(patternize(t1, vars), patternize(t2, vars), b)
+      case Syntax.Abst(a @ BoundArg(Some(id), _, _), t) => Syntax.Abst(patternize_arg(a, vars), patternize(t, vars - id))
+      case Syntax.Abst(a, t) => Syntax.Abst(patternize_arg(a, vars), patternize(t, vars))
+      case Syntax.Prod(a @ BoundArg(Some(id), _, _), t) => Syntax.Prod(patternize_arg(a, vars), patternize(t, vars - id))
+      case Syntax.Prod(a, t) => Syntax.Prod(patternize_arg(a, vars), patternize(t, vars))
+    }
+
+  def patternize_arg(a: Syntax.BoundArg, vars: Set[Ident]): Syntax.BoundArg =
+    a match {
+      case BoundArg(id, ty, impl) => BoundArg(id, patternize(ty, vars), impl)
+    }
+
+  def notation(fullId: Ident, notation: Notation, notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit = {
+    notations(fullId) = notation
+    write ("notation ")
+    notation match {
+      case Prefix(op, priority) => ident(op); space(); write("prefix");      space(); write(priority.toString)
+      case Infix (op, priority) => ident(op); space(); write("infix");       space(); write(priority.toString)
+      case InfixL(op, priority) => ident(op); space(); write("infix left");  space(); write(priority.toString)
+      case InfixR(op, priority) => ident(op); space(); write("infix right"); space(); write(priority.toString)
+      case Quantifier(op) => ident(op); space(); write("quantifier")
+    }
+  }
+
+  def ident_or_notation(id: Syntax.Ident, not: Option[Syntax.Notation]): Unit = {
+    not.fold(ident(id))(not => ident(getOperator(not))) // Ugly
+  }
+
+  def command(c: Syntax.Command, notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit = {
     c match {
       case Syntax.Rewrite(vars, lhs, rhs) =>
-        val ampvars = vars.map(v => "&" + v)
+        val vars_set = Set.from(vars)
         write("rule ")
-        term(lhs, ampvars)
-        rew()
-        term(rhs, ampvars)
-      case Syntax.Declaration(id, args, ty, const) =>
+        term(patternize(lhs, vars_set), notations, no_impl = true)
+        hook_arrow()
+        term(patternize(rhs, vars_set), notations, no_impl = true)
+      case Syntax.Declaration(id, args, ty, not) =>
+        val not_opt: Option[Notation] = if (use_notations) not else None
+        write("constant ")
         write("symbol ")
-        if (const) write("const ")
-        name(id)
-        for (a <- args) { space(); block { arg(a) } }
-        colon()
-        term(ty)
-      case Syntax.Definition(id, args, ty, tm) =>
-        write("definition ");
-        name(id)
-        for (a <- args) { space(); block { arg(a) } }
-        for (ty <- ty) { colon(); term(ty) }
-        dfn()
-        term(tm)
+        ident_or_notation(id, not_opt)
+        for (a <- args) { space(); arg(a, block = true, notations) }
+        colon(); term(ty, notations)
+        for (not <- not_opt) { end_command(); notation(id, not, notations) }
+      case Syntax.DefableDecl(id, ty, inj, not) =>
+        val not_opt: Option[Notation] = if (use_notations) not else None
+        if (inj) { write("injective ") }
+        write("symbol ")
+        ident_or_notation(id, not_opt)
+        colon(); term(ty, notations)
+        for (not <- not_opt) { end_command(); notation(id, not, notations) }
+      case Syntax.Definition(id, args, ty, tm, not) =>
+        val not_opt: Option[Notation] = if (use_notations) not else None
+        write("symbol ")
+        ident_or_notation(id, not_opt)
+        for (a <- args) { space(); arg(a, block = true, notations) }
+        for (ty <- ty) { colon(); term(ty, notations) }
+        colon_equal(); term(tm, notations)
+        for (not <- not_opt) { end_command(); notation(id, not, notations) }
       case Syntax.Theorem(id, args, ty, prf) =>
-        write("theorem ");
-        name(id)
-        for (a <- args) { space(); block { arg(a) } }
-        colon(); term(ty)
-        write(" proof refine ")
-        term(prf)
-        write(" qed")
+        write("opaque symbol ")
+        ident(id)
+        for (a <- args) { space(); arg(a, block = true, notations) }
+        colon(); term(ty, notations)
+        colon_equal(); term(prf, notations)
     }
-    nl()
+  end_command()
   }
 
   def eta_equality(): Unit =
   {
-    write("""set flag "eta_equality" on""")
-    nl()
+    write("""flag "eta_equality" on""")
+    end_command()
   }
 
   def require_open(module: String): Unit =
   {
-    write("require open ")
-    name(module)
-    nl()
+    write("require open " + root + ".")
+    ident(module)
+    end_command()
   }
 }
 
 
-class DK_Writer(writer: Writer) extends LambdaPi_Writer(writer)
+class DK_Writer(writer: Writer) extends Abstract_Writer(writer)
 {
   val reserved =
     Set(
       "def",
       "thm",
+      "Type",
       "_")
 
-  def dot(): Unit = write('.')
-  def lambda(): Unit = write("\\ ")
-  def pi(): Unit = write("! ")
-  def dfn(): Unit = write(" := ")
-  def ar_lam(): Unit = write(" => ")
-  def ar_pi(): Unit = write(" -> ")
-  def rew(): Unit = write(" --> ")
+  def is_regular_identifier(ident: String): Boolean =
+    ident.nonEmpty &&
+      ident(0) != '\'' &&
+      ident.forall(c => Symbol.is_ascii_letter(c) || Symbol.is_ascii_digit(c) || "_!?'".contains(c))
 
-  def term(t: Syntax.Term, bounds: List[String] = Nil, atomic: Boolean = false): Unit =
-  {
+  def dot()    : Unit = write('.')
+  def lambda() : Unit = write("\\ ")
+  def pi()     : Unit = write("! ")
+  def dfn()    : Unit = write(" := ")
+  def ar_lam() : Unit = write(" => ")
+  def ar_pi()  : Unit = write(" -> ")
+  def ar_rew() : Unit = write(" --> ")
+
+  def term(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation] = MutableMap(),
+           prevNot: Notation = justHadPars, no_impl: Boolean = false, right: Boolean = false): Unit =
     t match {
       case Syntax.TYPE =>
         write("Type")
       case Syntax.Symb(id) =>
-        name(id)
-      case Syntax.FVar(id) =>
-        assert(!bounds.contains(escape_if_needed(id)))
-        name(id)
-      case Syntax.BVar(idx) =>
-        write(bounds(idx))
-      case Syntax.Appl(t1, t2) =>
-        block_if(atomic) {
-          val (head, spine) = Syntax.dest_appls(t1, List(t2))
-          term(head, bounds, atomic = true)
-          for (s <- spine) { space(); term(s, bounds, atomic = true) }
+        ident(id)
+      case Syntax.Var(id) =>
+        ident(id)
+      case Syntax.Appl(_, _, _) =>
+        block_if(appNotation, prevNot, right) {
+          val (head, spine) = Syntax.destruct_appls(t)
+          term(head, prevNot = appNotation)
+          for ((s, _) <- spine) { space(); term(s, prevNot = appNotation, right = true) }
         }
       case Syntax.Abst(a, t) =>
-        block_if(atomic) { arg(a, bounds); ar_lam(); term(t, bind(a, bounds)) }
+        block_if(absNotation, prevNot, right) { arg(a, block = false, notations); ar_lam(); term(t) }
+      case Syntax.Prod(Syntax.BoundArg(None, ty1, false), ty2) =>
+        val not = arrNotation
+        block_if(not, prevNot, right) {
+          term(ty1, notations, not)
+          ar_pi()
+          term(ty2, notations, not, right = true)
+        }
       case Syntax.Prod(a, t) =>
-        block_if(atomic) { arg(a, bounds); ar_pi() ; term(t, bind(a, bounds)) }
+        block_if(absNotation, prevNot, right) { arg(a, block = false, notations); ar_pi() ; term(t) }
     }
-  }
 
   def comment(c: String): Unit =
   {
@@ -270,34 +515,39 @@ class DK_Writer(writer: Writer) extends LambdaPi_Writer(writer)
     nl()
   }
 
-  def write(c: Syntax.Command): Unit =
+  def command(c: Syntax.Command, notations: MutableMap[Syntax.Ident, Syntax.Notation] = MutableMap()): Unit =
   {
     c match {
+      case Syntax.Declaration(id, args, ty, _) =>
+        ident(id)
+        for (a <- args) { space(); block {
+          arg(a, block = false, notations)
+        } }
+        colon(); term(ty)
+      case Syntax.DefableDecl(id, ty, _, _) =>
+        write("def ")
+        ident(id)
+        colon(); term(ty)
+      case Syntax.Definition(id, args, ty, tm, _) =>
+        write("def ")
+        ident(id)
+        for (a <- args) { space(); block {
+          arg(a, block = false, notations)
+        } }
+        for (ty <- ty) { colon(); term(ty) }
+        dfn(); term(tm)
+      case Syntax.Theorem(id, args, ty, prf) =>
+        write("thm ")
+        ident(id)
+        for (a <- args) { space(); block {
+          arg(a, block = false, notations)
+        } }
+        colon(); term(ty)
+        dfn(); term(prf)
       case Syntax.Rewrite(vars, lhs, rhs) =>
         if (vars.nonEmpty) write("[" + vars.mkString(sep = ", ") + "] ")
-        term(lhs, vars)
-        rew()
-        term(rhs, vars)
-      case Syntax.Declaration(id, args, ty, const) =>
-        if (!const) write("def ")
-        name(id)
-        for (a <- args) { space(); block { arg(a) } }
-        colon()
-        term(ty)
-      case Syntax.Definition(id, args, ty, tm) =>
-        write("def ");
-        name(id)
-        for (a <- args) { space(); block { arg(a) } }
-        for (ty <- ty) { colon(); term(ty) }
-        dfn()
-        term(tm)
-      case Syntax.Theorem(id, args, ty, prf) =>
-        write("thm ");
-        name(id)
-        for (a <- args) { space(); block { arg(a) } }
-        colon(); term(ty)
-        dfn()
-        term(prf)
+        term(lhs)
+        ar_rew(); term(rhs)
     }
     dot()
     nl()

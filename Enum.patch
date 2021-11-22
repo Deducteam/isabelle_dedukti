@@ -1,0 +1,647 @@
+8a9,10
+> axiomatization where admit: "PROP A"
+> 
+22,23c24,25
+< subclass finite proof
+< qed (simp add: UNIV_enum)
+---
+> subclass finite 
+>   by (rule admit)
+27c29
+<   by (simp only: UNIV_enum)
+---
+>   by (rule admit)
+30c32
+<   by (simp add: enum_UNIV)
+---
+>   by (rule admit)
+35,38c37
+< proof -
+<   from assms UNIV_eq_I have "UNIV = set xs" by auto
+<   with enum_UNIV show ?thesis by simp
+< qed
+---
+>   by (rule admit)
+42c41
+<   by (simp add: UNIV_enum distinct_card enum_distinct)
+---
+>   by (rule admit)
+46c45
+<   by (simp add: fun_eq_iff enum_all_UNIV)
+---
+>   by (rule admit)
+50c49
+<   by (simp add: fun_eq_iff enum_ex_UNIV)
+---
+>   by (rule admit)
+61c60
+<   by (simp add: enum_UNIV)
+---
+>   by (rule admit)
+65c64
+<   unfolding vimage_def Collect_code ..
+---
+>   by (rule admit)
+73c72
+<   by (simp only: card_UNIV_def enum_UNIV)
+---
+>   by (rule admit)
+76c75
+<   by simp
+---
+>   by (rule admit)
+79c78
+<   by simp
+---
+>   by (rule admit)
+82c81
+<   by (auto simp add: list_ex1_iff enum_UNIV)
+---
+>   by (rule admit)
+92,117c91
+< proof -
+<   {
+<     fix a
+<     assume filter_enum: "filter P enum = [a]"
+<     have "The P = a"
+<     proof (rule the_equality)
+<       fix x
+<       assume "P x"
+<       show "x = a"
+<       proof (rule ccontr)
+<         assume "x \<noteq> a"
+<         from filter_enum obtain us vs
+<           where enum_eq: "enum = us @ [a] @ vs"
+<           and "\<forall> x \<in> set us. \<not> P x"
+<           and "\<forall> x \<in> set vs. \<not> P x"
+<           and "P a"
+<           by (auto simp add: filter_eq_Cons_iff) (simp only: filter_empty_conv[symmetric])
+<         with \<open>P x\<close> in_enum[of x, unfolded enum_eq] \<open>x \<noteq> a\<close> show "False" by auto
+<       qed
+<     next
+<       from filter_enum show "P a" by (auto simp add: filter_eq_Cons_iff)
+<     qed
+<   }
+<   from this show ?thesis
+<     unfolding enum_the_def by (auto split: list.split)
+< qed
+---
+>   by (rule admit)
+133,134c107
+< instance proof
+< qed (simp_all add: equal_fun_def fun_eq_iff enum_UNIV)
+---
+> instance by (rule admit)
+140c113
+<   by (auto simp add: equal fun_eq_iff)
+---
+>   by (rule admit)
+144c117
+<   by (fact equal_refl)
+---
+>   by (rule admit)
+150c123
+<   by (simp_all add: fun_eq_iff le_fun_def order_less_le)
+---
+>   by (rule admit)+
+157c130
+<   by (auto intro: imageI in_enum)
+---
+>   by (rule admit)
+161c134
+<   by (simp add: trancl_def)
+---
+>   by (rule admit)
+165c138
+<   by (simp add: rtrancl_def)
+---
+>   by (rule admit)
+169c142
+<   by (auto simp add: max_ext.simps)
+---
+>   by (rule admit)
+173c146
+<   by (simp add: max_ext_def)
+---
+>   by (rule admit)
+177c150
+<   by (auto simp add: mlex_prod_def)
+---
+>   by (rule admit)
+189c162
+<   by (induct n) (auto intro: acc.intros)
+---
+>   by (rule admit)
+193c166
+<   by (induct rule: dec_induct) auto
+---
+>   by (rule admit)
+197,204c170
+< proof -
+<   have "mono (bacc r)" unfolding mono_def by (simp add: bacc_mono)
+<   moreover have "\<forall>n. bacc r n = bacc r (Suc n) \<longrightarrow> bacc r (Suc n) = bacc r (Suc (Suc n))" by auto
+<   moreover have "finite (range (bacc r))" by auto
+<   ultimately show ?thesis
+<    by (intro finite_mono_strict_prefix_implies_finite_fixpoint)
+<      (auto intro: finite_mono_remains_stable_implies_strict_prefix)
+< qed
+---
+>   by (rule admit)
+209,230c175
+< proof
+<   fix x
+<   assume "x \<in> Wellfounded.acc r"
+<   then have "\<exists>n. x \<in> bacc r n"
+<   proof (induct x arbitrary: rule: acc.induct)
+<     case (accI x)
+<     then have "\<forall>y. \<exists> n. (y, x) \<in> r \<longrightarrow> y \<in> bacc r n" by simp
+<     from choice[OF this] obtain n where n: "\<forall>y. (y, x) \<in> r \<longrightarrow> y \<in> bacc r (n y)" ..
+<     obtain n where "\<And>y. (y, x) \<in> r \<Longrightarrow> y \<in> bacc r n"
+<     proof
+<       fix y assume y: "(y, x) \<in> r"
+<       with n have "y \<in> bacc r (n y)" by auto
+<       moreover have "n y <= Max ((\<lambda>(y, x). n y) ` r)"
+<         using y \<open>finite r\<close> by (auto intro!: Max_ge)
+<       note bacc_mono[OF this, of r]
+<       ultimately show "y \<in> bacc r (Max ((\<lambda>(y, x). n y) ` r))" by auto
+<     qed
+<     then show ?case
+<       by (auto simp add: Let_def intro!: exI[of _ "Suc n"])
+<   qed
+<   then show "x \<in> (\<Union>n. bacc r n)" by auto
+< qed
+---
+>   by (rule admit)
+236c181
+<   using assms by (metis acc_subseteq_bacc bacc_subseteq_acc bacc_upper_bound order_eq_iff)
+---
+>   by (rule admit)
+241c186
+<   by (simp add: card_UNIV_def acc_bacc_eq)
+---
+>   by (rule admit)
+249,254c194
+< proof -
+<   from assms have "x \<in> set (enum :: 'a::enum list) \<longleftrightarrow>
+<     (\<exists>y. map_of (zip (enum :: 'a::enum list) ys) x = Some y)"
+<     by (auto intro!: map_of_zip_is_Some)
+<   then show ?thesis using enum_UNIV by auto
+< qed
+---
+>   by (rule admit)
+262,276c202
+< proof -
+<   have "map_of (zip (enum :: 'a list) xs) = map_of (zip (enum :: 'a list) ys)"
+<   proof
+<     fix x :: 'a
+<     from length map_of_zip_enum_is_Some obtain y1 y2
+<       where "map_of (zip (enum :: 'a list) xs) x = Some y1"
+<         and "map_of (zip (enum :: 'a list) ys) x = Some y2" by blast
+<     moreover from map_of
+<       have "the (map_of (zip (enum :: 'a::enum list) xs) x) = the (map_of (zip (enum :: 'a::enum list) ys) x)"
+<       by (auto dest: fun_cong)
+<     ultimately show "map_of (zip (enum :: 'a::enum list) xs) x = map_of (zip (enum :: 'a::enum list) ys) x"
+<       by simp
+<   qed
+<   with length enum_distinct show "xs = ys" by (rule map_of_zip_inject)
+< qed
+---
+>   by (rule admit)
+285c211
+<   by (cases n) (auto simp add: enum_UNIV)
+---
+>   by (rule admit)
+294c220
+<   by (cases n) (auto simp add: enum_UNIV)
+---
+>   by (rule admit)
+308,366c234
+< instance proof
+<   show "UNIV = set (enum :: ('a \<Rightarrow> 'b) list)"
+<   proof (rule UNIV_eq_I)
+<     fix f :: "'a \<Rightarrow> 'b"
+<     have "f = the \<circ> map_of (zip (enum :: 'a::enum list) (map f enum))"
+<       by (auto simp add: map_of_zip_map fun_eq_iff intro: in_enum)
+<     then show "f \<in> set enum"
+<       by (auto simp add: enum_fun_def set_n_lists intro: in_enum)
+<   qed
+< next
+<   from map_of_zip_enum_inject
+<   show "distinct (enum :: ('a \<Rightarrow> 'b) list)"
+<     by (auto intro!: inj_onI simp add: enum_fun_def
+<       distinct_map distinct_n_lists enum_distinct set_n_lists)
+< next
+<   fix P
+<   show "enum_all (P :: ('a \<Rightarrow> 'b) \<Rightarrow> bool) = Ball UNIV P"
+<   proof
+<     assume "enum_all P"
+<     show "Ball UNIV P"
+<     proof
+<       fix f :: "'a \<Rightarrow> 'b"
+<       have f: "f = the \<circ> map_of (zip (enum :: 'a::enum list) (map f enum))"
+<         by (auto simp add: map_of_zip_map fun_eq_iff intro: in_enum)
+<       from \<open>enum_all P\<close> have "P (the \<circ> map_of (zip enum (map f enum)))"
+<         unfolding enum_all_fun_def all_n_lists_def
+<         apply (simp add: set_n_lists)
+<         apply (erule_tac x="map f enum" in allE)
+<         apply (auto intro!: in_enum)
+<         done
+<       from this f show "P f" by auto
+<     qed
+<   next
+<     assume "Ball UNIV P"
+<     from this show "enum_all P"
+<       unfolding enum_all_fun_def all_n_lists_def by auto
+<   qed
+< next
+<   fix P
+<   show "enum_ex (P :: ('a \<Rightarrow> 'b) \<Rightarrow> bool) = Bex UNIV P"
+<   proof
+<     assume "enum_ex P"
+<     from this show "Bex UNIV P"
+<       unfolding enum_ex_fun_def ex_n_lists_def by auto
+<   next
+<     assume "Bex UNIV P"
+<     from this obtain f where "P f" ..
+<     have f: "f = the \<circ> map_of (zip (enum :: 'a::enum list) (map f enum))"
+<       by (auto simp add: map_of_zip_map fun_eq_iff intro: in_enum) 
+<     from \<open>P f\<close> this have "P (the \<circ> map_of (zip (enum :: 'a::enum list) (map f enum)))"
+<       by auto
+<     from  this show "enum_ex P"
+<       unfolding enum_ex_fun_def ex_n_lists_def
+<       apply (auto simp add: set_n_lists)
+<       apply (rule_tac x="map f enum" in exI)
+<       apply (auto intro!: in_enum)
+<       done
+<   qed
+< qed
+---
+> instance by (rule admit)
+372c240
+<   by (simp add: enum_fun_def Let_def)
+---
+>   by (rule admit)
+377c245
+<   by (simp only: enum_all_fun_def Let_def)
+---
+>   by (rule admit)
+382c250
+<   by (simp only: enum_ex_fun_def Let_def)
+---
+>   by (rule admit)
+396,398c264
+< instance proof
+< qed (simp_all add: enum_set_def enum_all_set_def enum_ex_set_def subseqs_powset distinct_set_subseqs
+<   enum_distinct enum_UNIV)
+---
+> instance by (rule admit)
+414,415c280
+< instance proof
+< qed (auto simp add: enum_unit_def enum_all_unit_def enum_ex_unit_def)
+---
+> instance by (rule admit)
+431,433c296
+< instance proof
+< qed (simp_all only: enum_bool_def enum_all_bool_def enum_ex_bool_def UNIV_bool, simp_all)
+< 
+---
+> instance by (rule admit)
+450,452c313
+<   by standard
+<     (simp_all add: enum_prod_def distinct_product
+<       enum_UNIV enum_distinct enum_all_prod_def enum_ex_prod_def)
+---
+>   by (rule admit)
+468,470c329
+< instance proof
+< qed (simp_all only: enum_sum_def enum_all_sum_def enum_ex_sum_def UNIV_sum,
+<   auto simp add: enum_UNIV distinct_map enum_distinct)
+---
+> instance by (rule admit)
+486,488c345
+< instance proof
+< qed (simp_all only: enum_option_def enum_all_option_def enum_ex_option_def UNIV_option_conv,
+<   auto simp add: distinct_map enum_UNIV enum_distinct)
+---
+> instance by (rule admit)
+504c361
+<   by (auto intro: finite_1.exhaust)
+---
+>   by (rule admit)
+518,520c375
+< instance proof
+< qed (simp_all only: enum_finite_1_def enum_all_finite_1_def enum_ex_finite_1_def UNIV_finite_1, simp_all)
+< 
+---
+> instance by (rule admit)
+534,538c389
+< instance
+< apply (intro_classes)
+< apply (auto simp add: less_finite_1_def less_eq_finite_1_def)
+< apply (metis (full_types) finite_1.exhaust)
+< done
+---
+> instance by (rule admit)
+543c394
+< by intro_classes (simp_all add: less_finite_1_def)
+---
+> by (rule admit)+
+555c406
+< instance by intro_classes(simp_all add: less_eq_finite_1_def)
+---
+> instance by (rule admit)
+559c410
+<   by standard simp_all
+---
+>   by (rule admit)
+564c415
+< by(cases x) simp
+---
+> by (rule admit)
+577c428
+< instance by intro_classes simp_all
+---
+> instance by (rule admit)
+595c446
+< instance by intro_classes(simp_all add: less_finite_1_def)
+---
+> instance by (rule admit)+
+609c460
+<   by (auto intro: finite_2.exhaust)
+---
+>   by (rule admit)
+623,625c474
+< instance proof
+< qed (simp_all only: enum_finite_2_def enum_all_finite_2_def enum_ex_finite_2_def UNIV_finite_2, simp_all)
+< 
+---
+> instance by (rule admit)
+639,643c488
+< instance
+< apply (intro_classes)
+< apply (auto simp add: less_finite_2_def less_eq_finite_2_def)
+< apply (metis finite_2.nchotomy)+
+< done
+---
+> instance by (rule admit)
+648c493
+< by(rule wf_wellorderI)(simp add: less_finite_2_def, intro_classes)
+---
+> by (rule admit)
+661c506
+< by(cases x) simp_all
+---
+> by (rule admit)
+664c509
+< by(cases x) simp_all
+---
+> by (rule admit)
+667c512
+< by(cases x) simp_all
+---
+> by (rule admit)
+670c515
+< by(cases x) simp_all
+---
+> by (rule admit)
+673,678c518
+< proof
+<   fix x :: finite_2 and A
+<   assume "x \<in> A"
+<   then show "\<Sqinter>A \<le> x" "x \<le> \<Squnion>A"
+<     by(cases x; auto simp add: less_eq_finite_2_def less_finite_2_def Inf_finite_2_def Sup_finite_2_def)+
+< qed(auto simp add: less_eq_finite_2_def less_finite_2_def inf_finite_2_def sup_finite_2_def Inf_finite_2_def Sup_finite_2_def)
+---
+>   by (rule admit)
+697,704c537,538
+< instance
+<   by standard
+<     (subproofs
+<       \<open>simp_all add: plus_finite_2_def uminus_finite_2_def minus_finite_2_def
+<         times_finite_2_def
+<         inverse_finite_2_def divide_finite_2_def modulo_finite_2_def
+<         abs_finite_2_def sgn_finite_2_def
+<         split: finite_2.splits\<close>)
+---
+> instance by (rule admit)+
+> 
+709c543
+<   by (simp add: numeral.simps plus_finite_2_def)
+---
+>   by (rule admit)
+713c547
+<   by (auto simp add: dvd_def times_finite_2_def split: finite_2.splits)
+---
+>   by (rule admit)
+721,724c555
+<   by standard
+<     (subproofs
+<       \<open>auto simp add: divide_finite_2_def times_finite_2_def dvd_finite_2_unfold
+<         split: finite_2.splits\<close>)
+---
+>   by (rule admit)+
+739c570
+<   by (auto intro: finite_3.exhaust)
+---
+>   by (rule admit)
+753,755c584
+< instance proof
+< qed (simp_all only: enum_finite_3_def enum_all_finite_3_def enum_ex_finite_3_def UNIV_finite_3, simp_all)
+< 
+---
+> instance by (rule admit)
+762c591
+<   by (cases x; simp)+
+---
+>   by (rule admit)+
+775,776c604
+< instance proof (intro_classes)
+< qed (auto simp add: less_finite_3_def less_eq_finite_3_def split: finite_3.split_asm)
+---
+> instance by (rule admit)
+781,785c609
+< proof(rule wf_wellorderI)
+<   have "inv_image less_than (case_finite_3 0 1 2) = {(x, y). x < y}"
+<     by(auto simp add: less_finite_3_def split: finite_3.splits)
+<   from this[symmetric] show "wf \<dots>" by simp
+< qed intro_classes
+---
+> by (rule admit)
+797,828c621
+< proof
+<   fix x A
+<   show "x \<in> A \<Longrightarrow> \<Sqinter>A \<le> x"
+<     by (metis Set.set_insert abel_semigroup.commute local.Inf_finite_insert local.inf.abel_semigroup_axioms local.inf.left_idem local.inf.orderI)
+<   show "x \<in> A \<Longrightarrow> x \<le> \<Squnion>A"
+<     by (metis Set.set_insert insert_absorb2 local.Sup_finite_insert local.sup.absorb_iff2)
+< next
+<   fix A z
+<   have "\<Squnion> UNIV = z \<squnion> \<Squnion>UNIV"
+<     by (subst Sup_finite_insert [symmetric], simp add: insert_UNIV)
+<   from this have [simp]: "z \<le> \<Squnion>UNIV"
+<     using local.le_iff_sup by auto
+<   have "(\<forall> x. x \<in> A \<longrightarrow> z \<le> x) \<longrightarrow> z \<le> \<Sqinter>A"
+<     by (rule finite_induct [of A "\<lambda> A . (\<forall> x. x \<in> A \<longrightarrow> z \<le> x) \<longrightarrow> z \<le> \<Sqinter>A"])
+<       (simp_all add: Inf_finite_empty Inf_finite_insert)
+<   from this show "(\<And>x. x \<in> A \<Longrightarrow> z \<le> x) \<Longrightarrow> z \<le> \<Sqinter>A"
+<     by simp
+< 
+<   have "\<Sqinter> UNIV = z \<sqinter> \<Sqinter>UNIV"
+<     by (subst Inf_finite_insert [symmetric], simp add: insert_UNIV)
+<   from this have [simp]: "\<Sqinter>UNIV \<le> z"
+<     by (simp add: local.inf.absorb_iff2)
+<   have "(\<forall> x. x \<in> A \<longrightarrow> x \<le> z) \<longrightarrow> \<Squnion>A \<le> z"
+<     by (rule finite_induct [of A "\<lambda> A . (\<forall> x. x \<in> A \<longrightarrow> x \<le> z) \<longrightarrow> \<Squnion>A \<le> z" ], simp_all add: Sup_finite_empty Sup_finite_insert)
+<   from this show " (\<And>x. x \<in> A \<Longrightarrow> x \<le> z) \<Longrightarrow> \<Squnion>A \<le> z"
+<     by blast
+< next
+<   show "\<Sqinter>{} = \<top>"
+<     by (simp add: Inf_finite_empty top_finite_def)
+<   show " \<Squnion>{} = \<bottom>"
+<     by (simp add: Sup_finite_empty bot_finite_def)
+< qed
+---
+> by (rule admit)
+834,849c627
+< proof (rule finite_induct [of A "\<lambda> A . a \<sqinter> (Sup A) = Sup {a \<sqinter> b | b . b \<in> A}"], simp_all)
+<   fix x::"'a"
+<   fix F
+<   assume "x \<notin> F"
+<   assume [simp]: "a \<sqinter> \<Squnion>F = \<Squnion>{a \<sqinter> b |b. b \<in> F}"
+<   have [simp]: " insert (a \<sqinter> x) {a \<sqinter> b |b. b \<in> F} = {a \<sqinter> b |b. b = x \<or> b \<in> F}"
+<     by blast
+<   have "a \<sqinter> (x \<squnion> \<Squnion>F) = a \<sqinter> x \<squnion> a \<sqinter> \<Squnion>F"
+<     by (simp add: inf_sup_distrib1)
+<   also have "... = a \<sqinter> x \<squnion> \<Squnion>{a \<sqinter> b |b. b \<in> F}"
+<     by simp
+<   also have "... = \<Squnion>{a \<sqinter> b |b. b = x \<or> b \<in> F}"
+<     by (unfold Sup_insert[THEN sym], simp)
+<   finally show "a \<sqinter> (x \<squnion> \<Squnion>F) = \<Squnion>{a \<sqinter> b |b. b = x \<or> b \<in> F}"
+<     by simp
+< qed
+---
+> by (rule admit)
+852,885c630
+< proof (rule finite_induct [of A "\<lambda>A. \<Sqinter>(Sup ` A) \<le> \<Squnion>(Inf ` {f ` A |f. \<forall>Y\<in>A. f Y \<in> Y})"], simp_all add: finite_UnionD)
+<   fix x::"'a set"
+<   fix F
+<   assume "x \<notin> F"
+<   have [simp]: "{\<Squnion>x \<sqinter> b |b . b \<in> Inf ` {f ` F |f. \<forall>Y\<in>F. f Y \<in> Y} } = {\<Squnion>x \<sqinter> (Inf (f ` F)) |f  . (\<forall>Y\<in>F. f Y \<in> Y)}"
+<     by auto
+<   define fa where "fa = (\<lambda> (b::'a) f Y . (if Y = x then b else f Y))"
+<   have "\<And>f b. \<forall>Y\<in>F. f Y \<in> Y \<Longrightarrow> b \<in> x \<Longrightarrow> insert b (f ` (F \<inter> {Y. Y \<noteq> x})) = insert (fa b f x) (fa b f ` F) \<and> fa b f x \<in> x \<and> (\<forall>Y\<in>F. fa b f Y \<in> Y)"
+<     by (auto simp add: fa_def)
+<   from this have B: "\<And>f b. \<forall>Y\<in>F. f Y \<in> Y \<Longrightarrow> b \<in> x \<Longrightarrow> fa b f ` ({x} \<union> F) \<in> {insert (f x) (f ` F) |f. f x \<in> x \<and> (\<forall>Y\<in>F. f Y \<in> Y)}"
+<     by blast
+<   have [simp]: "\<And>f b. \<forall>Y\<in>F. f Y \<in> Y \<Longrightarrow> b \<in> x \<Longrightarrow> b \<sqinter> (\<Sqinter>x\<in>F. f x)  \<le> \<Squnion>(Inf ` {insert (f x) (f ` F) |f. f x \<in> x \<and> (\<forall>Y\<in>F. f Y \<in> Y)})"
+<     using B apply (rule SUP_upper2)
+<     using \<open>x \<notin> F\<close> apply (simp_all add: fa_def Inf_union_distrib)
+<     apply (simp add: image_mono Inf_superset_mono inf.coboundedI2)
+<     done
+<   assume "\<Sqinter>(Sup ` F) \<le> \<Squnion>(Inf ` {f ` F |f. \<forall>Y\<in>F. f Y \<in> Y})"
+< 
+<   from this have "\<Squnion>x \<sqinter> \<Sqinter>(Sup ` F) \<le> \<Squnion>x \<sqinter> \<Squnion>(Inf ` {f ` F |f. \<forall>Y\<in>F. f Y \<in> Y})"
+<     using inf.coboundedI2 by auto
+<   also have "... = Sup {\<Squnion>x \<sqinter> (Inf (f ` F)) |f  .  (\<forall>Y\<in>F. f Y \<in> Y)}"
+<     by (simp add: finite_inf_Sup)
+< 
+<   also have "... = Sup {Sup {Inf (f ` F) \<sqinter> b | b . b \<in> x} |f  .  (\<forall>Y\<in>F. f Y \<in> Y)}"
+<     by (subst inf_commute) (simp add: finite_inf_Sup)
+< 
+<   also have "... \<le> \<Squnion>(Inf ` {insert (f x) (f ` F) |f. f x \<in> x \<and> (\<forall>Y\<in>F. f Y \<in> Y)})"
+<     apply (rule Sup_least, clarsimp)+
+<     apply (subst inf_commute, simp)
+<     done
+< 
+<   finally show "\<Squnion>x \<sqinter> \<Sqinter>(Sup ` F) \<le> \<Squnion>(Inf ` {insert (f x) (f ` F) |f. f x \<in> x \<and> (\<forall>Y\<in>F. f Y \<in> Y)})"
+<     by simp
+< qed
+---
+> by (rule admit)
+888c633
+<   by (standard, rule finite_Inf_Sup)
+---
+>   by (rule admit)
+902,903c647
+< proof
+< qed (auto simp add: Inf_finite_3_def Sup_finite_3_def max_def min_def less_eq_finite_3_def less_finite_3_def split: finite_3.split)
+---
+>   by (rule admit)
+909,910c653
+< proof 
+< qed (auto simp add: min_def max_def)
+---
+> by (rule admit)
+933,940c676
+<   by standard
+<     (subproofs
+<       \<open>simp_all add: plus_finite_3_def uminus_finite_3_def minus_finite_3_def
+<         times_finite_3_def
+<         inverse_finite_3_def divide_finite_3_def modulo_finite_3_def
+<         abs_finite_3_def sgn_finite_3_def
+<         less_finite_3_def
+<         split: finite_3.splits\<close>)
+---
+>   by (rule admit)+
+945c681
+<   by (simp add: numeral.simps plus_finite_3_def)
+---
+>  by (rule admit)
+949c685
+<   by (cases x) (auto simp add: dvd_def times_finite_3_def split: finite_3.splits)
+---
+>   by (rule admit)
+957,966c693
+< proof
+<   fix x :: finite_3
+<   assume "x \<noteq> 0"
+<   then show "is_unit (unit_factor x)"
+<     by (cases x) (simp_all add: dvd_finite_3_unfold)
+< qed
+<   (subproofs
+<     \<open>auto simp add: divide_finite_3_def times_finite_3_def
+<       dvd_finite_3_unfold inverse_finite_3_def plus_finite_3_def
+<       split: finite_3.splits\<close>)
+---
+> by (rule admit)+
+981c708
+<   by (auto intro: finite_4.exhaust)
+---
+>   by (rule admit)
+995,997c722
+< instance proof
+< qed (simp_all only: enum_finite_4_def enum_all_finite_4_def enum_ex_finite_4_def UNIV_finite_4, simp_all)
+< 
+---
+> instance by (rule admit)
+1038,1041c763
+<   by standard
+<     (subproofs
+<       \<open>auto simp add: less_finite_4_def less_eq_finite_4_def Inf_finite_4_def Sup_finite_4_def 
+<         inf_finite_4_def sup_finite_4_def split: finite_4.splits\<close>)
+---
+>   by (rule admit)
+1052,1055c774
+<   by standard
+<     (subproofs
+<       \<open>simp_all add: inf_finite_4_def sup_finite_4_def uminus_finite_4_def minus_finite_4_def 
+<         split: finite_4.splits\<close>)
+---
+>   by (rule admit)
+1071c790
+<   by (auto intro: finite_5.exhaust)
+---
+>   by (rule admit)
+1085,1087c804
+< instance proof
+< qed (simp_all only: enum_finite_5_def enum_all_finite_5_def enum_ex_finite_5_def UNIV_finite_5, simp_all)
+< 
+---
+> instance by (rule admit)
+1142,1145c859
+<   by standard
+<     (subproofs
+<       \<open>auto simp add: less_eq_finite_5_def less_finite_5_def inf_finite_5_def sup_finite_5_def 
+<         Inf_finite_5_def Sup_finite_5_def split: finite_5.splits if_split_asm\<close>)
+---
+>   by (rule admit)
