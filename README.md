@@ -121,10 +121,10 @@ isabelle dedukti_import -o export_standard_proofs Dedukti_Example
   ```
   then open `$ISABELLE_HOME/src/HOL/Main.thy` via File Browser / Favorites
 
-* Isabelle/Scala: use IntelliJ IDEA with the Gradle project generated
-  by `isabelle dedukti_build` within the Isabelle/Dedukti directory:
+* Isabelle/Scala: use IntelliJ IDEA with the Java/Scala project generated
+  by `isabelle scala_project -L -f`:
   ```bash
-  idea gradle_project
+  idea "$(isabelle getenv -b ISABELLE_HOME_USER)/scala_project"
   ```
 * Note: Without proper IDE support Isabelle sources are very hard to
   read and write.  (Emacs or vi are not a proper IDE.)
