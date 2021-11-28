@@ -104,7 +104,8 @@ isabelle dedukti_import -o export_standard_proofs Dedukti_Example
 - `translate.scala` translates from Isabelle/Pure to the common dedukti/lambdapi AST
 - `writers.scala` write out either dedukti output or lambdapi output
 - `importer.scala` wraps the previous files into an Isabelle component, defining the CLI and interacting with other components
-- `tools.scala` registers the `dedukti_import` module as a valid `isabelle` subfunction
+- `tools.scala` defines the `isabelle dedukti_import` command-line tool,
+  which is registered via `services` in `etc/build.props`
 
 
 ## Isabelle development and browsing of sources
