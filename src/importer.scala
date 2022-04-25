@@ -8,8 +8,7 @@ import isabelle._
 import scala.collection.mutable
 
 
-object Importer
-{
+object Importer {
   /* importer */
 
   val default_output_file: Path = Path.explode("main.lp")
@@ -24,12 +23,11 @@ object Importer
     use_notations: Boolean = false,
     eta_expand: Boolean = false,
     output_file: Path = default_output_file,
-    verbose: Boolean = false): Unit =
-  {
+    verbose: Boolean = false
+  ): Unit = {
     /* build session with exports */
 
-    val build_options =
-    {
+    val build_options = {
       val options1 = options + "export_theory" + "record_proofs=2"
       if (options.bool("export_standard_proofs")) options1
       else options1 + "export_proofs"
@@ -62,9 +60,10 @@ object Importer
 
     var exported_proofs = Set.empty[Long]
 
-    def proof_boxes(thm: Export_Theory.Entity[Export_Theory.Thm], provider: Export.Provider)
-      : List[(Export_Theory.Thm_Id, Export_Theory.Proof)] =
-    {
+    def proof_boxes(
+      thm: Export_Theory.Entity[Export_Theory.Thm],
+      provider: Export.Provider
+    ) : List[(Export_Theory.Thm_Id, Export_Theory.Proof)] = {
       try {
         Export_Theory.read_proof_boxes(
           store, provider, thm.the_content.proof,
@@ -150,8 +149,8 @@ object Importer
       theory_name: String,
       output: Abstract_Writer,
       notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation],
-      theory: List[Syntax.Command]): Unit =
-    {
+      theory: List[Syntax.Command]
+    ): Unit = {
       progress.echo("Writing theory " + theory_name)
 
       output.comment("theory " + theory_name)
@@ -167,8 +166,7 @@ object Importer
 
     val all_theories = dependencies.theory_graph.topological_order
 
-    using(store.open_database(session))(db =>
-    {
+    using(store.open_database(session)) { db =>
       def translate_theory_by_name(name: String, previous_theories: Map[String, mutable.Queue[Syntax.Command]]): Map[String, mutable.Queue[Syntax.Command]] = {
         if (name == Thy_Header.PURE) {
           translate_theory(Export_Theory.read_pure_theory(store, cache = term_cache),
@@ -195,12 +193,11 @@ object Importer
       ext match {
         case "dk" =>
           // write into a single file
-          using(new Part_Writer(output_file))(writer =>
-          {
+          using(new Part_Writer(output_file)) { writer =>
             val syntax = new DK_Writer(writer)
             for (name <- all_theories)
               write_theory(name.theory, syntax, notations, translated_theories(name.theory))
-          })
+          }
 
         case "lp" =>
           def theory_file(theory_name: String): Path =
@@ -208,8 +205,7 @@ object Importer
 
           // write one file per theory
           for (name <- all_theories) {
-            using(new Part_Writer(theory_file(name.theory)))(writer =>
-            {
+            using(new Part_Writer(theory_file(name.theory))) { writer =>
               val syntax = new LP_Writer(output_file.dir, use_notations, writer)
               if (!eta_expand) syntax.eta_equality()
 
@@ -219,19 +215,18 @@ object Importer
               } syntax.require_open(req)
 
               write_theory(name.theory, syntax, notations, translated_theories(name.theory))
-            })
+            }
           }
 
           // write one file that loads all the other ones
-          using(new Part_Writer(output_file))(output =>
-          {
+          using(new Part_Writer(output_file)) { output =>
             val syntax = new LP_Writer(output_file.dir, use_notations, output)
             all_theories.foreach(name => syntax.require_open(name.theory))
-          })
+          }
 
         case ext => error("Unknown output format " + ext)
       }
-    })
+    }
   }
 
 
@@ -239,17 +234,16 @@ object Importer
 
   val isabelle_tool: Isabelle_Tool =
     Isabelle_Tool("dedukti_import", "import theory content into Dedukti", Scala_Project.here,
-      args =>
-    {
-      var output_file = default_output_file
-      var dirs: List[Path] = Nil
-      var fresh_build = false
-      var use_notations = false
-      var eta_expand = false
-      var options = Options.init()
-      var verbose = false
+      { args =>
+        var output_file = default_output_file
+        var dirs: List[Path] = Nil
+        var fresh_build = false
+        var use_notations = false
+        var eta_expand = false
+        var options = Options.init()
+        var verbose = false
 
-      val getopts = Getopts("""
+        val getopts = Getopts("""
 Usage: isabelle dedukti_import [OPTIONS] SESSION
 
   Options are:
@@ -263,44 +257,43 @@ Usage: isabelle dedukti_import [OPTIONS] SESSION
 
   Import specified sessions as Dedukti files.
 """,
-      "O:" -> (arg => output_file = Path.explode(arg)),
-      "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
-      "f" -> (_ => fresh_build = true),
-      "e" -> (_ => eta_expand = true),
-      "n" -> (_ => use_notations = true),
-      "o:" -> (arg => { options += arg }),
-      "v" -> (_ => verbose = true))
+        "O:" -> (arg => output_file = Path.explode(arg)),
+        "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
+        "f" -> (_ => fresh_build = true),
+        "e" -> (_ => eta_expand = true),
+        "n" -> (_ => use_notations = true),
+        "o:" -> (arg => { options += arg }),
+        "v" -> (_ => verbose = true))
 
-      val more_args = getopts(args)
+        val more_args = getopts(args)
 
-      val session =
-        more_args match {
-          case List(name) => name
-          case _ => getopts.usage()
+        val session =
+          more_args match {
+            case List(name) => name
+            case _ => getopts.usage()
+          }
+
+        val progress = new Console_Progress(verbose = true)
+
+        val start_date = Date.now()
+        if (verbose) progress.echo("Started at " + Build_Log.print_date(start_date) + "\n")
+
+        progress.interrupt_handler {
+          try {
+            importer(options, session,
+              progress = progress,
+              dirs = dirs,
+              fresh_build = fresh_build,
+              use_notations = use_notations,
+              eta_expand = eta_expand,
+              output_file = output_file,
+              verbose = verbose)
+          }
+          finally {
+            val end_date = Date.now()
+            if (verbose) progress.echo("\nFinished at " + Build_Log.print_date(end_date))
+            progress.echo((end_date.time - start_date.time).message_hms + " elapsed time")
+          }
         }
-
-      val progress = new Console_Progress(verbose = true)
-
-      val start_date = Date.now()
-      if (verbose) progress.echo("Started at " + Build_Log.print_date(start_date) + "\n")
-
-      progress.interrupt_handler {
-        try {
-          importer(options, session,
-            progress = progress,
-            dirs = dirs,
-            fresh_build = fresh_build,
-            use_notations = use_notations,
-            eta_expand = eta_expand,
-            output_file = output_file,
-            verbose = verbose)
-        }
-        finally {
-          val end_date = Date.now()
-          if (verbose) progress.echo("\nFinished at " + Build_Log.print_date(end_date))
-          progress.echo((end_date.time - start_date.time).message_hms + " elapsed time")
-        }
-      }
-    }
-  )
+      })
 }

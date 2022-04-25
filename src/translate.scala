@@ -12,8 +12,7 @@ import scala.annotation.tailrec
 // preludes for minimal Higher-order Logic (Isabelle/Pure)
 // see https://raw.githubusercontent.com/Deducteam/Libraries/master/theories/stt.dk
 
-object Prelude
-{
+object Prelude {
 
   /* Name disabiguation (as little invasive as possible) */
 
@@ -92,8 +91,7 @@ object Prelude
   // Integration rewrites
 
   // rule [η|ε] ($a [⇒|⟹] $b) ↪ [η|ε] $a → [η|ε] $b;
-  def rule_distr(etaeps: Syntax.Term, funimp: Syntax.Term): Syntax.Command =
-  {
+  def rule_distr(etaeps: Syntax.Term, funimp: Syntax.Term): Syntax.Command = {
     val a = Syntax.Var(var_ident("a"))
     val b = Syntax.Var(var_ident("b"))
     val etaeps_a = Syntax.Appl(etaeps, a)
@@ -127,12 +125,11 @@ object Prelude
 
 }
 
-
-
-object Translate
-{
+object Translate {
   import Prelude._
   var global_eta_expand = false
+
+
   /* binders */
 
   def bound_type_argument(name: String, impl: Boolean = false): Syntax.BoundArg =
@@ -147,14 +144,15 @@ object Translate
   // Object to record de Bruijn index names
   sealed case class Bounds(
     trm: List[String] = Nil,
-    prf: List[String] = Nil)
-  {
+    prf: List[String] = Nil
+  ) {
     def add_trm(tm: String): Bounds = copy(trm = tm :: trm)
     def add_prf(pf: String): Bounds = copy(prf = pf :: prf)
 
     def get_trm(idx: Int): String = trm(idx)
     def get_prf(idx: Int): String = prf(idx)
   }
+
 
   /* types and terms */
 

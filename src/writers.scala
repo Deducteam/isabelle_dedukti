@@ -14,8 +14,7 @@ import java.nio.file.{Files, StandardCopyOption}
 import scala.collection.mutable.{Map => MutableMap}
 
 
-class Part_Writer(file: Path) extends Writer
-{
+class Part_Writer(file: Path) extends Writer {
   private val file_part = file.ext("part")
 
   private val writer =
@@ -25,16 +24,14 @@ class Part_Writer(file: Path) extends Writer
   def write(a: Array[Char], off: Int, len: Int): Unit = writer.write(a, off, len)
   def flush(): Unit = writer.flush()
 
-  def close(): Unit =
-  {
+  def close(): Unit = {
     writer.close()
     Files.move(file_part.file.toPath, file.file.toPath, StandardCopyOption.REPLACE_EXISTING)
   }
 }
 
 
-trait Ident_Writer
-{
+trait Ident_Writer {
   val reserved: Set[String]
 
   def is_regular_identifier(ident: String): Boolean
@@ -49,8 +46,7 @@ trait Ident_Writer
 }
 
 
-abstract class Abstract_Writer(writer: Writer) extends Ident_Writer
-{
+abstract class Abstract_Writer(writer: Writer) extends Ident_Writer {
   def write(c: Char):   Unit = writer.write(c)
   def write(s: String): Unit = writer.write(s)
 
@@ -63,8 +59,13 @@ abstract class Abstract_Writer(writer: Writer) extends Ident_Writer
 
   def block(body: => Unit): Unit = { lpar(); body; rpar() }
   // Determine whether wrapping [body] in parentheses is needed
-  def block_if(curNot: Syntax.Notation, prevNot: Syntax.Notation, right: Boolean = false, force_no: Boolean = false)(body: => Unit): Unit =
-  {
+  def block_if(
+    curNot: Syntax.Notation,
+    prevNot: Syntax.Notation,
+    right: Boolean = false,
+    force_no: Boolean = false)(
+    body: => Unit
+  ): Unit = {
     val prio1: Double = getPriority (curNot).getOrElse(isabelle.error("NotImplemented"))
     val prio2: Double = getPriority(prevNot).getOrElse(isabelle.error("NotImplemented"))
 
@@ -78,10 +79,8 @@ abstract class Abstract_Writer(writer: Writer) extends Ident_Writer
       case InfixR(_, _) => !right
       case Quantifier(_) => isabelle.error("NotImplemented")
     }
-    if (doBlock && !force_no)
-      block(body)
-    else
-      body
+    if (doBlock && !force_no) block(body)
+    else body
   }
 
   def ident(a: String): Unit = write(escape_if_needed(a))
@@ -117,8 +116,8 @@ abstract class Abstract_Writer(writer: Writer) extends Ident_Writer
 }
 
 
-class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer) extends Abstract_Writer(writer)
-{
+class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer)
+  extends Abstract_Writer(writer) {
   val reserved = // copied from lambdapi/src/parsing/lpLexer.ml lines 185-240
     Set(
       "abort",
@@ -263,7 +262,7 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer) extends
             // val op = getOperator(not) Incomprehensible Scala to disallow this
             val not = Syntax.appNotation
             val force_no = pre_spine.isEmpty
-            block_if(not, prevNot, right, force_no)({
+            block_if(not, prevNot, right, force_no) {
               block(ident(op))
               for ((arg, impl) <- pre_spine) {
                 if (impl) {
@@ -272,7 +271,7 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer) extends
                 space(); term(arg, notations, not, no_impl, right = true)
                 }
               }
-            })
+            }
           }
       case _ =>
         val not = appNotation
@@ -305,8 +304,9 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer) extends
       case Syntax.Appl(_, _, _) =>
         appl(t, notations, prevNot, no_impl, right)
       case Syntax.Abst(a, t) =>
-        block_if(Syntax.absNotation, prevNot, right)
-          { lambda(); arg(a, block = true, notations); comma(); term(t, notations, no_impl = no_impl) }
+        block_if(Syntax.absNotation, prevNot, right) {
+          lambda(); arg(a, block = true, notations); comma(); term(t, notations, no_impl = no_impl)
+        }
       case Syntax.Prod(Syntax.BoundArg(None, ty1, false), ty2) =>
         val not = arrNotation
         block_if(not, prevNot, right) {
@@ -316,8 +316,9 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer) extends
           term(ty2, notations, not, no_impl, right = true)
         }
       case Syntax.Prod(a, t) =>
-        block_if(Syntax.absNotation, prevNot, right)
-          { pi(); arg(a, block = true, notations); comma(); term(t, notations, absNotation, no_impl) }
+        block_if(Syntax.absNotation, prevNot, right) {
+          pi(); arg(a, block = true, notations); comma(); term(t, notations, absNotation, no_impl)
+        }
     }
 
   def term_no_notation(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation],
@@ -342,8 +343,9 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer) extends
           if (isImplicit) write("}")
         }
       case Syntax.Abst(a, t) =>
-        block_if(Syntax.absNotation, prevNot, right)
-        { lambda(); arg(a, block = true, notations); comma(); term(t, notations) }
+        block_if(Syntax.absNotation, prevNot, right) {
+          lambda(); arg(a, block = true, notations); comma(); term(t, notations)
+        }
       case Syntax.Prod(Syntax.BoundArg(None, ty1, false), ty2) =>
         val not = arrNotation
         block_if(not, prevNot, right) {
@@ -353,8 +355,9 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer) extends
           term(ty2, notations, not, right = true)
         }
       case Syntax.Prod(a, t) =>
-        block_if(Syntax.absNotation, prevNot, right)
-          { pi(); arg(a, block = true, notations); comma(); term(t, notations, absNotation) }
+        block_if(Syntax.absNotation, prevNot, right) {
+          pi(); arg(a, block = true, notations); comma(); term(t, notations, absNotation)
+        }
     }
 
   def term(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation],
@@ -444,14 +447,12 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer) extends
   end_command()
   }
 
-  def eta_equality(): Unit =
-  {
+  def eta_equality(): Unit = {
     write("""flag "eta_equality" on""")
     end_command()
   }
 
-  def require_open(module: String): Unit =
-  {
+  def require_open(module: String): Unit = {
     write("require open " + root + ".")
     ident(module)
     end_command()
@@ -459,8 +460,7 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer) extends
 }
 
 
-class DK_Writer(writer: Writer) extends Abstract_Writer(writer)
-{
+class DK_Writer(writer: Writer) extends Abstract_Writer(writer) {
   val reserved =
     Set(
       "def",
@@ -509,20 +509,22 @@ class DK_Writer(writer: Writer) extends Abstract_Writer(writer)
         block_if(absNotation, prevNot, right) { arg(a, block = false, notations); ar_pi() ; term(t) }
     }
 
-  def comment(c: String): Unit =
-  {
+  def comment(c: String): Unit = {
     write("(; " + c + " ;)")
     nl()
   }
 
-  def command(c: Syntax.Command, notations: MutableMap[Syntax.Ident, Syntax.Notation] = MutableMap()): Unit =
-  {
+  def command(
+    c: Syntax.Command,
+    notations: MutableMap[Syntax.Ident, Syntax.Notation] = MutableMap()
+  ): Unit = {
     c match {
       case Syntax.Declaration(id, args, ty, _) =>
         ident(id)
-        for (a <- args) { space(); block {
-          arg(a, block = false, notations)
-        } }
+        for (a <- args) {
+          space()
+          block { arg(a, block = false, notations) }
+        }
         colon(); term(ty)
       case Syntax.DefableDecl(id, ty, _, _) =>
         write("def ")
@@ -531,17 +533,19 @@ class DK_Writer(writer: Writer) extends Abstract_Writer(writer)
       case Syntax.Definition(id, args, ty, tm, _) =>
         write("def ")
         ident(id)
-        for (a <- args) { space(); block {
-          arg(a, block = false, notations)
-        } }
+        for (a <- args) {
+          space()
+          block { arg(a, block = false, notations) }
+        }
         for (ty <- ty) { colon(); term(ty) }
         dfn(); term(tm)
       case Syntax.Theorem(id, args, ty, prf) =>
         write("thm ")
         ident(id)
-        for (a <- args) { space(); block {
-          arg(a, block = false, notations)
-        } }
+        for (a <- args) {
+          space()
+          block { arg(a, block = false, notations) }
+        }
         colon(); term(ty)
         dfn(); term(prf)
       case Syntax.Rewrite(vars, lhs, rhs) =>
