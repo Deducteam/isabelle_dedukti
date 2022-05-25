@@ -23,3 +23,14 @@ session Dedukti_All in "Ex/All" = Pure +
   sessions HOL
   theories
     HOL.Complex_Main
+
+session Dedukti_Essential in "Ex/Essential" = Pure +
+  options [export_theory, export_proofs, record_proofs = 2]
+  sessions HOL
+  theories
+    HOL.BNF_Greatest_Fixpoint
+    HOL.Binomial
+    HOL.Conditionally_Complete_Lattices
+    HOL.Extraction
+    HOL.Filter
+
