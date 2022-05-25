@@ -8,7 +8,7 @@ Nitpick: Yet another counterexample generator for Isabelle/HOL.
 section \<open>Nitpick: Yet Another Counterexample Generator for Isabelle/HOL\<close>
 
 theory Nitpick
-imports Record GCD
+imports Record GCD Sledgehammer
 keywords
   "nitpick" :: diag and
   "nitpick_params" :: thy_decl
