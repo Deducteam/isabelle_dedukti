@@ -39,11 +39,21 @@ object Importer {
 
     /* session structure */
 
-    val base_info = Sessions.base_info(options, Thy_Header.PURE, progress = progress, dirs = dirs)
+    val full_sessions = Sessions.load_structure(options, dirs = dirs)
+    val selected_sessions =
+      full_sessions.selection(Sessions.Selection(sessions = session :: None.toList))
+
+    val info = selected_sessions(session)
+    val ancestor = info.parent match {
+      case Some(info) => info
+      case None => error("Bad session " + quote(session))
+    }
+progress.echo("session: "+ session + ", ancestor: " + ancestor)
+    val base_info = Sessions.base_info(options, /*ancestor*/"Pure", progress = progress, dirs = dirs)
 
     val session_info =
       base_info.sessions_structure.get(session) match {
-        case Some(info) if info.parent.contains(Thy_Header.PURE) => info
+        case Some(info) /*if info.parent.contains(Thy_Header.PURE)*/ => info
         case Some(_) => error("Parent session needs to be Pure")
         case None => error("Bad session " + quote(session))
       }
@@ -75,7 +85,8 @@ object Importer {
     def translate_theory(
       theory: Export_Theory.Theory,
       provider: Export.Provider,
-      previous_theories: Map[String, mutable.Queue[Syntax.Command]])
+      previous_theories: Map[String, mutable.Queue[Syntax.Command]],
+      with_prf : Boolean )
         : Map[String, mutable.Queue[Syntax.Command]] = {
       progress.echo("Translating theory " + theory.name)
 
@@ -136,10 +147,10 @@ object Importer {
           }
 
           exported_proofs += id.serial
-          current_theories(id.theory_name).append(Translate.stmt_decl(Prelude.proof_ident(id.serial), prf.prop, Some(prf.proof)))
+          current_theories(id.theory_name).append(Translate.stmt_decl(Prelude.proof_ident(id.serial), prf.prop, if (with_prf) Some(prf.proof) else None))
         }
         current_theory.append(Translate.stmt_decl(Prelude.thm_ident(thm.name),
-          thm.the_content.prop, Some(thm.the_content.proof)))
+          thm.the_content.prop, if (with_prf) Some(thm.the_content.proof) else None))
       }
       current_theories
     }
@@ -164,19 +175,40 @@ object Importer {
 
     /* import session */
 
-    val all_theories = dependencies.theory_graph.topological_order
+    val whole_graph = dependencies.theory_graph
+    val nodes_deps = scala.collection.mutable.Set[isabelle.Document.Node.Name](whole_graph.topological_order.head)
+    // val nodes_deps = scala.collection.mutable.Set[isabelle.Document.Node.Name]()
+    for (th <- whole_graph.all_succs(dependencies.theories)){
+      nodes_deps += th
+    }
+    // val nodes_deps = whole_graph.all_succs(dependencies.theories).to[scala.collection.mutable.Set[isabelle.Document.Node.Name]]
+    // val nodes_deps = scala.collection.mutable.Set[isabelle.Document.Node.Name](dependencies.theory_graph.all_succs(dependencies.theories).)
+    // nodes_deps += Pure_Thy
+    val all_theories = whole_graph.topological_order
 
+progress.echo("Whole dependencies: " + dependencies.theory_graph)
+
+progress.echo("Whole graph: " + whole_graph)
+progress.echo("Restricted graph: " + whole_graph.restrict(nodes_deps))
     using(store.open_database(session)) { db =>
-      def translate_theory_by_name(name: String, previous_theories: Map[String, mutable.Queue[Syntax.Command]]): Map[String, mutable.Queue[Syntax.Command]] = {
+    using(store.open_database(ancestor)) { db2 =>
+      def translate_theory_by_name(name: String, previous_theories: Map[String, mutable.Queue[Syntax.Command]],with_prf:Boolean): Map[String, mutable.Queue[Syntax.Command]] = {
         if (name == Thy_Header.PURE) {
           translate_theory(Export_Theory.read_pure_theory(store, cache = term_cache),
-            Export.Provider.none, previous_theories)
+            Export.Provider.none, previous_theories, with_prf)
         }
         else {
+          try {
           val provider = Export.Provider.database(db, store.cache, session, name)
           val theory = Export_Theory.read_theory(provider, session, name, cache = term_cache)
 
-          translate_theory(theory, provider, previous_theories)
+          translate_theory(theory, provider, previous_theories,with_prf)
+          } catch { case _ =>
+          val provider = Export.Provider.database(db2, store.cache, ancestor, name)
+          val theory = Export_Theory.read_theory(provider, ancestor, name, cache = term_cache)
+
+          translate_theory(theory, provider, previous_theories,with_prf)
+          }
         }
       }
 
@@ -184,7 +216,7 @@ object Importer {
 
       val translated_theories =
         all_theories
-          .foldLeft(Map[String, mutable.Queue[Syntax.Command]]())((n, m) => translate_theory_by_name(m.theory, n))
+          .foldLeft(Map[String, mutable.Queue[Syntax.Command]]())((n, m) => translate_theory_by_name(m.theory, n, m.theory=="HOL.Enum"))
           .view.mapValues(_.toList).toMap
 
       val notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation] = collection.mutable.Map()
@@ -226,6 +258,7 @@ object Importer {
 
         case ext => error("Unknown output format " + ext)
       }
+    }
     }
   }
 
