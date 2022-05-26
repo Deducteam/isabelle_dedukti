@@ -34,3 +34,28 @@ session Dedukti_Essential in "Ex/Essential" = Pure +
     HOL.Extraction
     HOL.Filter
 
+session Dedukti_Presburger_deps in "Ex/Presburger_deps" = Pure +
+  options [export_theory, export_proofs, record_proofs = 2]
+  sessions HOL
+  theories
+    HOL.Groebner_Basis HOL.Set_Interval
+
+
+session Dedukti_Presburger in "Ex/Presburger" = Dedukti_Presburger_deps +
+  options [export_theory, export_proofs, record_proofs = 2]
+  sessions HOL
+  theories
+    HOL.Presburger
+
+session Dedukti_HOL = Pure +
+  options [export_theory, export_proofs, record_proofs = 2]
+  sessions HOL Tools
+  theories
+    HOL.HOL
+    Tools.Code_Generator
+
+session Dedukti_Orderings in "Ex/Orderings" = Dedukti_HOL +
+  options [export_theory, export_proofs, record_proofs = 2]
+  sessions Tools HOL
+  theories
+    HOL.Orderings
