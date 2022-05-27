@@ -42,7 +42,6 @@ object Importer {
     val full_sessions = Sessions.load_structure(options, dirs = dirs)
     val selected_sessions =
       full_sessions.selection(Sessions.Selection(sessions = session :: None.toList))
-
     val info = selected_sessions(session)
     val ancestor =
       info.parent match {
@@ -245,12 +244,17 @@ if (with_prf) {
     // val nodes_deps = whole_graph.all_succs(dependencies.theories).to[scala.collection.mutable.Set[isabelle.Document.Node.Name]]
     // val nodes_deps = scala.collection.mutable.Set[isabelle.Document.Node.Name](dependencies.theory_graph.all_succs(dependencies.theories).)
     // nodes_deps += Pure_Thy
-    val all_theories = whole_graph.topological_order
+    val all_theories : List[isabelle.Document.Node.Name] =
+      whole_graph.topological_order
+      /*using(store.open_database(session)) { db =>
+        val thy_names = Export.read_theory_names(db,session)
+        thy_names.map(s => isabelle.Document.Node.Name(s))
+      }*/
 
 progress.echo("Whole dependencies: " + dependencies.theory_graph)
-
 progress.echo("Whole graph: " + whole_graph)
 progress.echo("Restricted graph: " + whole_graph.restrict(nodes_deps))
+progress.echo("all_theories: " + all_theories)
 
     // gets provider for the thy
     def get_theory(sessionn: String, thy_name: String) : (Export_Theory.Theory, String) = {
@@ -262,7 +266,7 @@ progress.echo("Restricted graph: " + whole_graph.restrict(nodes_deps))
         case _ : Throwable =>
         selected_sessions(sessionn).parent match {
           case Some(parent) => get_theory(parent,thy_name)
-          case None => error("Bad session " + quote(session))
+          case None => error("Bad session " + quote(sessionn))
         }
       }
     }
@@ -386,6 +390,9 @@ Usage: isabelle dedukti_import [OPTIONS] SESSION
               output_file = output_file,
               verbose = verbose)
           }
+          catch {case x: Exception =>
+            progress.echo(x.getStackTrace.mkString("\n"))
+            println(x)}
           finally {
             val end_date = Date.now()
             if (verbose) progress.echo("\nFinished at " + Build_Log.print_date(end_date))
