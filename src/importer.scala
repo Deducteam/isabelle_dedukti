@@ -44,11 +44,13 @@ object Importer {
       full_sessions.selection(Sessions.Selection(sessions = session :: None.toList))
 
     val info = selected_sessions(session)
-    val ancestor = info.parent match {
-      case Some(info) => info
-      case None => error("Bad session " + quote(session))
-    }
-progress.echo("session: "+ session + ", ancestor: " + ancestor)
+    val ancestor =
+      info.parent match {
+        case Some(info) => info
+        case None => error("Bad session " + quote(session))
+      }
+    progress.echo("session: " + session + ", ancestor: " + ancestor)
+
     val base_info = Sessions.base_info(options, /*ancestor*/"Pure", progress = progress, dirs = dirs)
 
     val session_info =
@@ -72,14 +74,25 @@ progress.echo("session: "+ session + ", ancestor: " + ancestor)
 
     def proof_boxes(
       thm: Export_Theory.Entity[Export_Theory.Thm],
-      provider: Export.Provider
+      theory_name: String,
+      session: String //provider: Export.Provider
     ) : List[(Export_Theory.Thm_Id, Export_Theory.Proof)] = {
-      try {
-        Export_Theory.read_proof_boxes(
-          store, provider, thm.the_content.proof,
-          suppress = id => exported_proofs(id.serial), cache = term_cache)
+      using(store.open_database(session)) { db =>
+        try {
+          val provider =
+            Export.Provider.database(db, store.cache, session, theory_name)
+          Export_Theory.read_proof_boxes(
+            store, provider, thm.the_content.proof,
+            suppress = id => exported_proofs(id.serial), cache = term_cache)
+        }
+        catch { case ERROR(msg) =>
+          val info = selected_sessions(session)
+          info.parent match {
+            case Some(ancestor) => proof_boxes(thm, theory_name, ancestor)
+            case None => error(msg + "\nin " + thm)
+          }
+        }
       }
-      catch { case ERROR(msg) => error(msg + "\nin " + thm) }
     }
 
     def translate_theory(
@@ -140,7 +153,7 @@ progress.echo("session: "+ session + ", ancestor: " + ancestor)
       for (thm <- theory.thms) {
         if (verbose) progress.echo("  " + thm.toString)
 
-        for ((id, prf) <- proof_boxes(thm, provider)) {
+        for ((id, prf) <- proof_boxes(thm, theory.name, session)) {
           if (verbose) {
             progress.echo("  proof " + id.serial +
               (if (theory.name == id.theory_name) "" else " (from " + id.theory_name + ")"))
