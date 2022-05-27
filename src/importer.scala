@@ -251,11 +251,11 @@ progress.echo("Whole graph: " + whole_graph)
 progress.echo("Restricted graph: " + whole_graph.restrict(nodes_deps))
 
     // gets provider for the thy
-    def get_theory(sessionn: String, thy_name: String) : (Export_Theory.Theory) = {
+    def get_theory(sessionn: String, thy_name: String) : (Export_Theory.Theory, String) = {
       try {
         val db = store.open_database(sessionn)
         val provider = Export.Provider.database(db, store.cache, sessionn, thy_name)
-        Export_Theory.read_theory(provider, sessionn, thy_name, cache = term_cache)
+        (Export_Theory.read_theory(provider, sessionn, thy_name, cache = term_cache), sessionn)
       } catch {
         case _ : Throwable =>
         selected_sessions(sessionn).parent match {
@@ -273,8 +273,8 @@ progress.echo("Restricted graph: " + whole_graph.restrict(nodes_deps))
             previous_theories, false)
         }
         else {
-          val theory = get_theory(session,name)
-          translate_theory(theory, previous_theories, true)
+          val (theory,sess) = get_theory(session,name)
+          translate_theory(theory, previous_theories, sess == session)
         }
       }
 
