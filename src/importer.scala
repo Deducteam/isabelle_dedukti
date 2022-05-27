@@ -198,17 +198,17 @@ progress.echo("Restricted graph: " + whole_graph.restrict(nodes_deps))
             Export.Provider.none, previous_theories, false)
         }
         else {
-          try {
           val provider = Export.Provider.database(db, store.cache, session, name)
-          val theory = Export_Theory.read_theory(provider, session, name, cache = term_cache)
-
-          translate_theory(theory, provider, previous_theories,true)
-          } catch { case _ =>
-          val provider = Export.Provider.database(db2, store.cache, ancestor, name)
-          val theory = Export_Theory.read_theory(provider, ancestor, name, cache = term_cache)
-
-          translate_theory(theory, provider, previous_theories,false)
+          val (theory,write_prf) =
+          try {
+            val theory = Export_Theory.read_theory(provider, session, name, cache = term_cache)
+            (theory, true)
+          } catch { case _ : Throwable =>
+            val provider2 = Export.Provider.database(db2, store.cache, ancestor, name)
+            val theory = Export_Theory.read_theory(provider2, ancestor, name, cache = term_cache)
+            (theory, false)
           }
+          translate_theory(theory, provider, previous_theories,write_prf)
         }
       }
 
