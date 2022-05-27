@@ -303,16 +303,19 @@ progress.echo("Restricted graph: " + whole_graph.restrict(nodes_deps))
 
           // write one file per theory
           for (name <- all_theories) {
-            using(new Part_Writer(theory_file(name.theory))) { writer =>
-              val syntax = new LP_Writer(output_file.dir, use_notations, writer)
-              if (!eta_expand) syntax.eta_equality()
+            val (theory,sess) = get_theory(session,name)
+            if (sess == session) {
+              using(new Part_Writer(theory_file(name.theory))) { writer =>
+                val syntax = new LP_Writer(output_file.dir, use_notations, writer)
+                if (!eta_expand) syntax.eta_equality()
 
-              for {
-                req <- dependencies.theory_graph.all_preds(List(name)).reverse.map(_.theory)
-                if req != name.theory
-              } syntax.require_open(req)
+                for {
+                  req <- dependencies.theory_graph.all_preds(List(name)).reverse.map(_.theory)
+                  if req != name.theory
+                } syntax.require_open(req)
 
-              write_theory(name.theory, syntax, notations, translated_theories(name.theory))
+                write_theory(name.theory, syntax, notations, translated_theories(name.theory))
+              }
             }
           }
 
