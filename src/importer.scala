@@ -196,6 +196,7 @@ object Importer {
         current_theory.append(Translate.stmt_decl(Prelude.axiom_ident(axm.name), axm.the_content.prop, None))
       }
 
+if (with_prf) {
       for (thm <- theory.thms) {
         if (verbose) progress.echo("  " + thm.toString + " " + thm.serial)
 
@@ -211,6 +212,7 @@ object Importer {
         current_theory.append(Translate.stmt_decl(Prelude.thm_ident(thm.name),
           thm.the_content.prop, if (with_prf) Some(thm.the_content.proof) else None))
       }
+}
       current_theories
     }
 
@@ -265,8 +267,6 @@ progress.echo("Restricted graph: " + whole_graph.restrict(nodes_deps))
       }
     }
 
-    using(store.open_database(session)) { db =>
-    using(store.open_database(ancestor)) { db2 =>
       def translate_theory_by_name(name: String, previous_theories: Map[String, mutable.Queue[Syntax.Command]]): Map[String, mutable.Queue[Syntax.Command]] = {
         if (name == Thy_Header.PURE) {
           translate_theory(Export_Theory.read_pure_theory(store, cache = term_cache),
@@ -324,8 +324,6 @@ progress.echo("Restricted graph: " + whole_graph.restrict(nodes_deps))
 
         case ext => error("Unknown output format " + ext)
       }
-    }
-    }
   }
 
 
