@@ -151,12 +151,12 @@ object Importer {
       }
 
       for (a <- theory.classes) {
-        if (verbose) progress.echo("  " + a.toString)
+        if (verbose) progress.echo("  " + a.toString + a.serial)
         current_theory.append(Translate.class_decl(a.name))
       }
 
       for (a <- theory.types) {
-        if (verbose) progress.echo("  " + a.toString)
+        if (verbose) progress.echo("  " + a.toString + a.serial)
         current_theory.append(Translate.type_decl(a.name, a.the_content.args, a.the_content.abbrev, a.the_content.syntax))
 
         if (a.name == Pure_Thy.FUN ) {
@@ -168,7 +168,7 @@ object Importer {
       }
 
       for (a <- theory.consts) {
-        if (verbose) progress.echo("  " + a.toString)
+        if (verbose) progress.echo("  " + a.toString + " " + a.serial)
         current_theory.append(Translate.const_decl(a.name, a.the_content.typargs, a.the_content.typ, a.the_content.abbrev, a.the_content.syntax))
 
         if (a.name == Pure_Thy.ALL) {
@@ -180,7 +180,7 @@ object Importer {
       }
 
       for (axm <- theory.axioms) {
-        if (verbose) progress.echo("  " + axm.toString)
+        if (verbose) progress.echo("  " + axm.toString + " " + axm.serial)
         current_theory.append(Translate.stmt_decl(Prelude.axiom_ident(axm.name), axm.the_content.prop, None))
       }
 
