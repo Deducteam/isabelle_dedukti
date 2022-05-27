@@ -60,6 +60,53 @@ object Importer {
         case None => error("Bad session " + quote(session))
       }
 
+    def read_proof_boxes(
+    store: Sessions.Store,
+    proof: Term.Proof,
+    suppress: Export_Theory.Thm_Id => Boolean = _ => false,
+    cache: Term.Cache = Term.Cache.none): List[(Export_Theory.Thm_Id, Export_Theory.Proof)] =
+    {
+      var seen = Set.empty[Long]
+      var result = scala.collection.immutable.SortedMap.empty[Long, (Export_Theory.Thm_Id, Export_Theory.Proof)]
+      
+      def boxes(context: Option[(Long, Term.Proof)], prf: Term.Proof): Unit =
+      {
+        prf match {
+          case Term.Abst(_, _, p) => boxes(context, p)
+          case Term.AbsP(_, _, p) => boxes(context, p)
+          case Term.Appt(p, _) => boxes(context, p)
+          case Term.AppP(p, q) => boxes(context, p); boxes(context, q)
+          case thm: Term.PThm if !seen(thm.serial) =>
+          seen += thm.serial
+          val theory_name = thm.theory_name
+          val id = Export_Theory.Thm_Id(thm.serial, theory_name)
+          if (!suppress(id)) {
+            def loop(session:String) : Unit = {
+              val provider = Export.Provider.database(store.open_database(session), store.cache, session, theory_name)
+              val read =
+              if (id.pure) Export_Theory.read_pure_proof(store, id, cache = cache)
+              else Export_Theory.read_proof(provider, id, cache = cache)
+              read match {
+                case Some(p) =>
+                result += (thm.serial -> (id -> p))
+                boxes(Some((thm.serial, p.proof)), p.proof)
+                case None =>
+                selected_sessions(session).parent match {
+                  case Some(parent) => loop(parent)
+                  case None =>
+
+                }
+              }
+            }
+            loop(session)
+          }
+          case _ =>
+        }
+      }
+      
+      boxes(None, proof)
+      result.iterator.map(_._2).toList
+    }
     val resources = new Resources(base_info.sessions_structure, base_info.check.base)
 
     val dependencies = resources.session_dependencies(session_info, progress = progress)
@@ -81,8 +128,8 @@ object Importer {
         try {
           val provider =
             Export.Provider.database(db, store.cache, session, theory_name)
-          Export_Theory.read_proof_boxes(
-            store, provider, thm.the_content.proof,
+          read_proof_boxes(
+            store, thm.the_content.proof,
             suppress = id => exported_proofs(id.serial), cache = term_cache)
         }
         catch { case ERROR(msg) =>
@@ -150,7 +197,7 @@ object Importer {
       }
 
       for (thm <- theory.thms) {
-        if (verbose) progress.echo("  " + thm.toString)
+        if (verbose) progress.echo("  " + thm.toString + " " + thm.serial)
 
         for ((id, prf) <- proof_boxes(thm, theory.name, session)) {
           if (verbose) {
@@ -202,6 +249,22 @@ progress.echo("Whole dependencies: " + dependencies.theory_graph)
 
 progress.echo("Whole graph: " + whole_graph)
 progress.echo("Restricted graph: " + whole_graph.restrict(nodes_deps))
+
+    // gets provider for the thy
+    def get_theory(sessionn: String, thy_name: String) : (Export_Theory.Theory) = {
+      try {
+        val db = store.open_database(sessionn)
+        val provider = Export.Provider.database(db, store.cache, sessionn, thy_name)
+        Export_Theory.read_theory(provider, sessionn, thy_name, cache = term_cache)
+      } catch {
+        case _ : Throwable =>
+        selected_sessions(sessionn).parent match {
+          case Some(parent) => get_theory(parent,thy_name)
+          case None => error("Bad session " + quote(session))
+        }
+      }
+    }
+
     using(store.open_database(session)) { db =>
     using(store.open_database(ancestor)) { db2 =>
       def translate_theory_by_name(name: String, previous_theories: Map[String, mutable.Queue[Syntax.Command]]): Map[String, mutable.Queue[Syntax.Command]] = {
@@ -210,17 +273,8 @@ progress.echo("Restricted graph: " + whole_graph.restrict(nodes_deps))
             previous_theories, false)
         }
         else {
-          val provider = Export.Provider.database(db, store.cache, session, name)
-          val (theory,write_prf) =
-          try {
-            val theory = Export_Theory.read_theory(provider, session, name, cache = term_cache)
-            (theory, true)
-          } catch { case _ : Throwable =>
-            val provider2 = Export.Provider.database(db2, store.cache, ancestor, name)
-            val theory = Export_Theory.read_theory(provider2, ancestor, name, cache = term_cache)
-            (theory, false)
-          }
-          translate_theory(theory, previous_theories, write_prf)
+          val theory = get_theory(session,name)
+          translate_theory(theory, previous_theories, true)
         }
       }
 
