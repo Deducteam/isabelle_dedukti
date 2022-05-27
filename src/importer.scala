@@ -76,29 +76,29 @@ object Importer {
           case Term.Appt(p, _) => boxes(context, p)
           case Term.AppP(p, q) => boxes(context, p); boxes(context, q)
           case thm: Term.PThm if !seen(thm.serial) =>
-          seen += thm.serial
-          val theory_name = thm.theory_name
-          val id = Export_Theory.Thm_Id(thm.serial, theory_name)
-          if (!suppress(id)) {
-            def loop(session:String) : Unit = {
-              val provider = Export.Provider.database(store.open_database(session), store.cache, session, theory_name)
-              val read =
-              if (id.pure) Export_Theory.read_pure_proof(store, id, cache = cache)
-              else Export_Theory.read_proof(provider, id, cache = cache)
-              read match {
-                case Some(p) =>
-                result += (thm.serial -> (id -> p))
-                boxes(Some((thm.serial, p.proof)), p.proof)
-                case None =>
-                selected_sessions(session).parent match {
-                  case Some(parent) => loop(parent)
+            seen += thm.serial
+            val theory_name = thm.theory_name
+            val id = Export_Theory.Thm_Id(thm.serial, theory_name)
+            if (!suppress(id)) {
+              def loop(session:String) : Unit = {
+                val db = store.open_database(session)
+                val provider = Export.Provider.database(db, store.cache, session, theory_name)
+                val read =
+                  if (id.pure) Export_Theory.read_pure_proof(store, id, cache = cache)
+                  else Export_Theory.read_proof(provider, id, cache = cache)
+                read match {
+                  case Some(p) =>
+                    result += (thm.serial -> (id -> p))
+                    boxes(Some((thm.serial, p.proof)), p.proof)
                   case None =>
-
+                    selected_sessions(session).parent match {
+                      case Some(parent) => loop(parent)
+                      case None =>
+                    }
                 }
               }
+              loop(session)
             }
-            loop(session)
-          }
           case _ =>
         }
       }
@@ -118,28 +118,17 @@ object Importer {
 
     var exported_proofs = Set.empty[Long]
 
-    def proof_boxes(
+    /*def proof_boxes(
       thm: Export_Theory.Entity[Export_Theory.Thm],
-      theory_name: String,
-      session: String //provider: Export.Provider
+      provider: Export.Provider
     ) : List[(Export_Theory.Thm_Id, Export_Theory.Proof)] = {
-      using(store.open_database(session)) { db =>
-        try {
-          val provider =
-            Export.Provider.database(db, store.cache, session, theory_name)
-          read_proof_boxes(
-            store, thm.the_content.proof,
-            suppress = id => exported_proofs(id.serial), cache = term_cache)
-        }
-        catch { case ERROR(msg) =>
-          val info = selected_sessions(session)
-          info.parent match {
-            case Some(ancestor) => proof_boxes(thm, theory_name, ancestor)
-            case None => error(msg + "\nin " + thm)
-          }
-        }
+      try {
+        Export_Theory.read_proof_boxes(
+          store, provider, thm.the_content.proof,
+          suppress = id => exported_proofs(id.serial), cache = term_cache)
       }
-    }
+      catch { case ERROR(msg) => error(msg + "\nin " + thm) }
+    }*/
 
     def translate_theory(
       theory: Export_Theory.Theory,
@@ -199,7 +188,8 @@ if (with_prf) {
       for (thm <- theory.thms) {
         if (verbose) progress.echo("  " + thm.toString + " " + thm.serial)
 
-        for ((id, prf) <- proof_boxes(thm, theory.name, session)) {
+        for ((id, prf) <- read_proof_boxes(store, thm.the_content.proof,
+            suppress = id => exported_proofs(id.serial), cache = term_cache)) {
           if (verbose) {
             progress.echo("  proof " + id.serial +
               (if (theory.name == id.theory_name) "" else " (from " + id.theory_name + ")"))
@@ -307,7 +297,7 @@ progress.echo("all_theories: " + all_theories)
 
           // write one file per theory
           for (name <- all_theories) {
-            val (theory, sess) = get_theory(session, name.toString)
+            val (_, sess) = get_theory(session, name.toString)
             if (sess == session) {
               using(new Part_Writer(theory_file(name.theory))) { writer =>
                 val syntax = new LP_Writer(output_file.dir, use_notations, writer)
