@@ -49,13 +49,13 @@ session Dedukti_Presburger in "Ex/Presburger" = Dedukti_Presburger_deps +
 
 session Dedukti_HOL = Pure +
   options [export_theory, export_proofs, record_proofs = 2]
-  sessions HOL Tools
+  sessions HOL
   theories
     HOL.HOL
     Tools.Code_Generator
 
 session Dedukti_Orderings in "Ex/Orderings" = Dedukti_HOL +
   options [export_theory, export_proofs, record_proofs = 2]
-  sessions Tools HOL
+  sessions HOL
   theories
     HOL.Orderings

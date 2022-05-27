@@ -192,22 +192,22 @@ progress.echo("Whole graph: " + whole_graph)
 progress.echo("Restricted graph: " + whole_graph.restrict(nodes_deps))
     using(store.open_database(session)) { db =>
     using(store.open_database(ancestor)) { db2 =>
-      def translate_theory_by_name(name: String, previous_theories: Map[String, mutable.Queue[Syntax.Command]],with_prf:Boolean): Map[String, mutable.Queue[Syntax.Command]] = {
+      def translate_theory_by_name(name: String, previous_theories: Map[String, mutable.Queue[Syntax.Command]]): Map[String, mutable.Queue[Syntax.Command]] = {
         if (name == Thy_Header.PURE) {
           translate_theory(Export_Theory.read_pure_theory(store, cache = term_cache),
-            Export.Provider.none, previous_theories, with_prf)
+            Export.Provider.none, previous_theories, false)
         }
         else {
           try {
           val provider = Export.Provider.database(db, store.cache, session, name)
           val theory = Export_Theory.read_theory(provider, session, name, cache = term_cache)
 
-          translate_theory(theory, provider, previous_theories,with_prf)
+          translate_theory(theory, provider, previous_theories,true)
           } catch { case _ =>
           val provider = Export.Provider.database(db2, store.cache, ancestor, name)
           val theory = Export_Theory.read_theory(provider, ancestor, name, cache = term_cache)
 
-          translate_theory(theory, provider, previous_theories,with_prf)
+          translate_theory(theory, provider, previous_theories,false)
           }
         }
       }
@@ -216,7 +216,7 @@ progress.echo("Restricted graph: " + whole_graph.restrict(nodes_deps))
 
       val translated_theories =
         all_theories
-          .foldLeft(Map[String, mutable.Queue[Syntax.Command]]())((n, m) => translate_theory_by_name(m.theory, n, m.theory=="HOL.Enum"))
+          .foldLeft(Map[String, mutable.Queue[Syntax.Command]]())((n, m) => translate_theory_by_name(m.theory, n))
           .view.mapValues(_.toList).toMap
 
       val notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation] = collection.mutable.Map()
