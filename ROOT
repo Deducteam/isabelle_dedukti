@@ -47,7 +47,7 @@ session Dedukti_Presburger in "Ex/Presburger" = Dedukti_Presburger_deps +
   theories
     HOL.Presburger
 
-session Dedukti_HOL = Pure +
+session Dedukti_HOL in "Ex/HOL" = Pure +
   options [export_theory, export_proofs, record_proofs = 2]
   sessions HOL
   theories
