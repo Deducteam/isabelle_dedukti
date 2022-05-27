@@ -71,3 +71,15 @@ session Dedukti_Groups in "Ex/Groups" = Dedukti_Groups_dep +
   sessions HOL
   theories
     HOL.Groups
+
+session Dedukti_Set in "Ex/Set" = Dedukti_Groups +
+  options [export_theory, export_proofs, record_proofs = 2]
+  sessions HOL
+  theories
+    HOL.Set
+
+session Dedukti_Fun in "Ex/Fun" = Dedukti_Set +
+  options [export_theory, export_proofs, record_proofs = 2]
+  sessions HOL
+  theories
+    HOL.Fun
