@@ -307,7 +307,7 @@ progress.echo("all_theories: " + all_theories)
 
           // write one file per theory
           for (name <- all_theories) {
-            val (theory,sess) = get_theory(session,name)
+            val (theory, sess) = get_theory(session, name.toString)
             if (sess == session) {
               using(new Part_Writer(theory_file(name.theory))) { writer =>
                 val syntax = new LP_Writer(output_file.dir, use_notations, writer)
