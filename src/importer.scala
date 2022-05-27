@@ -97,7 +97,6 @@ object Importer {
 
     def translate_theory(
       theory: Export_Theory.Theory,
-      provider: Export.Provider,
       previous_theories: Map[String, mutable.Queue[Syntax.Command]],
       with_prf : Boolean )
         : Map[String, mutable.Queue[Syntax.Command]] = {
@@ -208,7 +207,7 @@ progress.echo("Restricted graph: " + whole_graph.restrict(nodes_deps))
       def translate_theory_by_name(name: String, previous_theories: Map[String, mutable.Queue[Syntax.Command]]): Map[String, mutable.Queue[Syntax.Command]] = {
         if (name == Thy_Header.PURE) {
           translate_theory(Export_Theory.read_pure_theory(store, cache = term_cache),
-            Export.Provider.none, previous_theories, false)
+            previous_theories, false)
         }
         else {
           val provider = Export.Provider.database(db, store.cache, session, name)
@@ -221,7 +220,7 @@ progress.echo("Restricted graph: " + whole_graph.restrict(nodes_deps))
             val theory = Export_Theory.read_theory(provider2, ancestor, name, cache = term_cache)
             (theory, false)
           }
-          translate_theory(theory, provider, previous_theories,write_prf)
+          translate_theory(theory, previous_theories, write_prf)
         }
       }
 
