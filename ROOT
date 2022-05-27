@@ -59,3 +59,15 @@ session Dedukti_Orderings in "Ex/Orderings" = Dedukti_HOL +
   sessions HOL
   theories
     HOL.Orderings
+
+session Dedukti_Groups_dep in "Ex/Groups_dep" = Pure +
+  options [export_theory, export_proofs, record_proofs = 2]
+  sessions HOL
+  theories
+    HOL.Orderings
+
+session Dedukti_Groups in "Ex/Groups" = Dedukti_Groups_dep +
+  options [export_theory, export_proofs, record_proofs = 2]
+  sessions HOL
+  theories
+    HOL.Groups
