@@ -80,7 +80,6 @@ object Importer {
             val theory_name = thm.theory_name
             val id = Export_Theory.Thm_Id(thm.serial, theory_name)
             if (!suppress(id)) {
-              def loop(session:String) : Unit = {
                 val db = store.open_database(session)
                 val provider = Export.Provider.database(db, store.cache, session, theory_name)
                 val read =
@@ -90,14 +89,8 @@ object Importer {
                   case Some(p) =>
                     result += (thm.serial -> (id -> p))
                     boxes(Some((thm.serial, p.proof)), p.proof)
-                  case None =>
-                    selected_sessions(session).parent match {
-                      case Some(parent) => loop(parent)
-                      case None =>
-                    }
+                  case None => /* Does this mean the proof is done in ancestor sessions? Don't process then.  */
                 }
-              }
-              loop(session)
             }
           case _ =>
         }

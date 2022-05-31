@@ -208,7 +208,8 @@ object Translate {
         Syntax.appls(Syntax.Symb(axiom_ident(axm.name)), axm.types.map(typ), implArgsMap(axiom_ident(axm.name)))
       case thm: Term.PThm =>
         val head = if (thm.name.nonEmpty) thm_ident(thm.name) else proof_ident(thm.serial)
-        Syntax.appls(Syntax.Symb(head), thm.types.map(typ), implArgsMap(head))
+        val impl = try implArgsMap(head) catch { case _ : Throwable => Nil }
+        Syntax.appls(Syntax.Symb(head), thm.types.map(typ), impl)
       case _ => error("Bad proof term encountered:\n" + prf)
     }
 
@@ -610,6 +611,8 @@ object Translate {
         Syntax.Theorem(s, new_args, final_ty, contracted)
       }
     }
-    catch { case ERROR(msg) => error(msg + "\nin " + quote(s)) }
+    catch { case e : Throwable => e.printStackTrace
+      error("oops") }
+//    catch { case ERROR(msg) => error(msg + "\nin " + quote(s)) }
   }
 }
