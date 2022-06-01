@@ -43,6 +43,7 @@ object Importer {
     val selected_sessions =
       full_sessions.selection(Sessions.Selection(sessions = session :: None.toList))
     val info = selected_sessions(session)
+
     val ancestor =
       info.parent match {
         case Some(info) => info
@@ -59,46 +60,6 @@ object Importer {
         case None => error("Bad session " + quote(session))
       }
 
-    def read_proof_boxes(
-    store: Sessions.Store,
-    proof: Term.Proof,
-    suppress: Export_Theory.Thm_Id => Boolean = _ => false,
-    cache: Term.Cache = Term.Cache.none): List[(Export_Theory.Thm_Id, Export_Theory.Proof)] =
-    {
-      var seen = Set.empty[Long]
-      var result = scala.collection.immutable.SortedMap.empty[Long, (Export_Theory.Thm_Id, Export_Theory.Proof)]
-      
-      def boxes(context: Option[(Long, Term.Proof)], prf: Term.Proof): Unit =
-      {
-        prf match {
-          case Term.Abst(_, _, p) => boxes(context, p)
-          case Term.AbsP(_, _, p) => boxes(context, p)
-          case Term.Appt(p, _) => boxes(context, p)
-          case Term.AppP(p, q) => boxes(context, p); boxes(context, q)
-          case thm: Term.PThm if !seen(thm.serial) =>
-            seen += thm.serial
-            val theory_name = thm.theory_name
-            val id = Export_Theory.Thm_Id(thm.serial, theory_name)
-            if (!suppress(id)) {
-                val db = store.open_database(session)
-                val provider = Export.Provider.database(db, store.cache, session, theory_name)
-                val read =
-                  if (id.pure) Export_Theory.read_pure_proof(store, id, cache = cache)
-                  else Export_Theory.read_proof(provider, id, cache = cache)
-                read match {
-                  case Some(p) =>
-                    result += (thm.serial -> (id -> p))
-                    boxes(Some((thm.serial, p.proof)), p.proof)
-                  case None => /* Does this mean the proof is done in ancestor sessions? Don't process then.  */
-                }
-            }
-          case _ =>
-        }
-      }
-      
-      boxes(None, proof)
-      result.iterator.map(_._2).toList
-    }
     val resources = new Resources(base_info.sessions_structure, base_info.check.base)
 
     val dependencies = resources.session_dependencies(session_info, progress = progress)
@@ -108,6 +69,27 @@ object Importer {
 
     val store = Sessions.store(options)
     val term_cache = Term.Cache.make()
+    val db = store.open_database(session)
+
+    def decode_proof : XML.Decode.T[Export_Theory.Proof] = {
+    import XML.Decode._
+    variant(List(
+      { case (_,body) =>
+        val (typargs, (args, (prop_body, proof_body))) =
+        {
+          import XML.Decode._
+          import Term_XML.Decode._
+          pair(list(pair(string, sort)), pair(list(pair(string, typ)), pair(x => x, x => x)))(body)
+        }
+        val env = args.toMap
+        val prop = Term_XML.Decode.term_env(env)(prop_body)
+        val proof = Term_XML.Decode.proof_env(env)(proof_body)
+        
+        val result = Export_Theory.Proof(typargs, args, prop, proof)
+        if (term_cache.no_cache) result else result.cache(term_cache)
+      }
+    ))
+    }
 
     var exported_proofs = Set.empty[Long]
 
@@ -177,24 +159,39 @@ object Importer {
         current_theory.append(Translate.stmt_decl(Prelude.axiom_ident(axm.name), axm.the_content.prop, None))
       }
 
-if (with_prf) {
       for (thm <- theory.thms) {
         if (verbose) progress.echo("  " + thm.toString + " " + thm.serial)
-
-        for ((id, prf) <- read_proof_boxes(store, thm.the_content.proof,
+/*        for ((id, prf) <- read_proof_boxes(store, thm.the_content.proof,
             suppress = id => exported_proofs(id.serial), cache = term_cache)) {
           if (verbose) {
             progress.echo("  proof " + id.serial +
               (if (theory.name == id.theory_name) "" else " (from " + id.theory_name + ")"))
           }
-
           exported_proofs += id.serial
           current_theories(id.theory_name).append(Translate.stmt_decl(Prelude.proof_ident(id.serial), prf.prop, if (with_prf) Some(prf.proof) else None))
         }
+*/
         current_theory.append(Translate.stmt_decl(Prelude.thm_ident(thm.name),
           thm.the_content.prop, if (with_prf) Some(thm.the_content.proof) else None))
       }
-}
+
+      val provider = Export.Provider.database(db, store.cache, session, theory.name)
+
+      for ((thy_name,prf_name) <- Export.read_theory_exports(db,session)) {
+        if ((thy_name == theory.name || thy_name == Thy_Header.PURE) && prf_name.startsWith("proofs/"))
+        {
+          val prf_serial = prf_name.substring(7).toLong
+          val prf_id = Export_Theory.Thm_Id(prf_serial,thy_name)
+
+          Export_Theory.read_proof(provider, prf_id, cache = term_cache) match {
+            case Some(prf) =>
+            current_theory.append(Translate.stmt_decl(Prelude.proof_ident(prf_serial), prf.prop, if (with_prf) Some(prf.proof) else None))
+          }
+          if (verbose) {
+            progress.echo("  proof " + prf_serial )
+          }
+        }
+      }
       current_theories
     }
 
@@ -238,6 +235,7 @@ progress.echo("Whole dependencies: " + dependencies.theory_graph)
 progress.echo("Whole graph: " + whole_graph)
 progress.echo("Restricted graph: " + whole_graph.restrict(nodes_deps))
 progress.echo("all_theories: " + all_theories)
+progress.echo("DB:\n" + store.open_database(session))
 
     // gets provider for the thy
     def get_theory(sessionn: String, thy_name: String) : (Export_Theory.Theory, String) = {
