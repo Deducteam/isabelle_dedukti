@@ -104,6 +104,5 @@ jobs:
           # Isabelle2021-1/bin/isabelle scala_build
         run: |
           eval $(opam env)
-          lambdapi init test
-          ~/Isabelle2021-1/bin/isabelle dedukti_import -O "test/main.lp" ${{ matrix.test-notations }} Dedukti_Base
-          lambdapi check -w test/main.lp
+          ~/Isabelle2021-1/bin/isabelle dedukti_import -O main.lp ${{ matrix.test-notations }} Dedukti_Base
+          lambdapi check main.lp
