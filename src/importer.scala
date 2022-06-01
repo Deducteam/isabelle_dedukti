@@ -175,7 +175,7 @@ object Importer {
         case (thy_name,prf_name)::prfs2 =>
         if ((thy_name == theory.name || thy_name == Thy_Header.PURE) && prf_name.startsWith("proofs/")) {
           val prf_serial = prf_name.substring(7).toLong
-          if (prf_serial >= thm_prf) {
+          if (prf_serial > thm_prf) {
             translate_thm(thm)
             thms match {
               case thm2 :: thms2 =>
