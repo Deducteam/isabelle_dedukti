@@ -184,11 +184,11 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer)
       "≡",
       "↪",
       "λ",
-      "[",
+      "{",
       "(",
       "[",
       "Π",
-      "]",
+      "}",
       ")",
       "]",
       ";",
@@ -218,7 +218,7 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer)
 
 
 
-  val root: String = root_path.implode.replace('/', '.')
+  val root: String = "Isabelle" //root_path.implode.replace('/', '.')
 
   def comma()       : Unit = write(", ")
   def semicolon()   : Unit = write(";")
