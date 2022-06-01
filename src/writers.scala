@@ -91,7 +91,7 @@ abstract class Abstract_Writer(writer: Writer) extends Ident_Writer {
   def arg(a: Syntax.BoundArg, block: Boolean, notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit = {
     if (block) {
       if (a.implicit_arg) {
-        write("{")
+        write("[")
       } else {
         write("(")
       }
@@ -104,7 +104,7 @@ abstract class Abstract_Writer(writer: Writer) extends Ident_Writer {
     term(a.typ, notations, prevNot = justHadPars)
     if (block) {
       if (a.implicit_arg) {
-        write("}")
+        write("]")
       } else {
         write(")")
       }
@@ -184,11 +184,11 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer)
       "≡",
       "↪",
       "λ",
-      "{",
+      "[",
       "(",
       "[",
       "Π",
-      "}",
+      "]",
       ")",
       "]",
       ";",
@@ -266,7 +266,7 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer)
               block(ident(op))
               for ((arg, impl) <- pre_spine) {
                 if (impl) {
-                  if (no_impl || spine.isEmpty) { space(); write("{"); term(arg, notations, Syntax.justHadPars, no_impl, right = true); write("}") }
+                  if (no_impl || spine.isEmpty) { space(); write("["); term(arg, notations, Syntax.justHadPars, no_impl, right = true); write("]") }
                 } else {
                 space(); term(arg, notations, not, no_impl, right = true)
                 }
@@ -280,7 +280,7 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer)
           term(head, notations, not, right)
           for ((arg, impl) <- pre_spine) {
             if (impl) {
-              if (no_impl || spine.isEmpty) { space(); write("{"); term(arg, notations, Syntax.justHadPars, right = true); write("}") }
+              if (no_impl || spine.isEmpty) { space(); write("["); term(arg, notations, Syntax.justHadPars, right = true); write("]") }
             } else {
               space()
               term(arg, notations, not, right = true)
@@ -338,9 +338,9 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer)
           term(t1, notations, not)
           space()
           val newNot = if (isImplicit) justHadPars else appNotation
-          if (isImplicit) write("{")
+          if (isImplicit) write("[")
           term(t2, notations, newNot, right = true)
-          if (isImplicit) write("}")
+          if (isImplicit) write("]")
         }
       case Syntax.Abst(a, t) =>
         block_if(Syntax.absNotation, prevNot, right) {
