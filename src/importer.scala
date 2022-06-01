@@ -159,38 +159,49 @@ object Importer {
         current_theory.append(Translate.stmt_decl(Prelude.axiom_ident(axm.name), axm.the_content.prop, None))
       }
 
-      for (thm <- theory.thms) {
-        if (verbose) progress.echo("  " + thm.toString + " " + thm.serial)
-/*        for ((id, prf) <- read_proof_boxes(store, thm.the_content.proof,
-            suppress = id => exported_proofs(id.serial), cache = term_cache)) {
-          if (verbose) {
-            progress.echo("  proof " + id.serial +
-              (if (theory.name == id.theory_name) "" else " (from " + id.theory_name + ")"))
-          }
-          exported_proofs += id.serial
-          current_theories(id.theory_name).append(Translate.stmt_decl(Prelude.proof_ident(id.serial), prf.prop, if (with_prf) Some(prf.proof) else None))
+      val provider = Export.Provider.database(db, store.cache, session, theory.name)
+      def get_thm_prf(thm : Export_Theory.Entity[Export_Theory.Thm]) =
+        thm.the_content.proof match {
+          case Term.PThm(thm_prf,_,_,_) => thm_prf
+          case _ => 0
         }
-*/
+      def translate_thm(thm : Export_Theory.Entity[Export_Theory.Thm]) = {
+        if (verbose) progress.echo("  " + thm.toString + " " + thm.serial)
         current_theory.append(Translate.stmt_decl(Prelude.thm_ident(thm.name),
-          thm.the_content.prop, if (with_prf) Some(thm.the_content.proof) else None))
+        thm.the_content.prop, if (with_prf) Some(thm.the_content.proof) else None))
       }
 
-      val provider = Export.Provider.database(db, store.cache, session, theory.name)
-
-      for ((thy_name,prf_name) <- Export.read_theory_exports(db,session)) {
-        if ((thy_name == theory.name || thy_name == Thy_Header.PURE) && prf_name.startsWith("proofs/"))
-        {
+      def prf_loop(prfs : List[(String,String)], thm : Export_Theory.Entity[Export_Theory.Thm], thms : List[Export_Theory.Entity[Export_Theory.Thm]],thm_prf : Long) : Unit = prfs match {
+        case (thy_name,prf_name)::prfs2 =>
+        if ((thy_name == theory.name || thy_name == Thy_Header.PURE) && prf_name.startsWith("proofs/")) {
           val prf_serial = prf_name.substring(7).toLong
-          val prf_id = Export_Theory.Thm_Id(prf_serial,thy_name)
-
-          Export_Theory.read_proof(provider, prf_id, cache = term_cache) match {
-            case Some(prf) =>
+          if (prf_serial >= thm_prf) {
+            translate_thm(thm)
+            thms match {
+              case thm2 :: thms2 =>
+              prf_loop(prfs,thm2,thms2,get_thm_prf(thm2))
+              case Nil =>
+              prf_loop(prfs,null,null,Long.MaxValue)
+            }
+          } else {
+            val prf_id = Export_Theory.Thm_Id(prf_serial,thy_name)
+            if (verbose) {
+              progress.echo("  proof " + prf_serial )
+            }
+            val prf = Export_Theory.read_proof(provider, prf_id, cache = term_cache) match {
+              case Some(prf) => prf
+            }
             current_theory.append(Translate.stmt_decl(Prelude.proof_ident(prf_serial), prf.prop, if (with_prf) Some(prf.proof) else None))
+            prf_loop(prfs2,thm,thms,thm_prf)
           }
-          if (verbose) {
-            progress.echo("  proof " + prf_serial )
-          }
+        } else {
+          prf_loop(prfs2,thm,thms,thm_prf)
         }
+        case _ =>
+      }
+      theory.thms match {
+        case thm :: thms =>
+        prf_loop(Export.read_theory_exports(db,session),thm,thms,get_thm_prf(thm))
       }
       current_theories
     }
