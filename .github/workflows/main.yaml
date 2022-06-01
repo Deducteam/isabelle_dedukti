@@ -55,7 +55,7 @@ jobs:
         run: |
           ~/Isabelle2021-1/bin/isabelle dedukti_import -O main.dk Dedukti_Base
           eval $(opam env)
-          dkcheck --eta main.dk
+          dk check --eta main.dk
 
   lambdapi:
     strategy:
