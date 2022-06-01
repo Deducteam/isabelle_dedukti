@@ -21,7 +21,7 @@ jobs:
       #     apt-get -y install git
       - name: Install Isabelle
         run: |
-          wget -q https://isabelle.sketis.net/website-Isabelle2021-1/dist/Isabelle2021-1_linux.tar.gz
+          wget -q https://isabelle.in.tum.de/dist/Isabelle2021-1_linux.tar.gz
           tar -xzf Isabelle2021-1_linux.tar.gz -C ~
       - name: Check out isabelle/dedukti repository
         uses: actions/checkout@v2
