@@ -7,8 +7,7 @@ import scala.annotation.tailrec
 import isabelle._
 
 
-object Syntax
-{
+object Syntax {
   type Ident = String
 
   sealed abstract class Term

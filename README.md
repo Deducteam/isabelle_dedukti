@@ -7,10 +7,10 @@ Isabelle component for dedukti.
 
   * Isabelle:
 
-      - Download Isabelle2021-1-RC1 
-        https://isabelle.sketis.net/website-Isabelle2021-1-RC1
+      - Download Isabelle2021-1
+        https://isabelle.sketis.net/website-Isabelle2021-1
 
-      - Unpack and run `Isabelle2021-1-RC1/bin/isabelle jedit` at least
+      - Unpack and run `Isabelle2021-1/bin/isabelle jedit` at least
         once, to ensure that everything works (e.g. see Documentation
         panel with Examples).
 
@@ -25,7 +25,7 @@ Isabelle component for dedukti.
           + or: install references to the Isabelle executables in
             another directory mentioned in `$PATH`, e.g. as follows:
             ```bash
-            Isabelle2021-1-RC1/bin/isabelle install "$HOME/bin"
+            Isabelle2021-1/bin/isabelle install "$HOME/bin"
             ```
 
   * Isabelle/Dedukti:
@@ -88,7 +88,8 @@ isabelle dedukti_import -o export_standard_proofs Dedukti_Example
 - `translate.scala` translates from Isabelle/Pure to the common dedukti/lambdapi AST
 - `writers.scala` write out either dedukti output or lambdapi output
 - `importer.scala` wraps the previous files into an Isabelle component, defining the CLI and interacting with other components
-- `tools.scala` registers the `dedukti_import` module as a valid `isabelle` subfunction
+- `tools.scala` defines the `isabelle dedukti_import` command-line tool,
+  which is registered via `services` in `etc/build.props`
 
 
 ## Isabelle development and browsing of sources
@@ -105,10 +106,10 @@ isabelle dedukti_import -o export_standard_proofs Dedukti_Example
   ```
   then open `$ISABELLE_HOME/src/HOL/Main.thy` via File Browser / Favorites
 
-* Isabelle/Scala: use IntelliJ IDEA with the Gradle project generated
-  by `isabelle dedukti_build` within the Isabelle/Dedukti directory:
+* Isabelle/Scala: use IntelliJ IDEA with the Java/Scala project generated
+  by `isabelle scala_project -L -f`:
   ```bash
-  idea gradle_project
+  idea "$(isabelle getenv -b ISABELLE_HOME_USER)/scala_project"
   ```
 * Note: Without proper IDE support Isabelle sources are very hard to
   read and write.  (Emacs or vi are not a proper IDE.)
