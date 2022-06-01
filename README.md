@@ -47,11 +47,14 @@ Isabelle component for dedukti.
         line in `$ISABELLE_HOME_USER/etc/settings` --- these should be
         removed, to avoid duplicate component initialization.
 
-  * Dkcheck or Lambdapi (for actual checking):
+  * Dk file checkers:
 
-    Install [dkcheck](https://github.com/Deducteam/Dedukti)
+    - [dkcheck](https://github.com/Deducteam/Dedukti)
+    - [kocheck](https://github.com/01mf02/kontroli-rs)
     
-    or [lambdapi](https://github.com/Deducteam/lambdapi)
+  * Lp file checkers:
+  
+    - [lambdapi](https://github.com/Deducteam/lambdapi)
 
 
 ## Build and test (lambdapi output)
