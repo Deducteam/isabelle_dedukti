@@ -39,25 +39,24 @@ object Importer {
 
     /* session structure */
     val full_sessions = Sessions.load_structure(options, dirs = dirs)
-    val selected_sessions =
-      full_sessions.selection(Sessions.Selection(sessions = session :: None.toList))
-      val base_info = Sessions.base_info(options, /*ancestor*/"Pure", progress = progress, dirs = dirs)
-      val session_info =
-        base_info.sessions_structure.get(session) match {
-          case Some(info) => info
-          case None => error("Bad session " + quote(session))
-        }
-      val resources = new Resources(base_info.sessions_structure, base_info.check.base)
-      val whole_graph =
-        if (session == "Pure") {
-          (Document.Node.Name.make_graph(List(((Document.Node.Name("Pure", theory = "Pure"), ()),List[Document.Node.Name]()))))
-        } else {
-          resources.session_dependencies(session_info, progress = progress).theory_graph
-        }
-      val all_theories : List[Document.Node.Name] = whole_graph.topological_order
+    val base_info = Sessions.base_info(options, "Pure", progress = progress, dirs = dirs)
+    val session_info =
+      base_info.sessions_structure.get(session) match {
+        case Some(info) => info
+        case None => error("Bad session " + quote(session))
+      }
+    val resources = new Resources(base_info.sessions_structure, base_info.check.base)
 
-      progress.echo("Whole graph: " + whole_graph)
-      progress.echo("all_theories: " + all_theories)
+    val whole_graph =
+      if (session == "Pure") {
+        (Document.Node.Name.make_graph(List(((Document.Node.Name("Pure", theory = "Pure"), ()),List[Document.Node.Name]()))))
+      } else {
+        resources.session_dependencies(session_info, progress = progress).theory_graph
+      }
+    val all_theories : List[Document.Node.Name] = whole_graph.topological_order
+
+    progress.echo("Whole graph: " + whole_graph)
+    progress.echo("all_theories: " + all_theories)
 
     /* import theory content */
 
@@ -242,7 +241,7 @@ object Importer {
           (Export_Theory.read_theory(provider, sessionn, thy_name, cache = term_cache), sessionn)
         } catch {
           case _ : Throwable =>
-          selected_sessions(sessionn).parent match {
+          full_sessions(sessionn).parent match {
             case Some(parent) => get_theory(parent,thy_name)
             case None => error("Bad session " + quote(sessionn))
           }
