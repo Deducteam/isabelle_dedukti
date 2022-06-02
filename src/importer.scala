@@ -155,10 +155,16 @@ object Importer {
       }
 
       val provider = Export.Provider.database(db, store.cache, session, theory.name)
-      def get_thm_prf(thm : Export_Theory.Entity[Export_Theory.Thm]) =
-        thm.the_content.proof match {
+      def get_thm_prf(thm : Export_Theory.Entity[Export_Theory.Thm]) = {
+        def sub(p:Term.Proof) : Long = p match {
           case Term.PThm(thm_prf,_,_,_) => thm_prf
+          case Term.Appt(p,t) => sub(p)
+          case Term.AppP(p,q) => Math.max(sub(p), sub(q))
+          case Term.Abst(x, ty, b) => sub(b)
+          case Term.AbsP(x, hyp, b) => sub(b)
           case _ => 0
+        }
+        sub(thm.the_content.proof)
         }
       def translate_thm(thm : Export_Theory.Entity[Export_Theory.Thm]) = {
         if (verbose) progress.echo("  " + thm.toString + " " + thm.serial)
@@ -169,6 +175,7 @@ object Importer {
       def prf_loop(prfs : List[Long], thm : Export_Theory.Entity[Export_Theory.Thm], thms : List[Export_Theory.Entity[Export_Theory.Thm]],thm_prf : Long) : Unit = prfs match {
         case prf_serial::prfs2 =>
           if (prf_serial > thm_prf) {
+            progress.echo("  Ready for thm " + prf_serial + " > " + thm_prf)
             translate_thm(thm)
             thms match {
               case thm2 :: thms2 =>
