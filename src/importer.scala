@@ -174,7 +174,7 @@ object Importer {
       def prf_loop(prfs : List[Long], thm : Export_Theory.Entity[Export_Theory.Thm], thms : List[Export_Theory.Entity[Export_Theory.Thm]],thm_prf : Long) : Unit = prfs match {
         case prf_serial::prfs2 =>
           if (prf_serial > thm_prf) {
-            progress.echo("  Ready for thm " + prf_serial + " > " + thm_prf)
+            // progress.echo("  Ready for thm " + prf_serial + " > " + thm_prf)
             translate_thm(thm)
             thms match {
               case thm2 :: thms2 =>
@@ -184,9 +184,9 @@ object Importer {
             }
           } else {
             val prf_id = Export_Theory.Thm_Id(prf_serial,theory.name)
-            if (verbose) {
-              progress.echo("  proof " + prf_serial )
-            }
+            // if (verbose) {
+            // progress.echo("  proof " + prf_serial )
+            // }
             val prf = Export_Theory.read_proof(provider, prf_id, cache = term_cache) match {
               case Some(prf) => prf
             }
@@ -195,20 +195,35 @@ object Importer {
           }
         case _ =>
       }
-      theory.thms match {
-        case thm :: thms =>
-        val exports = Export.read_theory_exports(db,session)
-        val prfs = exports.foldLeft(Nil: List[Long]) {
-          case (prfs2 : List[Long],(thy_name,prf_name)) => (
-            if (thy_name == theory.name && prf_name.startsWith("proofs/")) {
-              prf_name.substring(7).toLong :: prfs2
-            } else {
-              prfs2
-            }
-          )
-        }
-        prf_loop(prfs.sorted,thm,thms,get_thm_prf(thm))
+      val exports = Export.read_theory_exports(db,session)
+      val prfs = exports.foldLeft(Nil: List[Long]) {
+        case (prfs2 : List[Long],(thy_name,prf_name)) => (
+          if (thy_name == theory.name && prf_name.startsWith("proofs/")) {
+            prf_name.substring(7).toLong :: prfs2
+          } else {
+            // if (thy_name == "HOL.Groups" && theory.name == "HOL.Lattices" && prf_name.startsWith("proofs/")) {
+            //   progress.echo("We found a proof " + prf_name + " from the wrong theory " + thy_name + " compared to " + theory.name)
+            //   val prf_id = Export_Theory.Thm_Id(prf_name.substring(7).toLong,thy_name)
+            //   val prf = Export_Theory.read_proof(provider, prf_id, cache = term_cache) match {
+            //     case Some(prf) => prf
+            //   }
+            //   progress.echo("It has the following statement:" + prf.prop)
+            // }
+            prfs2
+          }
+        )
       }
+      theory.thms match {
+        case thm :: thms => prf_loop(prfs.sorted,thm,thms,get_thm_prf(thm))
+        case _ => prf_loop(prfs.sorted,null,null,Long.MaxValue)
+      }
+      // for (item <- current_theory) {
+      //   item match {
+      //     case Syntax.Theorem(x,_,_,_) /*if (x == 187462)*/ => progress.echo("Found the item: " + item)
+      //     case _ => 
+      //   }
+      // }
+      
       current_theories
     }
 
