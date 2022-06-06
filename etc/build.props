@@ -8,6 +8,8 @@ sources = \
   src/ast.scala \
   src/tools.scala \
   src/translate.scala \
-  src/writers.scala
+  src/writers.scala \
+  src/generator.scala
 services = \
-  isabelle.dedukti.Tools
+  isabelle.dedukti.Tools \
+  isabelle.dedukti.Tools2 \

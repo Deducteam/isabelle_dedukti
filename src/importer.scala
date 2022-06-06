@@ -6,6 +6,7 @@ package isabelle.dedukti
 import isabelle._
 
 import scala.collection.mutable
+import scala.util.control.Breaks._
 
 
 object Importer {
@@ -17,6 +18,7 @@ object Importer {
   def importer(
     options: Options,
     session: String,
+    theory_name: String,
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
     fresh_build: Boolean = false,
@@ -37,33 +39,58 @@ object Importer {
       fresh = fresh_build, strict = true)
 
 
-    /* session structure */
+    val store = Sessions.store(options)
+    val term_cache = Term.Cache.make()
+    val db = store.open_database(session)
+    val provider = Export.Provider.database(db, store.cache, session, theory_name)
+    // progress.echo("DB: " + db)
+        // gets provider for the thy
+    val theory =
+      if (theory_name == Thy_Header.PURE) {
+        Export_Theory.read_pure_theory(store, cache = term_cache)
+      } else {
+        Export_Theory.read_theory(provider, session, theory_name, cache = term_cache)
+      } 
     val full_sessions = Sessions.load_structure(options, dirs = dirs)
     val base_info = Sessions.base_info(options, "Pure", progress = progress, dirs = dirs)
     val session_info =
-      base_info.sessions_structure.get(session) match {
+      base_info.sessions_structure.get("HOL") match {
         case Some(info) => info
         case None => error("Bad session " + quote(session))
       }
     val resources = new Resources(base_info.sessions_structure, base_info.check.base)
 
-    val whole_graph =
+    var whole_graph =
       if (session == "Pure") {
         (Document.Node.Name.make_graph(List(((Document.Node.Name("Pure", theory = "Pure"), ()),List[Document.Node.Name]()))))
       } else {
         resources.session_dependencies(session_info, progress = progress).theory_graph
       }
-    val all_theories : List[Document.Node.Name] = whole_graph.topological_order
 
-    progress.echo("Whole graph: " + whole_graph)
-    progress.echo("all_theories: " + all_theories)
+    // progress.echo("Graph: " + whole_graph)
 
-    /* import theory content */
+    // val whole_graph2 = whole_graph.iterator.foldLeft(whole_graph) {
+    //     case (g, (x,_)) =>
+    //       whole_graph.iterator.foldLeft(g) {
+    //         case (gp, (y,_)) => if ((x.theory == "HOL.Product_Type" && y.theory == "HOL.Nat")) {gp.add_edge(x,y)} else {gp}
+    //       }
+    //   }
 
-    val store = Sessions.store(options)
-    val term_cache = Term.Cache.make()
-    val db = store.open_database(session)
-    progress.echo("DB: " + db)
+    for ((k,e) <- whole_graph.iterator) {
+      for ((kp,ep) <- whole_graph.iterator) {
+        if ((k.theory == "HOL.Product_Type" && (kp.theory == "HOL.Nat" || kp.theory == "HOL.Sum_Type"))) {
+          whole_graph = whole_graph.add_edge(k,kp)
+        }
+      }
+    }
+    // for ((node,key) <- whole_graph.iterator) {
+    //   if (/*theory_name == "HOL.Nat" && */node.theory == "HOL.Product_Type") {
+    //     progress.echo("Requirements before: " + theory_name) // + whole_graph2.all_succs(List(node)))
+    //   }
+    //   // if (node.theory == theory_name) {
+    //   //   progress.echo("Requirements before: " + whole_graph2.all_preds(List(node)))
+    //   // }
+    // }
 
     def decode_proof : XML.Decode.T[Export_Theory.Proof] = {
     import XML.Decode._
@@ -99,133 +126,112 @@ object Importer {
       catch { case ERROR(msg) => error(msg + "\nin " + thm) }
     }*/
 
-    def translate_theory(
-      theory: Export_Theory.Theory,
-      previous_theories: Map[String, mutable.Queue[Syntax.Command]],
-      with_prf : Boolean )
-        : Map[String, mutable.Queue[Syntax.Command]] = {
-      progress.echo("Translating theory " + theory.name)
+    // def translate_theory(
+    //   theory: Export_Theory.Theory,
+    //   previous_theories: Map[String, mutable.Queue[Syntax.Command]],
+    //   with_prf : Boolean )
+    //     : Map[String, mutable.Queue[Syntax.Command]] = {
+    progress.echo("Translating theory " + theory_name)
 
-      val current_theories = {
-        if (previous_theories contains theory.name)
-          previous_theories
-        else
-          previous_theories + (theory.name -> mutable.Queue[Syntax.Command]())
+    // val current_theories = {
+    //   if (previous_theories contains theory.name)
+    //     previous_theories
+    //   else
+    //     previous_theories + (theory.name -> mutable.Queue[Syntax.Command]())
+    // }
+    val current_theory = mutable.Queue[Syntax.Command]()
+
+    if (theory_name == Thy_Header.PURE) {
+      current_theory.append(Prelude.typeD)
+      current_theory.append(Prelude.etaD)
+    }
+
+    for (a <- theory.classes) {
+      // if (verbose) progress.echo("  " + a.toString + a.serial)
+      current_theory.append(Translate.class_decl(a.name))
+    }
+
+    for (a <- theory.types) {
+      // if (verbose) progress.echo("  " + a.toString + a.serial)
+      current_theory.append(Translate.type_decl(a.name, a.the_content.args, a.the_content.abbrev, a.the_content.syntax))
+
+      if (a.name == Pure_Thy.FUN ) {
+        current_theory.append(Prelude.funR)
       }
-      val current_theory = current_theories(theory.name)
-
-      if (theory.name == Thy_Header.PURE) {
-        current_theory.append(Prelude.typeD)
-        current_theory.append(Prelude.etaD)
+      if (a.name == Pure_Thy.PROP) {
+        current_theory.append(Prelude.epsD)
       }
+    }
 
-      for (a <- theory.classes) {
-        if (verbose) progress.echo("  " + a.toString + a.serial)
-        current_theory.append(Translate.class_decl(a.name))
+    for (a <- theory.consts) {
+      // if (verbose) progress.echo("  " + a.toString + " " + a.serial)
+      current_theory.append(Translate.const_decl(a.name, a.the_content.typargs, a.the_content.typ, a.the_content.abbrev, a.the_content.syntax))
+
+      if (a.name == Pure_Thy.ALL) {
+        current_theory.append(Prelude.allR)
       }
-
-      for (a <- theory.types) {
-        if (verbose) progress.echo("  " + a.toString + a.serial)
-        current_theory.append(Translate.type_decl(a.name, a.the_content.args, a.the_content.abbrev, a.the_content.syntax))
-
-        if (a.name == Pure_Thy.FUN ) {
-          current_theory.append(Prelude.funR)
-        }
-        if (a.name == Pure_Thy.PROP) {
-          current_theory.append(Prelude.epsD)
-        }
+      if (a.name == Pure_Thy.IMP) {
+        current_theory.append(Prelude.impR);
       }
+    }
 
-      for (a <- theory.consts) {
-        if (verbose) progress.echo("  " + a.toString + " " + a.serial)
-        current_theory.append(Translate.const_decl(a.name, a.the_content.typargs, a.the_content.typ, a.the_content.abbrev, a.the_content.syntax))
+    for (axm <- theory.axioms) {
+      // if (verbose) progress.echo("  " + axm.toString + " " + axm.serial)
+      current_theory.append(Translate.stmt_decl(Prelude.axiom_ident(axm.name), axm.the_content.prop, None))
+    }
 
-        if (a.name == Pure_Thy.ALL) {
-          current_theory.append(Prelude.allR)
-        }
-        if (a.name == Pure_Thy.IMP) {
-          current_theory.append(Prelude.impR);
-        }
+    def get_thm_prf(thm : Export_Theory.Entity[Export_Theory.Thm]) = {
+      def sub(p:Term.Proof) : Long = p match {
+        case Term.PThm(thm_prf,_,_,_) => thm_prf
+        case Term.Appt(p,t) => sub(p)
+        case Term.AppP(p,q) => Math.max(sub(p), sub(q))
+        case Term.Abst(x, ty, b) => sub(b)
+        case Term.AbsP(x, hyp, b) => sub(b)
+        case _ => 0
       }
+      sub(thm.the_content.proof)
+    }
+    def translate_thm(thm : Export_Theory.Entity[Export_Theory.Thm]) = {
+      // if (verbose) progress.echo("  " + thm.toString + " " + thm.serial)
+      current_theory.append(Translate.stmt_decl(Prelude.thm_ident(thm.name), thm.the_content.prop, Some(thm.the_content.proof)))
+    }
 
-      for (axm <- theory.axioms) {
-        if (verbose) progress.echo("  " + axm.toString + " " + axm.serial)
-        current_theory.append(Translate.stmt_decl(Prelude.axiom_ident(axm.name), axm.the_content.prop, None))
-      }
-
-      val provider = Export.Provider.database(db, store.cache, session, theory.name)
-      def get_thm_prf(thm : Export_Theory.Entity[Export_Theory.Thm]) = {
-        def sub(p:Term.Proof) : Long = p match {
-          case Term.PThm(thm_prf,_,_,_) => thm_prf
-          case Term.Appt(p,t) => sub(p)
-          case Term.AppP(p,q) => Math.max(sub(p), sub(q))
-          case Term.Abst(x, ty, b) => sub(b)
-          case Term.AbsP(x, hyp, b) => sub(b)
-          case _ => 0
-        }
-        sub(thm.the_content.proof)
-        }
-      def translate_thm(thm : Export_Theory.Entity[Export_Theory.Thm]) = {
-        if (verbose) progress.echo("  " + thm.toString + " " + thm.serial)
-        current_theory.append(Translate.stmt_decl(Prelude.thm_ident(thm.name),
-        thm.the_content.prop, if (with_prf) Some(thm.the_content.proof) else None))
-      }
-
-      def prf_loop(prfs : List[Long], thm : Export_Theory.Entity[Export_Theory.Thm], thms : List[Export_Theory.Entity[Export_Theory.Thm]],thm_prf : Long) : Unit = prfs match {
-        case prf_serial::prfs2 =>
-          if (prf_serial > thm_prf) {
-            // progress.echo("  Ready for thm " + prf_serial + " > " + thm_prf)
-            translate_thm(thm)
-            thms match {
-              case thm2 :: thms2 =>
-              prf_loop(prfs,thm2,thms2,get_thm_prf(thm2))
-              case Nil =>
-              prf_loop(prfs,null,null,Long.MaxValue)
-            }
-          } else {
-            val prf_id = Export_Theory.Thm_Id(prf_serial,theory.name)
-            // if (verbose) {
-            // progress.echo("  proof " + prf_serial )
-            // }
-            val prf = Export_Theory.read_proof(provider, prf_id, cache = term_cache) match {
-              case Some(prf) => prf
-            }
-            current_theory.append(Translate.stmt_decl(Prelude.proof_ident(prf_serial), prf.prop, if (with_prf) Some(prf.proof) else None))
-            prf_loop(prfs2,thm,thms,thm_prf)
+    def prf_loop(prfs : List[(Long,Export_Theory.Proof)], thm : Export_Theory.Entity[Export_Theory.Thm], thms : List[Export_Theory.Entity[Export_Theory.Thm]],thm_prf : Long) : Unit = prfs match {
+      case (prf_serial,prf)::prfs2 =>
+        if (prf_serial > thm_prf) {
+          translate_thm(thm)
+          // progress.echo("  Ready for thm " + prf_serial + " > " + thm_prf)
+          thms match {
+            case thm2 :: thms2 =>
+            prf_loop(prfs,thm2,thms2,get_thm_prf(thm2))
+            case Nil =>
+            prf_loop(prfs,null,null,Long.MaxValue)
           }
-        case _ =>
-      }
-      val exports = Export.read_theory_exports(db,session)
-      val prfs = exports.foldLeft(Nil: List[Long]) {
-        case (prfs2 : List[Long],(thy_name,prf_name)) => (
-          if (thy_name == theory.name && prf_name.startsWith("proofs/")) {
-            prf_name.substring(7).toLong :: prfs2
-          } else {
-            // if (thy_name == "HOL.Groups" && theory.name == "HOL.Lattices" && prf_name.startsWith("proofs/")) {
-            //   progress.echo("We found a proof " + prf_name + " from the wrong theory " + thy_name + " compared to " + theory.name)
-            //   val prf_id = Export_Theory.Thm_Id(prf_name.substring(7).toLong,thy_name)
-            //   val prf = Export_Theory.read_proof(provider, prf_id, cache = term_cache) match {
-            //     case Some(prf) => prf
-            //   }
-            //   progress.echo("It has the following statement:" + prf.prop)
-            // }
-            prfs2
-          }
+        } else {
+          // if (verbose) progress.echo("  proof " + prf_serial)
+          current_theory.append(Translate.stmt_decl(Prelude.proof_ident(prf_serial), prf.prop, Some(prf.proof)))
+          prf_loop(prfs2,thm,thms,thm_prf)
+        }
+      case _ =>
+    }
+    val exports = Export.read_theory_exports(db,session)
+    val prfs = 
+      exports.foldLeft(Nil: List[(Long,Export_Theory.Proof)]) {
+        case (prfs2 : List[(Long,Export_Theory.Proof)],(thy_name,prf_name)) => (
+          if (prf_name.startsWith("proofs/")) {
+            val prf_serial = prf_name.substring(7).toLong
+            Export_Theory.read_proof(provider, Export_Theory.Thm_Id(prf_serial,thy_name), cache = term_cache) match {
+              case Some(prf) => (prf_serial,prf)::prfs2
+              case None => prfs2
+            }
+          } else { prfs2 }
         )
       }
-      theory.thms match {
-        case thm :: thms => prf_loop(prfs.sorted,thm,thms,get_thm_prf(thm))
-        case _ => prf_loop(prfs.sorted,null,null,Long.MaxValue)
-      }
-      // for (item <- current_theory) {
-      //   item match {
-      //     case Syntax.Theorem(x,_,_,_) /*if (x == 187462)*/ => progress.echo("Found the item: " + item)
-      //     case _ => 
-      //   }
-      // }
-      
-      current_theories
+    theory.thms match {
+      case thm :: thms => prf_loop(prfs.sortBy(_._1),thm,thms,get_thm_prf(thm))
+      case _ => prf_loop(prfs.sortBy(_._1),null,null,Long.MaxValue)
     }
+      
 
 
     def write_theory(
@@ -240,83 +246,67 @@ object Importer {
       output.nl()
 
       for (command <- theory) {
-        output.command(command, notations)
-      }
-    }
-
-
-    // gets provider for the thy
-    def get_theory(sessionn: String, thy_name: String) : (Export_Theory.Theory, String) = {
-      if (thy_name == Thy_Header.PURE) {
-        (Export_Theory.read_pure_theory(store, cache = term_cache), "Pure")
-      } else {
-        try {
-          val db = store.open_database(sessionn)
-          val provider = Export.Provider.database(db, store.cache, sessionn, thy_name)
-          (Export_Theory.read_theory(provider, sessionn, thy_name, cache = term_cache), sessionn)
-        } catch {
-          case _ : Throwable =>
-          full_sessions(sessionn).parent match {
-            case Some(parent) => get_theory(parent,thy_name)
-            case None => error("Bad session " + quote(sessionn))
-          }
+        command match {
+          case Syntax.Definition(_,_,_,_,_) =>
+          case command => output.command(command, notations)
         }
       }
     }
 
-      def translate_theory_by_name(name: String, previous_theories: Map[String, mutable.Queue[Syntax.Command]]): Map[String, mutable.Queue[Syntax.Command]] = {
-        val (theory,sess) = get_theory(session,name)
-        translate_theory(theory, previous_theories, sess == session)
-      }
 
-      Translate.global_eta_expand = eta_expand
 
-      val translated_theories =
-        all_theories
-          .foldLeft(Map[String, mutable.Queue[Syntax.Command]]())((n, m) => translate_theory_by_name(m.theory, n))
-          .view.mapValues(_.toList).toMap
 
-      val notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation] = collection.mutable.Map()
 
-      val ext = output_file.get_ext
-      ext match {
-        case "dk" =>
-          // write into a single file
-          using(new Part_Writer(output_file)) { writer =>
-            val syntax = new DK_Writer(writer)
-            for (name <- all_theories)
-              write_theory(name.theory, syntax, notations, translated_theories(name.theory))
-          }
+    Translate.global_eta_expand = eta_expand
 
-        case "lp" =>
-          def theory_file(theory_name: String): Path =
-            output_file.dir + Path.explode(theory_name + ".lp")
+      // val translated_theory =
+      //   all_theories
+      //     .foldLeft(Map[String, mutable.Queue[Syntax.Command]]())((n, m) => translate_theory_by_name(m.theory, n))
+      //     .view.mapValues(_.toList).toMap
 
-          // write one file per theory
-          for (name <- all_theories) {
-            val (_, sess) = get_theory(session, name.toString)
-            if (sess == session) {
-              using(new Part_Writer(theory_file(name.theory))) { writer =>
-                val syntax = new LP_Writer(output_file.dir, use_notations, writer)
-                if (!eta_expand) syntax.eta_equality()
+    val notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation] = collection.mutable.Map()
 
-                for {
-                  req <- whole_graph.all_preds(List(name)).reverse.map(_.theory)
-                  if req != name.theory
-                } syntax.require_open(req)
+    val ext = output_file.get_ext
+    ext match {
+      case "dk" =>
+        // write into a single file
+        using(new Part_Writer(output_file)) { writer =>
+          val syntax = new DK_Writer(writer)
+          write_theory(theory_name, syntax, notations, current_theory.toList)
+        }
 
-                write_theory(name.theory, syntax, notations, translated_theories(name.theory))
+      case "lp" =>
+        def theory_file(theory_name: String): Path =
+          output_file.dir + Path.explode(theory_name + ".lp")
+
+        using(new Part_Writer(theory_file(theory_name))) { writer =>
+          val syntax = new LP_Writer(output_file.dir, use_notations, writer)
+          if (!eta_expand) syntax.eta_equality()
+
+        breakable{
+          for ((node,key) <- whole_graph.iterator) {
+            if (node.theory == theory_name) {
+              // progress.echo("Requirements after: " + whole_graph.all_preds(List(node)).reverse.map(_.theory))
+              for {
+                req <- whole_graph.all_preds(List(node)).reverse.map(_.theory)
+                if req != theory_name
+              } syntax.require_open(req)
+              break()
               }
             }
-          }
+        }
+            
 
-          // write one file that loads all the other ones
-          using(new Part_Writer(output_file)) { output =>
-            val syntax = new LP_Writer(output_file.dir, use_notations, output)
-            all_theories.foreach(name => syntax.require_open(name.theory))
-          }
+          write_theory(theory_name, syntax, notations, current_theory.toList)
+        }
 
-        case ext => error("Unknown output format " + ext)
+          // // write one file that loads all the other ones
+          // using(new Part_Writer(output_file)) { output =>
+          //   val syntax = new LP_Writer(output_file.dir, use_notations, output)
+          //   all_theories.foreach(name => syntax.require_open(name.theory))
+          // }
+
+      case ext => error("Unknown output format " + ext)
       }
   }
 
@@ -358,9 +348,9 @@ Usage: isabelle dedukti_import [OPTIONS] SESSION
 
         val more_args = getopts(args)
 
-        val session =
+        val (session,theory) =
           more_args match {
-            case List(name) => name
+            case List(session,theory) => (session,theory)
             case _ => getopts.usage()
           }
 
@@ -371,7 +361,7 @@ Usage: isabelle dedukti_import [OPTIONS] SESSION
 
         progress.interrupt_handler {
           try {
-            importer(options, session,
+            importer(options, session, theory,
               progress = progress,
               dirs = dirs,
               fresh_build = fresh_build,
