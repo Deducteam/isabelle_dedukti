@@ -1,0 +1,83 @@
+--- Enum.thy	2021-12-12 18:44:29.000000000 +0900
++++ /Users/jeremydubut/Documents/Science/isabelle_dedukti_ssh/Enum.thy	2022-06-07 15:54:49.000000000 +0900
+@@ -696,14 +696,14 @@
+ definition "sgn = (\<lambda>x :: finite_2. x)"
+ instance
+   by standard
+-    (subproofs
+-      \<open>simp_all add: plus_finite_2_def uminus_finite_2_def minus_finite_2_def
++    (simp_all add: plus_finite_2_def uminus_finite_2_def minus_finite_2_def
+         times_finite_2_def
+         inverse_finite_2_def divide_finite_2_def modulo_finite_2_def
+         abs_finite_2_def sgn_finite_2_def
+-        split: finite_2.splits\<close>)
++        split: finite_2.splits)
+ end
+ 
++
+ lemma two_finite_2 [simp]:
+   "2 = a\<^sub>1"
+   by (simp add: numeral.simps plus_finite_2_def)
+@@ -931,13 +931,12 @@
+ definition "sgn = (\<lambda>x :: finite_3. x)"
+ instance
+   by standard
+-    (subproofs
+-      \<open>simp_all add: plus_finite_3_def uminus_finite_3_def minus_finite_3_def
++     (simp_all add: plus_finite_3_def uminus_finite_3_def minus_finite_3_def
+         times_finite_3_def
+         inverse_finite_3_def divide_finite_3_def modulo_finite_3_def
+         abs_finite_3_def sgn_finite_3_def
+         less_finite_3_def
+-        split: finite_3.splits\<close>)
++        split: finite_3.splits)
+ end
+ 
+ lemma two_finite_3 [simp]:
+@@ -960,10 +959,9 @@
+   then show "is_unit (unit_factor x)"
+     by (cases x) (simp_all add: dvd_finite_3_unfold)
+ qed
+-  (subproofs
+-    \<open>auto simp add: divide_finite_3_def times_finite_3_def
++  (auto simp add: divide_finite_3_def times_finite_3_def
+       dvd_finite_3_unfold inverse_finite_3_def plus_finite_3_def
+-      split: finite_3.splits\<close>)
++      split: finite_3.splits)
+ end
+ 
+ hide_const (open) a\<^sub>1 a\<^sub>2 a\<^sub>3
+@@ -1036,9 +1034,8 @@
+ 
+ instance
+   by standard
+-    (subproofs
+-      \<open>auto simp add: less_finite_4_def less_eq_finite_4_def Inf_finite_4_def Sup_finite_4_def 
+-        inf_finite_4_def sup_finite_4_def split: finite_4.splits\<close>)
++     (auto simp add: less_finite_4_def less_eq_finite_4_def Inf_finite_4_def Sup_finite_4_def 
++        inf_finite_4_def sup_finite_4_def split: finite_4.splits)
+ end
+ 
+ instance finite_4 :: complete_lattice ..
+@@ -1050,9 +1047,8 @@
+ definition "x - y = x \<sqinter> - (y :: finite_4)"
+ instance
+   by standard
+-    (subproofs
+-      \<open>simp_all add: inf_finite_4_def sup_finite_4_def uminus_finite_4_def minus_finite_4_def 
+-        split: finite_4.splits\<close>)
++     (simp_all add: inf_finite_4_def sup_finite_4_def uminus_finite_4_def minus_finite_4_def 
++        split: finite_4.splits)
+ end
+ 
+ hide_const (open) a\<^sub>1 a\<^sub>2 a\<^sub>3 a\<^sub>4
+@@ -1140,9 +1136,8 @@
+ 
+ instance
+   by standard
+-    (subproofs
+-      \<open>auto simp add: less_eq_finite_5_def less_finite_5_def inf_finite_5_def sup_finite_5_def 
+-        Inf_finite_5_def Sup_finite_5_def split: finite_5.splits if_split_asm\<close>)
++     (auto simp add: less_eq_finite_5_def less_finite_5_def inf_finite_5_def sup_finite_5_def 
++        Inf_finite_5_def Sup_finite_5_def split: finite_5.splits if_split_asm)
+ end
