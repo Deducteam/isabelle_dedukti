@@ -1,0 +1,65 @@
+--- /Users/jeremydubut/Desktop/List.thy	2021-12-12 18:44:30.000000000 +0900
++++ List.thy	2022-06-07 17:43:41.000000000 +0900
+@@ -5,7 +5,7 @@
+ section \<open>The datatype of finite lists\<close>
+ 
+ theory List
+-imports Sledgehammer Lifting_Set
++  imports Lifting_Set Set_Interval Numeral_Simprocs
+ begin
+ 
+ datatype (set: 'a) list =
+@@ -4421,9 +4421,14 @@
+   distinct (removeAll [] xs) \<and>
+   (\<forall>ys. ys \<in> set xs \<longrightarrow> distinct ys) \<and>
+   (\<forall>ys zs. ys \<in> set xs \<and> zs \<in> set xs \<and> ys \<noteq> zs \<longrightarrow> set ys \<inter> set zs = {})"
+-apply (induct xs)
+- apply(simp_all, safe, auto)
+-by (metis Int_iff UN_I empty_iff equals0I set_empty)
++  apply (fold disjnt_def)
++proof(induct xs)
++  case Nil
++  then show ?case by simp
++next
++  case (Cons a xs)
++  show ?case by (auto simp: Cons Ball_def disjnt_def[symmetric] disjnt_sym)
++qed
+ 
+ 
+ subsubsection \<open>\<^const>\<open>replicate\<close>\<close>
+@@ -5009,7 +5014,16 @@
+   "z # zs \<in> shuffles xs ys \<longleftrightarrow>
+     (xs \<noteq> [] \<and> hd xs = z \<and> zs \<in> shuffles (tl xs) ys \<or>
+      ys \<noteq> [] \<and> hd ys = z \<and> zs \<in> shuffles xs (tl ys))"
+-  by (induct xs ys rule: shuffles.induct) auto
++proof(induct xs ys rule: shuffles.induct)
++  case (1 ys)
++  then show ?case by auto
++next
++  case (2 xs)
++  then show ?case by auto
++next
++  case (3 x xs y ys)
++  show ?case by (auto simp add: 3)
++qed
+ 
+ lemma splice_in_shuffles [simp, intro]: "splice xs ys \<in> shuffles xs ys"
+   by (induction xs ys rule: splice.induct) (simp_all add: Cons_in_shuffles_iff shuffles_commutes)
+@@ -6320,7 +6334,7 @@
+ 
+ lemma sorted_list_of_set_lessThan_Suc [simp]:
+   "sorted_list_of_set {..<Suc k} = sorted_list_of_set {..<k} @ [k]"
+-  using le0 lessThan_atLeast0 sorted_list_of_set_range upt_Suc_append by presburger
++  using lessThan_atLeast0 by auto
+ 
+ lemma sorted_list_of_set_atMost_Suc [simp]:
+   "sorted_list_of_set {..Suc k} = sorted_list_of_set {..k} @ [Suc k]"
+@@ -6792,7 +6806,7 @@
+     by blast
+   hence "((u@v)!i, (w@z)!i) \<in> r"
+     unfolding nth_append using less_le_trans[OF \<open>i < length w\<close> assms(2)] \<open>(u!i,w!i) \<in> r\<close>
+-    by presburger
++    by auto
+   moreover have "i < min (length (u@v)) (length (w@z))"
+     using assms(2) \<open>i < length w\<close> by simp
+   moreover have "take i (u@v) = take i (w@z)"
