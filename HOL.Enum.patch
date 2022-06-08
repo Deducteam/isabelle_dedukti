@@ -1,83 +1,342 @@
---- Enum.thy	2021-12-12 18:44:29.000000000 +0900
-+++ /Users/jeremydubut/Documents/Science/isabelle_dedukti_ssh/Enum.thy	2022-06-07 15:54:49.000000000 +0900
-@@ -696,14 +696,14 @@
+--- Enum.thy	2022-06-08 18:26:55.599809900 +0900
++++ /cygdrive/c/Isabelle2021-1/src/HOL/Enum.thy	2022-06-08 18:15:25.517896700 +0900
+@@ -682,7 +682,7 @@
+ 
+ instance finite_2 :: complete_distrib_lattice ..
+ 
+-instantiation finite_2 :: field begin
++instantiation finite_2 :: "{field, idom_abs_sgn, idom_modulo}" begin
+ definition [simp]: "0 = a\<^sub>1"
+ definition [simp]: "1 = a\<^sub>2"
+ definition "x + y = (case (x, y) of (a\<^sub>1, a\<^sub>1) \<Rightarrow> a\<^sub>1 | (a\<^sub>2, a\<^sub>2) \<Rightarrow> a\<^sub>1 | _ \<Rightarrow> a\<^sub>2)"
+@@ -691,48 +691,17 @@
+ definition "x * y = (case (x, y) of (a\<^sub>2, a\<^sub>2) \<Rightarrow> a\<^sub>2 | _ \<Rightarrow> a\<^sub>1)"
+ definition "inverse = (\<lambda>x :: finite_2. x)"
+ definition "divide = ((*) :: finite_2 \<Rightarrow> _)"
+-instance
+-proof
+-  fix a b c :: finite_2
+-  show "a + b + c = a + (b + c)" 
+-    by (cases a; cases b; cases c; simp add: plus_finite_2_def)
+-  show "0 + a = a" by (cases a; simp add: plus_finite_2_def)
+-  show "-a + a = 0" by (cases a; simp add: plus_finite_2_def uminus_finite_2_def)
+-  show "a - b = a + -b" by (simp add: minus_finite_2_def uminus_finite_2_def)
+-  show "a * b * c = a * (b * c)" by (cases a; cases b; cases c; simp add: times_finite_2_def)
+-  show "a * b = b * a" by (cases a; cases b; simp add: times_finite_2_def)
+-  show "1 * a = a" by (cases a; simp add: times_finite_2_def)
+-  show "a + b = b + a" by (cases a; cases b; simp add: plus_finite_2_def)
+-  show "(a + b) * c = a * c + b * c" 
+-    by (cases a; cases b; cases c; simp add: plus_finite_2_def times_finite_2_def)
+-  show "(0::finite_2) \<noteq> 1" by simp
+-  show "a \<noteq> 0 \<Longrightarrow> inverse a * a = 1" 
+-    by (cases a; simp add: times_finite_2_def inverse_finite_2_def)
+-  show "a div b = a * inverse b" by (simp add: divide_finite_2_def inverse_finite_2_def)
+-  show "inverse (0::finite_2) = 0" by (simp add: inverse_finite_2_def)
+-qed
+-end
+-
+-instantiation finite_2 :: "{idom_abs_sgn, idom_modulo}" begin
+ definition "x mod y = (case (x, y) of (a\<^sub>2, a\<^sub>1) \<Rightarrow> a\<^sub>2 | _ \<Rightarrow> a\<^sub>1)"
+ definition "abs = (\<lambda>x :: finite_2. x)"
  definition "sgn = (\<lambda>x :: finite_2. x)"
  instance
-   by standard
--    (subproofs
--      \<open>simp_all add: plus_finite_2_def uminus_finite_2_def minus_finite_2_def
-+    (simp_all add: plus_finite_2_def uminus_finite_2_def minus_finite_2_def
-         times_finite_2_def
-         inverse_finite_2_def divide_finite_2_def modulo_finite_2_def
-         abs_finite_2_def sgn_finite_2_def
--        split: finite_2.splits\<close>)
-+        split: finite_2.splits)
+-proof
+-  fix a b :: finite_2
+-  show "sgn a * \<bar>a\<bar> = a" by (cases a; simp add: abs_finite_2_def sgn_finite_2_def)
+-  show "sgn (sgn a) = sgn a" by (simp add: sgn_finite_2_def)
+-  show "\<bar>\<bar>a\<bar>\<bar> = \<bar>a\<bar>" by (cases a; simp add: abs_finite_2_def)
+-  show "\<bar>(0::finite_2)\<bar> = 0" by (simp add: abs_finite_2_def)
+-  show "sgn (0::finite_2) = 0" by (simp add: sgn_finite_2_def)
+-  show "sgn (1::finite_2) = 1" by (simp add: sgn_finite_2_def)
+-  show "sgn (- (1::finite_2)) = - 1" by (simp add: sgn_finite_2_def)
+-  show "sgn (a * b) = sgn a * sgn b" by (simp add: sgn_finite_2_def)
+-  show "a / b * b + a mod b = a" 
+-    by (cases a; cases b; 
+-        simp add: plus_finite_2_def times_finite_2_def modulo_finite_2_def 
+-          divide_finite_2_def inverse_finite_2_def)
+-qed
++  by standard
++    (subproofs
++      \<open>simp_all add: plus_finite_2_def uminus_finite_2_def minus_finite_2_def
++        times_finite_2_def
++        inverse_finite_2_def divide_finite_2_def modulo_finite_2_def
++        abs_finite_2_def sgn_finite_2_def
++        split: finite_2.splits\<close>)
  end
  
-+
  lemma two_finite_2 [simp]:
-   "2 = a\<^sub>1"
-   by (simp add: numeral.simps plus_finite_2_def)
-@@ -931,13 +931,12 @@
+@@ -741,13 +710,7 @@
+ 
+ lemma dvd_finite_2_unfold:
+   "x dvd y \<longleftrightarrow> x = a\<^sub>2 \<or> y = a\<^sub>1"
+-proof(unfold dvd_def)
+-  fix x y :: finite_2
+-  have "(\<exists>k. y = x * k) = (y = x * a\<^sub>1 \<or> y = x * a\<^sub>2)" 
+-    using exists_code[of "\<lambda>k. y = x * k"] enum_ex_finite_2_def[of "\<lambda>k. y = x * k"] by auto
+-  then show "(\<exists>k. y = x * k) = (x = a\<^sub>2 \<or> y = a\<^sub>1)"
+-    by (cases x; cases y; simp add: enum_ex_finite_2_def times_finite_2_def)
+-qed
++  by (auto simp add: dvd_def times_finite_2_def split: finite_2.splits)
+ 
+ instantiation finite_2 :: "{normalization_semidom, unique_euclidean_semiring}" begin
+ definition [simp]: "normalize = (id :: finite_2 \<Rightarrow> _)"
+@@ -755,31 +718,10 @@
+ definition [simp]: "euclidean_size x = (case x of a\<^sub>1 \<Rightarrow> 0 | a\<^sub>2 \<Rightarrow> 1)"
+ definition [simp]: "division_segment (x :: finite_2) = 1"
+ instance
+-proof
+-  fix a b r :: finite_2
+-  show "euclidean_size (0::finite_2) = 0" by simp
+-  show "b \<noteq> 0 \<Longrightarrow> euclidean_size (a mod b) < euclidean_size b" 
+-    by (cases a; cases b; simp add:  modulo_finite_2_def)
+-  show "b \<noteq> 0 \<Longrightarrow> euclidean_size a \<le> euclidean_size (a * b)"
+-    by (cases a; cases b; simp add:  times_finite_2_def)
+-  show "euclidean_size (a * b) =  euclidean_size a * euclidean_size b"
+-    by (cases a; cases b; simp add:  times_finite_2_def)
+-  show "is_unit (division_segment a)" by simp
+-  show "a \<noteq> 0 \<Longrightarrow> b \<noteq> 0 \<Longrightarrow> division_segment (a * b) = division_segment a * division_segment b"
+-    by (cases a; cases b; simp add:  times_finite_2_def)
+-  show "b \<noteq> 0 \<Longrightarrow>  \<not> b dvd a \<Longrightarrow> division_segment (a mod b) = division_segment b"
+-    by (simp add: dvd_finite_2_unfold)
+-  show "b \<noteq> 0 \<Longrightarrow> division_segment r = division_segment b \<Longrightarrow> 
+-          euclidean_size r < euclidean_size b \<Longrightarrow> (a * b + r) / b = a"
+-    by (cases b; cases a; cases r; 
+-        simp add: divide_finite_2_def inverse_finite_2_def times_finite_2_def plus_finite_2_def)
+-  show "unit_factor (0::finite_2) = 0" by simp
+-  show "is_unit a \<Longrightarrow> unit_factor a = a" by simp
+-  show "a \<noteq> 0 \<Longrightarrow> is_unit (unit_factor a)" by (cases a; simp add: dvd_finite_2_unfold)
+-  show "is_unit a \<Longrightarrow> unit_factor (a * b) =  a * unit_factor b" by simp
+-  show "unit_factor a * normalize a = a" by (cases a; simp)
+-  show "normalize (0::finite_2) = 0" by simp
+-qed
++  by standard
++    (subproofs
++      \<open>auto simp add: divide_finite_2_def times_finite_2_def dvd_finite_2_unfold
++        split: finite_2.splits\<close>)
+ end
+ 
+  
+@@ -971,7 +913,7 @@
+ 
+ instance finite_3 :: complete_linorder ..
+ 
+-instantiation finite_3 :: field begin
++instantiation finite_3 :: "{field, idom_abs_sgn, idom_modulo}" begin
+ definition [simp]: "0 = a\<^sub>1"
+ definition [simp]: "1 = a\<^sub>2"
+ definition
+@@ -984,48 +926,18 @@
+ definition "x * y = (case (x, y) of (a\<^sub>2, a\<^sub>2) \<Rightarrow> a\<^sub>2 | (a\<^sub>3, a\<^sub>3) \<Rightarrow> a\<^sub>2 | (a\<^sub>2, a\<^sub>3) \<Rightarrow> a\<^sub>3 | (a\<^sub>3, a\<^sub>2) \<Rightarrow> a\<^sub>3 | _ \<Rightarrow> a\<^sub>1)"
+ definition "inverse = (\<lambda>x :: finite_3. x)" 
+ definition "x div y = x * inverse (y :: finite_3)"
+-instance
+-proof
+-  fix a b c :: finite_3
+-  show "a + b + c = a + (b + c)" 
+-    by (cases a; cases b; cases c; simp add: plus_finite_3_def)
+-  show "0 + a = a" by (cases a; simp add: plus_finite_3_def)
+-  show "-a + a = 0" by (cases a; simp add: plus_finite_3_def uminus_finite_3_def)
+-  show "a - b = a + -b" by (simp add: minus_finite_3_def)
+-  show "a * b * c = a * (b * c)" by (cases a; cases b; cases c; simp add: times_finite_3_def)
+-  show "a * b = b * a" by (cases a; cases b; simp add: times_finite_3_def)
+-  show "1 * a = a" by (cases a; simp add: times_finite_3_def)
+-  show "a + b = b + a" by (cases a; cases b; simp add: plus_finite_3_def)
+-  show "(a + b) * c = a * c + b * c" 
+-    by (cases a; cases b; cases c; simp add: plus_finite_3_def times_finite_3_def)
+-  show "(0::finite_3) \<noteq> 1" by simp
+-  show "a \<noteq> 0 \<Longrightarrow> inverse a * a = 1" 
+-    by (cases a; simp add: times_finite_3_def inverse_finite_3_def)
+-  show "a div b = a * inverse b" by (simp add: divide_finite_3_def)
+-  show "inverse (0::finite_3) = 0" by (simp add: inverse_finite_3_def)
+-qed
+-end
+-
+-instantiation finite_3 :: "{idom_abs_sgn, idom_modulo}" begin
+ definition "x mod y = (case y of a\<^sub>1 \<Rightarrow> x | _ \<Rightarrow> a\<^sub>1)"
+ definition "abs = (\<lambda>x. case x of a\<^sub>3 \<Rightarrow> a\<^sub>2 | _ \<Rightarrow> x)"
  definition "sgn = (\<lambda>x :: finite_3. x)"
  instance
-   by standard
--    (subproofs
--      \<open>simp_all add: plus_finite_3_def uminus_finite_3_def minus_finite_3_def
-+     (simp_all add: plus_finite_3_def uminus_finite_3_def minus_finite_3_def
-         times_finite_3_def
-         inverse_finite_3_def divide_finite_3_def modulo_finite_3_def
-         abs_finite_3_def sgn_finite_3_def
-         less_finite_3_def
--        split: finite_3.splits\<close>)
-+        split: finite_3.splits)
+-proof
+-  fix a b :: finite_3
+-  show "sgn a * \<bar>a\<bar> = a" by (cases a; simp add: abs_finite_3_def sgn_finite_3_def)
+-  show "sgn (sgn a) = sgn a" by (simp add: sgn_finite_3_def)
+-  show "\<bar>\<bar>a\<bar>\<bar> = \<bar>a\<bar>" by (cases a; simp add: abs_finite_3_def)
+-  show "\<bar>(0::finite_3)\<bar> = 0" by (simp add: abs_finite_3_def)
+-  show "sgn (0::finite_3) = 0" by (simp add: sgn_finite_3_def)
+-  show "sgn (1::finite_3) = 1" by (simp add: sgn_finite_3_def)
+-  show "sgn (- (1::finite_3)) = - 1" by (simp add: sgn_finite_3_def)
+-  show "sgn (a * b) = sgn a * sgn b" by (simp add: sgn_finite_3_def)
+-  show "a / b * b + a mod b = a" 
+-    by (cases a; cases b; 
+-        simp add: plus_finite_3_def times_finite_3_def modulo_finite_3_def 
+-          divide_finite_3_def inverse_finite_3_def)
+-qed
++  by standard
++    (subproofs
++      \<open>simp_all add: plus_finite_3_def uminus_finite_3_def minus_finite_3_def
++        times_finite_3_def
++        inverse_finite_3_def divide_finite_3_def modulo_finite_3_def
++        abs_finite_3_def sgn_finite_3_def
++        less_finite_3_def
++        split: finite_3.splits\<close>)
  end
  
  lemma two_finite_3 [simp]:
-@@ -960,10 +959,9 @@
-   then show "is_unit (unit_factor x)"
-     by (cases x) (simp_all add: dvd_finite_3_unfold)
- qed
--  (subproofs
--    \<open>auto simp add: divide_finite_3_def times_finite_3_def
-+  (auto simp add: divide_finite_3_def times_finite_3_def
-       dvd_finite_3_unfold inverse_finite_3_def plus_finite_3_def
--      split: finite_3.splits\<close>)
-+      split: finite_3.splits)
+@@ -1034,13 +946,7 @@
+ 
+ lemma dvd_finite_3_unfold:
+   "x dvd y \<longleftrightarrow> x = a\<^sub>2 \<or> x = a\<^sub>3 \<or> y = a\<^sub>1"
+-proof(unfold dvd_def)
+-  fix x y :: finite_3
+-  have "(\<exists>k. y = x * k) = (y = x * a\<^sub>1 \<or> y = x * a\<^sub>2 \<or> y = x * a\<^sub>3)" 
+-    using exists_code[of "\<lambda>k. y = x * k"] enum_ex_finite_3_def[of "\<lambda>k. y = x * k"] by auto
+-  then show "(\<exists>k. y = x * k) = (x = a\<^sub>2 \<or> x = a\<^sub>3 \<or> y = a\<^sub>1)"
+-    by (cases x; cases y; simp add: enum_ex_finite_3_def times_finite_3_def)
+-qed
++  by (cases x) (auto simp add: dvd_def times_finite_3_def split: finite_3.splits)
+ 
+ instantiation finite_3 :: "{normalization_semidom, unique_euclidean_semiring}" begin
+ definition [simp]: "normalize x = (case x of a\<^sub>3 \<Rightarrow> a\<^sub>2 | _ \<Rightarrow> x)"
+@@ -1049,30 +955,15 @@
+ definition [simp]: "division_segment (x :: finite_3) = 1"
+ instance
+ proof
+-  fix a b r :: finite_3
+-  show "euclidean_size (0::finite_3) = 0" by simp
+-  show "b \<noteq> 0 \<Longrightarrow> euclidean_size (a mod b) < euclidean_size b" 
+-    by (cases a; cases b; simp add:  modulo_finite_3_def)
+-  show "b \<noteq> 0 \<Longrightarrow> euclidean_size a \<le> euclidean_size (a * b)"
+-    by (cases a; cases b; simp add:  times_finite_3_def)
+-  show "euclidean_size (a * b) =  euclidean_size a * euclidean_size b"
+-    by (cases a; cases b; simp add:  times_finite_3_def)
+-  show "is_unit (division_segment a)" by simp
+-  show "a \<noteq> 0 \<Longrightarrow> b \<noteq> 0 \<Longrightarrow> division_segment (a * b) = division_segment a * division_segment b"
+-    by (cases a; cases b; simp add:  times_finite_3_def)
+-  show "b \<noteq> 0 \<Longrightarrow>  \<not> b dvd a \<Longrightarrow> division_segment (a mod b) = division_segment b"
+-    by (simp add: dvd_finite_3_unfold)
+-  show "b \<noteq> 0 \<Longrightarrow> division_segment r = division_segment b \<Longrightarrow> 
+-          euclidean_size r < euclidean_size b \<Longrightarrow> (a * b + r) / b = a"
+-    by (cases b; cases a; cases r; 
+-        simp add: divide_finite_3_def inverse_finite_3_def times_finite_3_def plus_finite_3_def)
+-  show "unit_factor (0::finite_3) = 0" by simp
+-  show "is_unit a \<Longrightarrow> unit_factor a = a" by simp
+-  show "a \<noteq> 0 \<Longrightarrow> is_unit (unit_factor a)" by (cases a; simp add: dvd_finite_3_unfold)
+-  show "is_unit a \<Longrightarrow> unit_factor (a * b) =  a * unit_factor b" by simp
+-  show "unit_factor a * normalize a = a" by (cases a; simp)
+-  show "normalize (0::finite_3) = 0" by simp
+-qed
++  fix x :: finite_3
++  assume "x \<noteq> 0"
++  then show "is_unit (unit_factor x)"
++    by (cases x) (simp_all add: dvd_finite_3_unfold)
++qed
++  (subproofs
++    \<open>auto simp add: divide_finite_3_def times_finite_3_def
++      dvd_finite_3_unfold inverse_finite_3_def plus_finite_3_def
++      split: finite_3.splits\<close>)
  end
  
  hide_const (open) a\<^sub>1 a\<^sub>2 a\<^sub>3
-@@ -1036,9 +1034,8 @@
+@@ -1144,39 +1035,10 @@
+   | _ \<Rightarrow> a\<^sub>1)"
  
  instance
-   by standard
--    (subproofs
--      \<open>auto simp add: less_finite_4_def less_eq_finite_4_def Inf_finite_4_def Sup_finite_4_def 
--        inf_finite_4_def sup_finite_4_def split: finite_4.splits\<close>)
-+     (auto simp add: less_finite_4_def less_eq_finite_4_def Inf_finite_4_def Sup_finite_4_def 
-+        inf_finite_4_def sup_finite_4_def split: finite_4.splits)
+-proof
+-  fix x y z :: finite_4
+-  fix A :: "finite_4 set"
+-  show "(x < y) = (x \<le> y \<and> \<not> y \<le> x)" 
+-    by (cases x; cases y; simp add: less_eq_finite_4_def less_finite_4_def)
+-  show "x \<le> x" by (cases x; simp add: less_eq_finite_4_def)
+-  show "x \<le> y \<Longrightarrow> y \<le> z \<Longrightarrow> x \<le> z" 
+-    by (cases x; cases y; cases z; simp add: less_eq_finite_4_def)
+-  show "x \<le> y \<Longrightarrow> y \<le> x \<Longrightarrow> x = y" 
+-    by (cases x; cases y; simp add: less_eq_finite_4_def)
+-  show "x \<sqinter> y \<le> x" 
+-    by (cases x; cases y; simp add: inf_finite_4_def less_eq_finite_4_def)
+-  show "x \<sqinter> y \<le> y" 
+-    by (cases x; cases y; simp add: inf_finite_4_def less_eq_finite_4_def)
+-  show "x \<le> y \<Longrightarrow> x \<le> z \<Longrightarrow> x \<le> y \<sqinter> z"
+-    by (cases x; cases y; cases z; simp add: inf_finite_4_def less_eq_finite_4_def)
+-  show "x \<le> x \<squnion> y"
+-    by (cases x; cases y; simp add: sup_finite_4_def less_eq_finite_4_def)
+-  show "y \<le> x \<squnion> y"
+-    by (cases x; cases y; simp add: sup_finite_4_def less_eq_finite_4_def)
+-  show "y \<le> x \<Longrightarrow> z \<le> x \<Longrightarrow> y \<squnion> z \<le> x"
+-    by (cases x; cases y; cases z; simp add: sup_finite_4_def less_eq_finite_4_def)
+-  show "\<Sqinter> ({}:: finite_4 set) = \<Squnion> UNIV" by (simp add: Sup_finite_4_def Inf_finite_4_def)
+-  show "\<Sqinter> insert x A = x \<sqinter> \<Sqinter> A"
+-    by (cases x; simp add: Inf_finite_4_def inf_finite_4_def)
+-  show "\<Squnion> ({}:: finite_4 set) = \<Sqinter> UNIV" by (simp add: Sup_finite_4_def Inf_finite_4_def)
+-  show "\<Squnion> insert x A = x \<squnion> \<Squnion> A" 
+-    by (cases x; simp add: Sup_finite_4_def sup_finite_4_def)
+-  show "(\<bottom>:: finite_4) = \<Sqinter> UNIV" by (simp add: Inf_finite_4_def)
+-  show "(\<top>:: finite_4)  = \<Squnion> UNIV" by (simp add: Sup_finite_4_def)
+-  show "x \<squnion> y \<sqinter> z = (x \<squnion> y) \<sqinter> (x \<squnion> z)"
+-    by (cases x; cases y; cases z; simp add: sup_finite_4_def inf_finite_4_def)
+-qed
++  by standard
++    (subproofs
++      \<open>auto simp add: less_finite_4_def less_eq_finite_4_def Inf_finite_4_def Sup_finite_4_def 
++        inf_finite_4_def sup_finite_4_def split: finite_4.splits\<close>)
  end
  
  instance finite_4 :: complete_lattice ..
-@@ -1050,9 +1047,8 @@
+@@ -1187,12 +1049,10 @@
+ definition "- x = (case x of a\<^sub>1 \<Rightarrow> a\<^sub>4 | a\<^sub>2 \<Rightarrow> a\<^sub>3 | a\<^sub>3 \<Rightarrow> a\<^sub>2 | a\<^sub>4 \<Rightarrow> a\<^sub>1)"
  definition "x - y = x \<sqinter> - (y :: finite_4)"
  instance
-   by standard
--    (subproofs
--      \<open>simp_all add: inf_finite_4_def sup_finite_4_def uminus_finite_4_def minus_finite_4_def 
--        split: finite_4.splits\<close>)
-+     (simp_all add: inf_finite_4_def sup_finite_4_def uminus_finite_4_def minus_finite_4_def 
-+        split: finite_4.splits)
+-proof
+-  fix x y :: finite_4
+-  show "x \<sqinter> - x = \<bottom>" by (cases x; simp add: uminus_finite_4_def inf_finite_4_def)
+-  show "x \<squnion> - x = \<top>" by (cases x; simp add: uminus_finite_4_def sup_finite_4_def)
+-  show "x - y = x \<sqinter> - y" by (simp add: minus_finite_4_def)
+-qed
++  by standard
++    (subproofs
++      \<open>simp_all add: inf_finite_4_def sup_finite_4_def uminus_finite_4_def minus_finite_4_def 
++        split: finite_4.splits\<close>)
  end
  
  hide_const (open) a\<^sub>1 a\<^sub>2 a\<^sub>3 a\<^sub>4
-@@ -1140,9 +1136,8 @@
+@@ -1279,37 +1139,10 @@
+    | _ \<Rightarrow> a\<^sub>1)"
  
  instance
-   by standard
--    (subproofs
--      \<open>auto simp add: less_eq_finite_5_def less_finite_5_def inf_finite_5_def sup_finite_5_def 
--        Inf_finite_5_def Sup_finite_5_def split: finite_5.splits if_split_asm\<close>)
-+     (auto simp add: less_eq_finite_5_def less_finite_5_def inf_finite_5_def sup_finite_5_def 
-+        Inf_finite_5_def Sup_finite_5_def split: finite_5.splits if_split_asm)
+-proof
+-  fix x y z :: finite_5
+-  fix A :: "finite_5 set"
+-  show "(x < y) = (x \<le> y \<and> \<not> y \<le> x)" 
+-    by (cases x; cases y; simp add: less_eq_finite_5_def less_finite_5_def)
+-  show "x \<le> x" by (cases x; simp add: less_eq_finite_5_def)
+-  show "x \<le> y \<Longrightarrow> y \<le> z \<Longrightarrow> x \<le> z" 
+-    by (cases x; cases y; cases z; simp add: less_eq_finite_5_def)
+-  show "x \<le> y \<Longrightarrow> y \<le> x \<Longrightarrow> x = y" 
+-    by (cases x; cases y; simp add: less_eq_finite_5_def)
+-  show "x \<sqinter> y \<le> x" 
+-    by (cases x; cases y; simp add: inf_finite_5_def less_eq_finite_5_def)
+-  show "x \<sqinter> y \<le> y" 
+-    by (cases x; cases y; simp add: inf_finite_5_def less_eq_finite_5_def)
+-  show "x \<le> y \<Longrightarrow> x \<le> z \<Longrightarrow> x \<le> y \<sqinter> z"
+-    by (cases x; cases y; cases z; simp add: inf_finite_5_def less_eq_finite_5_def)
+-  show "x \<le> x \<squnion> y"
+-    by (cases x; cases y; simp add: sup_finite_5_def less_eq_finite_5_def)
+-  show "y \<le> x \<squnion> y"
+-    by (cases x; cases y; simp add: sup_finite_5_def less_eq_finite_5_def)
+-  show "y \<le> x \<Longrightarrow> z \<le> x \<Longrightarrow> y \<squnion> z \<le> x"
+-    by (cases x; cases y; cases z; simp add: sup_finite_5_def less_eq_finite_5_def)
+-  show "\<Sqinter> ({}:: finite_5 set) = \<Squnion> UNIV" by (simp add: Sup_finite_5_def Inf_finite_5_def)
+-  show "\<Sqinter> insert x A = x \<sqinter> \<Sqinter> A"
+-    by (cases x; simp add: Inf_finite_5_def inf_finite_5_def)
+-  show "\<Squnion> ({}:: finite_5 set) = \<Sqinter> UNIV" by (simp add: Sup_finite_5_def Inf_finite_5_def)
+-  show "\<Squnion> insert x A = x \<squnion> \<Squnion> A" 
+-    by (cases x; simp add: Sup_finite_5_def sup_finite_5_def)
+-  show "(\<bottom>:: finite_5) = \<Sqinter> UNIV" by (simp add: Inf_finite_5_def)
+-  show "(\<top>:: finite_5)  = \<Squnion> UNIV" by (simp add: Sup_finite_5_def)
+-qed
++  by standard
++    (subproofs
++      \<open>auto simp add: less_eq_finite_5_def less_finite_5_def inf_finite_5_def sup_finite_5_def 
++        Inf_finite_5_def Sup_finite_5_def split: finite_5.splits if_split_asm\<close>)
  end
+ 
+ 
