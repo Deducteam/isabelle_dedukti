@@ -4421,9 +4421,14 @@ lemma distinct_concat_iff: "distinct (concat xs) \<longleftrightarrow>
   distinct (removeAll [] xs) \<and>
   (\<forall>ys. ys \<in> set xs \<longrightarrow> distinct ys) \<and>
   (\<forall>ys zs. ys \<in> set xs \<and> zs \<in> set xs \<and> ys \<noteq> zs \<longrightarrow> set ys \<inter> set zs = {})"
-apply (induct xs)
- apply(simp_all, safe, auto)
-by (metis Int_iff UN_I empty_iff equals0I set_empty)
+  apply (fold disjnt_def)
+proof(induct xs)
+  case Nil
+  then show ?case by simp
+next
+  case (Cons a xs)
+  show ?case by (auto simp: Cons Ball_def disjnt_def[symmetric] disjnt_sym)
+qed
 
 
 subsubsection \<open>\<^const>\<open>replicate\<close>\<close>
@@ -5009,7 +5014,16 @@ lemma Cons_in_shuffles_iff:
   "z # zs \<in> shuffles xs ys \<longleftrightarrow>
     (xs \<noteq> [] \<and> hd xs = z \<and> zs \<in> shuffles (tl xs) ys \<or>
      ys \<noteq> [] \<and> hd ys = z \<and> zs \<in> shuffles xs (tl ys))"
-  by (induct xs ys rule: shuffles.induct) auto
+proof(induct xs ys rule: shuffles.induct)
+  case (1 ys)
+  then show ?case by auto
+next
+  case (2 xs)
+  then show ?case by auto
+next
+  case (3 x xs y ys)
+  show ?case by (auto simp add: 3)
+qed
 
 lemma splice_in_shuffles [simp, intro]: "splice xs ys \<in> shuffles xs ys"
   by (induction xs ys rule: splice.induct) (simp_all add: Cons_in_shuffles_iff shuffles_commutes)
