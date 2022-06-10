@@ -1,0 +1,15 @@
+- Main, removed quickcheck and nunchaku
+- Mirabelle removed quickcheck
+- split quickcheck_random --> random_prep
+- split quickcheck_exhaustive --> random_prep
+- tools random_generator, random_fun_lift --> Random_Prep.random_fun_lift
+- random_pred, quickcheck_random --> random_prep
+- predicate_compile, quickcheck_exhaustive --> random_prep
+- tools predicate_compile_compilations, Quickcheck_Exhaustive --> Random_Prep (many times)
+- tools predicate_compile_core, quickcheck_random --> random_prep (twice), quickcheck_exhaustive --> random_prep (once)
+- record, quickcheck_exhaustive --> random_pred
+- Enum --> rewrite proofs, removed splits
+- Factorial ??
+- List --> rewrite proofs, remove subproofs + ??
+- Rat, Real --> remove nitpick + quickcheck setups
+- String --> rewrite function + proof
