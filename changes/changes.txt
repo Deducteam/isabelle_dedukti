@@ -10,6 +10,8 @@
 - record, quickcheck_exhaustive --> random_pred
 - Enum --> rewrite proofs, removed splits
 - Factorial ??
-- List --> rewrite proofs, remove subproofs + ??
+- List --> rewrite proofs, remove subproofs
 - Rat, Real --> remove nitpick + quickcheck setups
 - String --> rewrite function + proof
+- Transcendental --> rewrite proof to remove arith+
+- MacLaurin --> rewrite proof quite a lot

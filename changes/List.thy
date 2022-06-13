@@ -407,7 +407,6 @@ lemma strict_sorted_imp_sorted: "sorted_wrt (<) xs \<Longrightarrow> sorted xs"
 
 end
 
-
 subsubsection \<open>List comprehension\<close>
 
 text\<open>Input syntax for Haskell-like list comprehension notation.
@@ -779,7 +778,6 @@ simproc_setup list_to_set_comprehension ("set xs") =
 code_datatype set coset
 hide_const (open) coset
 
-
 subsubsection \<open>\<^const>\<open>Nil\<close> and \<^const>\<open>Cons\<close>\<close>
 
 lemma not_Cons_self [simp]:
@@ -898,8 +896,7 @@ lemma list_all2_iff:
 by (induct xs ys rule: list_induct2') auto
 
 lemma neq_if_length_neq: "length xs \<noteq> length ys \<Longrightarrow> (xs = ys) == False"
-by (rule Eq_FalseI) auto
-
+  by (rule Eq_FalseI) auto
 
 subsubsection \<open>\<open>@\<close> -- append\<close>
 
@@ -962,13 +959,13 @@ lemma hd_append: "hd (xs @ ys) = (if xs = [] then hd ys else hd xs)"
 by (induct xs) auto
 
 lemma hd_append2 [simp]: "xs \<noteq> [] \<Longrightarrow> hd (xs @ ys) = hd xs"
-by (simp add: hd_append split: list.split)
+by (simp add: hd_append)
 
 lemma tl_append: "tl (xs @ ys) = (case xs of [] \<Rightarrow> tl ys | z#zs \<Rightarrow> zs @ ys)"
-by (simp split: list.split)
+by (cases xs; simp)
 
 lemma tl_append2 [simp]: "xs \<noteq> [] \<Longrightarrow> tl (xs @ ys) = tl xs @ ys"
-by (simp add: tl_append split: list.split)
+by (cases xs;simp add: tl_append)
 
 
 lemma Cons_eq_append_conv: "x#xs = ys@zs =
@@ -1176,7 +1173,6 @@ functor map: map
 by (simp_all add: id_def)
 
 declare map.id [simp]
-
 
 subsubsection \<open>\<^const>\<open>rev\<close>\<close>
 
@@ -1409,8 +1405,7 @@ lemma set_minus_filter_out:
 lemma append_Cons_eq_iff:
   "\<lbrakk> x \<notin> set xs; x \<notin> set ys \<rbrakk> \<Longrightarrow>
    xs @ x # ys = xs' @ x # ys' \<longleftrightarrow> (xs = xs' \<and> ys = ys')"
-by(auto simp: append_eq_Cons_conv Cons_eq_append_conv append_eq_append_conv2)
-
+  by(auto simp: append_eq_Cons_conv Cons_eq_append_conv append_eq_append_conv2)
 
 subsubsection \<open>\<^const>\<open>concat\<close>\<close>
 
@@ -1586,7 +1581,7 @@ next
   proof (cases)
     assume "p x"
     hence eq: "?S' = insert 0 (Suc ` ?S)"
-      by(auto simp: image_def split:nat.split dest:gr0_implies_Suc)
+      by (auto simp: image_def dest:gr0_implies_Suc)
     have "length (filter p (x # xs)) = Suc(card ?S)"
       using Cons \<open>p x\<close> by simp
     also have "\<dots> = Suc(card(Suc ` ?S))" using fin
@@ -1848,7 +1843,6 @@ next
     thus "?R" ..
   qed
 qed
-
 
 subsubsection \<open>\<^const>\<open>list_update\<close>\<close>
 
@@ -2369,8 +2363,7 @@ proof (cases "n \<ge> length xs")
 qed auto
 
 lemma nth_image: "l \<le> size xs \<Longrightarrow> nth xs ` {0..<l} = set(take l xs)"
-  by(auto simp: set_conv_nth image_def) (metis Suc_le_eq nth_take order_trans)
-
+  by(auto simp: set_conv_nth image_def) (metis nth_take)
 
 subsubsection \<open>\<^const>\<open>takeWhile\<close> and \<^const>\<open>dropWhile\<close>\<close>
 
@@ -2432,7 +2425,7 @@ lemma set_dropWhileD: "x \<in> set (dropWhile P xs) \<Longrightarrow> x \<in> se
   by (induct xs) (auto split: if_split_asm)
 
 lemma set_takeWhileD: "x \<in> set (takeWhile P xs) \<Longrightarrow> x \<in> set xs \<and> P x"
-  by (induct xs) (auto split: if_split_asm)
+  by (induct xs;auto) 
 
 lemma takeWhile_eq_all_conv[simp]:
   "(takeWhile P xs = xs) = (\<forall>x \<in> set xs. P x)"
@@ -2578,7 +2571,7 @@ lemma [code]:
 
 lemma zip_Cons1:
   "zip (x#xs) ys = (case ys of [] \<Rightarrow> [] | y#ys \<Rightarrow> (x,y)#zip xs ys)"
-  by(auto split:list.split)
+  by (cases xs; cases ys; simp)
 
 lemma length_zip [simp]:
   "length (zip xs ys) = min (length xs) (length ys)"
@@ -3054,7 +3047,6 @@ next
   then show "xs \<in> ?L" by induct auto
 qed
 
-
 subsubsection \<open>\<^const>\<open>fold\<close> with natural argument order\<close>
 
 lemma fold_simps [code]: \<comment> \<open>eta-expanded variant for generated code -- enables tail-recursion optimisation in Scala\<close>
@@ -3402,7 +3394,6 @@ next
   with \<open>i < n - m\<close> show \<open>map f [m..<n] ! i = xs ! i\<close>
     by simp
 qed
-
 
 subsubsection \<open>\<open>upto\<close>: interval-list on \<^typ>\<open>int\<close>\<close>
 
@@ -4140,7 +4131,7 @@ qed
 
 lemma remdups_adj_append'': "xs \<noteq> []
   \<Longrightarrow> remdups_adj (xs @ ys) = remdups_adj xs @ remdups_adj (dropWhile (\<lambda>y. y = last xs) ys)"
-by (induction xs rule: remdups_adj.induct) (auto simp: remdups_adj_Cons')
+  by (induction xs rule: remdups_adj.induct) (auto simp: remdups_adj_Cons')
 
 
 subsection \<open>@{const distinct_adj}\<close>
@@ -4636,8 +4627,7 @@ by (induct n) (simp_all)
 
 lemma fold_replicate [simp]:
   "fold f (replicate n x) = f x ^^ n"
-by (subst foldr_fold [symmetric]) simp_all
-
+  by (subst foldr_fold [symmetric]) simp_all
 
 subsubsection \<open>\<^const>\<open>enumerate\<close>\<close>
 
@@ -4694,8 +4684,7 @@ lemma enumerate_append_eq:
 
 lemma enumerate_map_upt:
   "enumerate n (map f [n..<m]) = map (\<lambda>k. (k, f k)) [n..<m]"
-by (cases "n \<le> m") (simp_all add: zip_map2 zip_same_conv_map enumerate_eq_zip)
-
+  by (cases "n \<le> m") (simp_all add: zip_map2 zip_same_conv_map enumerate_eq_zip)
 
 subsubsection \<open>\<^const>\<open>rotate1\<close> and \<^const>\<open>rotate\<close>\<close>
 
@@ -4909,7 +4898,6 @@ next
   then have "\<forall>x. x \<in> set xs \<longrightarrow> x \<noteq> a" by auto
   with Cons show ?case by(simp add: nths_Cons cong:filter_cong)
 qed
-
 
 subsubsection \<open>\<^const>\<open>subseqs\<close> and \<^const>\<open>List.n_lists\<close>\<close>
 
@@ -5170,20 +5158,28 @@ lemma transpose_aux_max:
   (is "max _ ?foldB = Suc (max _ ?foldA)")
 proof (cases "(filter (\<lambda>ys. ys \<noteq> []) xss) = []")
   case True
-  hence "foldr (\<lambda>xs. max (length xs)) xss 0 = 0"
+  then show ?thesis 
   proof (induct xss)
-    case (Cons x xs)
-    then have "x = []" by (cases x) auto
-    with Cons show ?case by auto
-  qed simp
-  thus ?thesis using True by simp
+    case Nil
+    then show ?case by simp
+  next
+    case (Cons a xsss)
+    then show ?case 
+      by (cases a; simp add: filter_def)
+  qed
 next
   case False
-
   have foldA: "?foldA = foldr (\<lambda>x. max (length x)) (filter (\<lambda>ys. ys \<noteq> []) xss) 0 - 1"
-    by (induct xss) auto
+  proof(induct xss)
+    case Nil
+    then show ?case by simp
+  next
+    case IH: (Cons a xss)
+    then show ?case by (cases a; simp add: filter_def)
+  qed
+
   have foldB: "?foldB = foldr (\<lambda>x. max (length x)) (filter (\<lambda>ys. ys \<noteq> []) xss) 0"
-    by (induct xss) auto
+    by (induct xss; simp) 
 
   have "0 < ?foldB"
   proof -
@@ -5255,18 +5251,6 @@ proof (rule nth_equalityI)
   thus "transpose (map (map f) xs) ! i = map (map f) (transpose xs) ! i"
     by (simp add: nth_transpose filter_map comp_def)
 qed
-
-subsubsection \<open>\<^const>\<open>min\<close> and \<^const>\<open>arg_min\<close>\<close>
-
-lemma min_list_Min: "xs \<noteq> [] \<Longrightarrow> min_list xs = Min (set xs)"
-  by (induction xs rule: induct_list012)(auto)
-
-lemma f_arg_min_list_f: "xs \<noteq> [] \<Longrightarrow> f (arg_min_list f xs) = Min (f ` (set xs))"
-  by(induction f xs rule: arg_min_list.induct) (auto simp: min_def intro!: antisym)
-
-lemma arg_min_list_in: "xs \<noteq> [] \<Longrightarrow> arg_min_list f xs \<in> set xs"
-  by(induction xs rule: induct_list012) (auto simp: Let_def)
-
 
 subsubsection \<open>(In)finiteness\<close>
 
