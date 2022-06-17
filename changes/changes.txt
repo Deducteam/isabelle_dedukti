@@ -15,3 +15,4 @@
 - String --> rewrite function + proof
 - Transcendental --> rewrite proof to remove arith+
 - MacLaurin --> rewrite proof quite a lot
+- Bit_operations: trying to rewrite some proofs (a problem remains that a simp rule in Parity is of the shape 1 + something while it would be used as something + 1)
