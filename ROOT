@@ -488,3 +488,276 @@ session Dedukti_HOL.Map in "Ex/HOL.Map" = Dedukti_HOL.Factorial +
    theories
       HOL.Map
 
+session Dedukti_HOL.Enum in "Ex/HOL.Enum" = Dedukti_HOL.Map +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Enum
+
+session Dedukti_HOL.Groebner_Basis in "Ex/HOL.Groebner_Basis" = Dedukti_HOL.Enum +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Groebner_Basis
+
+session Dedukti_HOL.Presburger in "Ex/HOL.Presburger" = Dedukti_HOL.Groebner_Basis +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Presburger
+
+session Dedukti_HOL.Binomial in "Ex/HOL.Binomial" = Dedukti_HOL.Presburger +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Binomial
+
+session Dedukti_HOL.Bit_Operations in "Ex/HOL.Bit_Operations" = Dedukti_HOL.Binomial +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Bit_Operations
+
+session Dedukti_HOL.Code_Numeral in "Ex/HOL.Code_Numeral" = Dedukti_HOL.Bit_Operations +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Code_Numeral
+
+session Dedukti_HOL.GCD in "Ex/HOL.GCD" = Dedukti_HOL.Code_Numeral +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.GCD
+
+session Dedukti_HOL.Random in "Ex/HOL.Random" = Dedukti_HOL.GCD +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Random
+
+session Dedukti_HOL.String in "Ex/HOL.String" = Dedukti_HOL.Random +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.String
+
+session Dedukti_HOL.BNF_Greatest_Fixpoint in "Ex/HOL.BNF_Greatest_Fixpoint" = Dedukti_HOL.String +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.BNF_Greatest_Fixpoint
+
+session Dedukti_HOL.Predicate in "Ex/HOL.Predicate" = Dedukti_HOL.BNF_Greatest_Fixpoint +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Predicate
+
+session Dedukti_HOL.Lazy_Sequence in "Ex/HOL.Lazy_Sequence" = Dedukti_HOL.Predicate +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Lazy_Sequence
+
+session Dedukti_HOL.Limited_Sequence in "Ex/HOL.Limited_Sequence" = Dedukti_HOL.Lazy_Sequence +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Limited_Sequence
+
+session Dedukti_HOL.Typerep in "Ex/HOL.Typerep" = Dedukti_HOL.Limited_Sequence +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Typerep
+
+session Dedukti_HOL.Code_Evaluation in "Ex/HOL.Code_Evaluation" = Dedukti_HOL.Typerep +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Code_Evaluation
+
+session Dedukti_HOL.Random_Prep in "Ex/HOL.Random_Prep" = Dedukti_HOL.Code_Evaluation +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Random_Prep
+
+session Dedukti_HOL.Random_Pred in "Ex/HOL.Random_Pred" = Dedukti_HOL.Random_Prep +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Random_Pred
+
+session Dedukti_HOL.Random_Sequence in "Ex/HOL.Random_Sequence" = Dedukti_HOL.Random_Pred +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Random_Sequence
+
+session Dedukti_HOL.Predicate_Compile in "Ex/HOL.Predicate_Compile" = Dedukti_HOL.Random_Sequence +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Predicate_Compile
+
+session Dedukti_HOL.Sledgehammer in "Ex/HOL.Sledgehammer" = Dedukti_HOL.Predicate_Compile +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Sledgehammer
+
+session Dedukti_HOL.Mirabelle in "Ex/HOL.Mirabelle" = Dedukti_HOL.Sledgehammer +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Mirabelle
+
+session Dedukti_Main in "Ex/Main" = Dedukti_HOL.Mirabelle +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      Main
+
+session Dedukti_HOL.Archimedean_Field in "Ex/HOL.Archimedean_Field" = Dedukti_Main +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Archimedean_Field
+
+session Dedukti_HOL.Rat in "Ex/HOL.Rat" = Dedukti_HOL.Archimedean_Field +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Rat
+
+session Dedukti_HOL.Real in "Ex/HOL.Real" = Dedukti_HOL.Rat +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Real
+
+session Dedukti_HOL.Hull in "Ex/HOL.Hull" = Dedukti_HOL.Real +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Hull
+
+session Dedukti_HOL.Modules in "Ex/HOL.Modules" = Dedukti_HOL.Hull +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Modules
+
+session Dedukti_HOL.Vector_Spaces in "Ex/HOL.Vector_Spaces" = Dedukti_HOL.Modules +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Vector_Spaces
+
+session Dedukti_HOL.Topological_Spaces in "Ex/HOL.Topological_Spaces" = Dedukti_HOL.Vector_Spaces +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Topological_Spaces
+
+session Dedukti_HOL.Real_Vector_Spaces in "Ex/HOL.Real_Vector_Spaces" = Dedukti_HOL.Topological_Spaces +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Real_Vector_Spaces
+
+session Dedukti_HOL.Inequalities in "Ex/HOL.Inequalities" = Dedukti_HOL.Real_Vector_Spaces +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Inequalities
+
+session Dedukti_HOL.Limits in "Ex/HOL.Limits" = Dedukti_HOL.Inequalities +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Limits
+
+session Dedukti_HOL.Deriv in "Ex/HOL.Deriv" = Dedukti_HOL.Limits +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Deriv
+
+session Dedukti_HOL.NthRoot in "Ex/HOL.NthRoot" = Dedukti_HOL.Deriv +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.NthRoot
+
+session Dedukti_HOL.Series in "Ex/HOL.Series" = Dedukti_HOL.NthRoot +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Series
+
+session Dedukti_HOL.Transcendental in "Ex/HOL.Transcendental" = Dedukti_HOL.Series +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Transcendental
+
+session Dedukti_HOL.Complex in "Ex/HOL.Complex" = Dedukti_HOL.Transcendental +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.Complex
+
+session Dedukti_HOL.MacLaurin in "Ex/HOL.MacLaurin" = Dedukti_HOL.Complex +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      HOL.MacLaurin
+
+session Dedukti_Complex_Main in "Ex/Complex_Main" = Dedukti_HOL.MacLaurin +
+   options [export_theory, export_proofs, record_proofs = 2]
+   sessions
+      HOL
+   theories
+      Complex_Main
+

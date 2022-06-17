@@ -111,7 +111,7 @@ About the options and inputs:
 
   * Building: HOL until Complex_Main, except Quickchecks, Record, Nunchaku, and Nitpick (it seems Quickchecks are unsound and should be avoided anyway). Time ~40mins with 16GB memory.
   * Translating/writing: same as above, only for lambdapi. Time ~15mins.
-  * Checking: No error was found until BNF_Least_Fixpoint but memory blew up.
+  * Checking: No error was found until Transfer but memory blew up.
 
 
 ## Known issues [Jeremy]
