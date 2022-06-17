@@ -19,6 +19,7 @@ object Importer {
     options: Options,
     session: String,
     theory_name: String,
+    base_session: String = "HOL",
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
     fresh_build: Boolean = false,
@@ -54,7 +55,7 @@ object Importer {
     val full_sessions = Sessions.load_structure(options, dirs = dirs)
     val base_info = Sessions.base_info(options, "Pure", progress = progress, dirs = dirs)
     val session_info =
-      base_info.sessions_structure.get("HOL") match {
+      base_info.sessions_structure.get(base_session) match {
         case Some(info) => info
         case None => error("Bad session " + quote(session))
       }
@@ -76,21 +77,20 @@ object Importer {
     //       }
     //   }
 
+    
     for ((k,e) <- whole_graph.iterator) {
+      if (k.theory.startsWith("HOL.Quickcheck") || 
+          Set[String]("HOL.Record","HOL.Nitpick","HOL.Nunchaku")(k.theory)) {
+        whole_graph = whole_graph.del_node(k)
+      }
+    }
+    for ((k,e) <- whole_graph.iterator) { //HERE
       for ((kp,ep) <- whole_graph.iterator) {
         if ((k.theory == "HOL.Product_Type" && (kp.theory == "HOL.Nat" || kp.theory == "HOL.Sum_Type"))) {
           whole_graph = whole_graph.add_edge(k,kp)
         }
       }
     }
-    // for ((node,key) <- whole_graph.iterator) {
-    //   if (/*theory_name == "HOL.Nat" && */node.theory == "HOL.Product_Type") {
-    //     progress.echo("Requirements before: " + theory_name) // + whole_graph2.all_succs(List(node)))
-    //   }
-    //   // if (node.theory == theory_name) {
-    //   //   progress.echo("Requirements before: " + whole_graph2.all_preds(List(node)))
-    //   // }
-    // }
 
     def decode_proof : XML.Decode.T[Export_Theory.Proof] = {
     import XML.Decode._

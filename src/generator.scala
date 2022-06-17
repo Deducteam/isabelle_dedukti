@@ -60,7 +60,12 @@ object Generator {
       } else {
         resources.session_dependencies(session_info, progress = progress).theory_graph
       }
-
+    for ((k,e) <- whole_graph.iterator) {
+      if (k.theory.startsWith("HOL.Quickcheck") || 
+          Set[String]("HOL.Record","HOL.Nitpick","HOL.Nunchaku")(k.theory)) {
+        whole_graph = whole_graph.del_node(k)
+      }
+    }
     for ((k,e) <- whole_graph.iterator) {
       for ((kp,ep) <- whole_graph.iterator) {
         if ((k.theory == "HOL.Product_Type" && (kp.theory == "HOL.Nat" || kp.theory == "HOL.Sum_Type"))) {
@@ -80,9 +85,7 @@ object Generator {
     // }
 
     if (build) {
-      if (Files.exists(Paths.get("ROOT"))) {
-        "mv ROOT ROOT_temp1369836102" !
-      }
+      progress.echo("Generating the root file")
       val file = new File("ROOT")
       val bw = new BufferedWriter(new FileWriter(file))
       var previous_theory = "Pure"
@@ -99,9 +102,9 @@ object Generator {
             "mkdir Ex/"+theory_name !
           }
           previous_theory = "Dedukti_"+theory_name
-          if (verbose) {
-            progress.echo("Generated ROOT file for :" + theory_name)
-          }
+          // if (verbose) {
+          //   progress.echo("Generated ROOT file for :" + theory_name)
+          // }
           if (theory_name == target_theory) {break()}
         }
       }
@@ -174,7 +177,7 @@ object Generator {
           val bufferedSource = Source.fromFile(theory_name+".lp")
           val lines = bufferedSource.getLines().toList
           val nb_lines = lines.length
-          progress.echo("Number of lines: " + nb_lines)
+          // progress.echo("Number of lines: " + nb_lines)
           // progress.echo("Number of keys mem: " + proof_mem.keySet.toList.length)
           // progress.echo("Number of keys equiv: " + proof_equiv.keySet.toList.length)
           var compt = 0
@@ -199,7 +202,7 @@ object Generator {
                   // progress.echo("The original id of " + id + " is " + original_proof_id)
                   compt += 1
                   if (compt >= pctl) {
-                    progress.echo("We've done " + pct + "pct")
+                    // progress.echo("We've done " + pct + "pct")
                     // progress.echo("Number of keys mem: " + proof_mem.keySet.toList.length)
                     // progress.echo("Number of keys equiv: " + proof_equiv.keySet.toList.length)
                     pct += 10
@@ -218,7 +221,7 @@ object Generator {
                   // progress.echo("... to :" + new_line)
                   compt += 1
                   if (compt >= pctl) {
-                    progress.echo("We've done " + pct + "pct")
+                    // progress.echo("We've done " + pct + "pct")
                     // progress.echo("Number of keys mem: " + proof_mem.keySet.toList.length)
                     // progress.echo("Number of keys equiv: " + proof_equiv.keySet.toList.length)
                     pct += 10
@@ -231,7 +234,7 @@ object Generator {
                 // progress.echo("Kept line")
                 compt += 1
                 if (compt >= pctl) {
-                  progress.echo("We've done " + pct + "pct")
+                  // progress.echo("We've done " + pct + "pct")
                   // progress.echo("Number of keys mem: " + proof_mem.keySet.toList.length)
                   // progress.echo("Number of keys equiv: " + proof_equiv.keySet.toList.length)
                   pct += 10
