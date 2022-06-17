@@ -113,6 +113,16 @@ About the options and inputs:
   * Translating/writing: same as above, only for lambdapi. Time ~15mins.
   * Checking: No error was found until BNF_Least_Fixpoint but memory blew up.
 
+
+## Known issues [Jeremy]
+
+  * Bit_operations are slow to build because of the way they are defined compared to some simplification rules in Parity. Not fixed.
+  * Presburger is slow to build because of the examples at the end. Not fixed.
+  * In a database associated with a given theory, there might be proofs labelled from another theory. Fix: those proofs are not too many so they are just translated in this theory.
+  * Somehow, the databases for Nat and Sum_type use proofs from Product_Type while they are independent in the dependency graph. Fix: add explictly the connection in the graph. 
+  * Quickcheck_random fails to build (it is actually unsound). Fix: remove it from the dependency graph (together with other theories).
+
+
 ## Project structure
 - `ast.scala` defines the AST of the exported material. It is common for dedukti and lambdapi, and is a (very) strict subset of the ASTs of these languages
 - `translate.scala` translates from Isabelle/Pure to the common dedukti/lambdapi AST
