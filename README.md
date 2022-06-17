@@ -1,6 +1,7 @@
 # Isabelle/Dedukti
 
 Isabelle component for dedukti.
+Notes from Jeremy: The building and translation works only for HOL up to Complex_Main for now.
 
 
 ## Prerequisites
@@ -56,63 +57,68 @@ Isabelle component for dedukti.
   
     - [lambdapi](https://github.com/Deducteam/lambdapi)
 
+  * [Jeremy] Patching HOL:
 
-## Build and test (lambdapi output)
+    - You may want to start with changing the permission on the HOL folder:
 
-```bash
-isabelle scala_build && isabelle dedukti_test
+    ```
+    chmod -R +w <path to your Isabelle distribution>/src/HOL/
+    ```
+
+    - Patch the folder, from the isabelle_dedukti folder:
+
+    ```
+    patch -up0 -d <path to your Isabelle distribution>/src/HOL/ < HOL.patch
+    ```
+
+    - To reverse the patch:
+
+    ```
+    patch -uREp0 -d <path to your Isabelle distribution>/src/HOL/ < HOL.patch
+    ```
+
+    - The list of changes can be found in `changes.txt`
+
+  * [Jeremy] Deleting the databases:
+
+    - If something is wrong, you may want to try deleting the databases (which means the proof terms will be rebuilt anew) located somewhere like:
+
+    ```
+    ~/.isabelle/Isabelle2021/heaps/<something>/log/
+    ```
+
+
+## Examples [Jeremy]
+
+A typical way of calling the tool is as follows:
+
+```
+isabelle dedukti_generate -O main.lp -b -v -r theory session
 ```
 
+About the options and inputs:
 
-## Examples
+  * You have the same options as in `dedukti_import`. In particular, you should specify the output format with -o.
+  * The two inputs are:
+    - First, a theory until which you want to build/translate. Ex: Complex_Main.
+    - Second, a usual session to which the first argument belongs. Ex: HOL.
+  * The option -b is for building: when specified, a ROOT file will be created as follows. The session in second argument will be topologically ordered. Then one session per theory will be created whose parent is the session associated with the predecessor in topological ordering. Finally, the session associated with the first argument will be built (and so all the sessions for the predecessors will be built too).
+  * The option -r is for recursive translation: when this option is not specified, only the theory from the first argument will be translated. Otherwise, all predecessors will be translated as well.
+  * The option -p is for postprocessing (work in progress): the goal is to simplify the translations, removing repetitions.
 
-Generating and checking a Dedukti file:
 
-```
-isabelle dedukti_import -O output.dk Dedukti_Base
-dkcheck --eta output.dk
-```
+## What was tested? [Jeremy]
 
-Generating and checking a Lambdapi file:
-
-```
-isabelle dedukti_import -O main.lp Dedukti_Base
-lambdapi check main.lp
-```
-
-Small-scale proofs with nicer names:
-
-```
-isabelle dedukti_import -o export_standard_proofs Dedukti_Example
-```
+  * Building: HOL until Complex_Main, except Quickchecks, Record, Nunchaku, and Nitpick (it seems Quickchecks are unsound and should be avoided anyway). Time ~40mins with 16GB memory.
+  * Translating/writing: same as above, only for lambdapi. Time ~15mins.
+  * Checking: No error was found until BNF_Least_Fixpoint but memory blew up.
 
 ## Project structure
 - `ast.scala` defines the AST of the exported material. It is common for dedukti and lambdapi, and is a (very) strict subset of the ASTs of these languages
 - `translate.scala` translates from Isabelle/Pure to the common dedukti/lambdapi AST
 - `writers.scala` write out either dedukti output or lambdapi output
-- `importer.scala` wraps the previous files into an Isabelle component, defining the CLI and interacting with other components
-- `tools.scala` defines the `isabelle dedukti_import` command-line tool,
+- `importer.scala` wraps the previous files into an Isabelle component, defining the CLI and interacting with other components. [Jeremy]: Note it has been changed a lot. It will now create one file by session, because it is expected to be ran on a single-theory session. However, the ancestor of this session does not need to be Pure, and nothing from previous theories will be translated.
+- [Jeremy]: `generator.scala` wraps the previous files into an Isabelle component, creating a ROOT file, building, calling the translator and postprocessing the output file
+- `tools.scala` defines the `isabelle dedukti_import` and `isabelle dedukti_generate` command-line tools,
   which is registered via `services` in `etc/build.props`
 
-
-## Isabelle development and browsing of sources
-
-* Isabelle/ML: use Isabelle/jEdit and open ML files (with their proper
-  `.thy` file opened as well), but for Isabelle/Pure a special
-  bootstrap theory context is provided by
-  `$ISABELLE_HOME/src/Pure/ROOT.ML` (see Documentation panel).
-
-* Isabelle/HOL: use Isabelle/Pure to process the theory and ML sources
-  in Isabelle/jEdit, e.g. like this:
-  ```bash
-  isabelle jedit -l Pure
-  ```
-  then open `$ISABELLE_HOME/src/HOL/Main.thy` via File Browser / Favorites
-
-* Isabelle/Scala: use IntelliJ IDEA with the Java/Scala project generated
-  by `isabelle scala_project -L -f`:
-  ```bash
-  idea "$(isabelle getenv -b ISABELLE_HOME_USER)/scala_project"
-  ```
-* Note: Without proper IDE support Isabelle sources are very hard to
-  read and write.  (Emacs or vi are not a proper IDE.)
