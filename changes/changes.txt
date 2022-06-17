@@ -2,11 +2,11 @@
 - Mirabelle removed quickcheck
 - split quickcheck_random --> random_prep
 - split quickcheck_exhaustive --> random_prep
-- tools random_generator, random_fun_lift --> Random_Prep.random_fun_lift
+- HOL/Tools/Quickcheck random_generator, random_fun_lift --> Random_Prep.random_fun_lift
 - random_pred, quickcheck_random --> random_prep
 - predicate_compile, quickcheck_exhaustive --> random_prep
-- tools predicate_compile_compilations, Quickcheck_Exhaustive --> Random_Prep (many times)
-- tools predicate_compile_core, quickcheck_random --> random_prep (twice), quickcheck_exhaustive --> random_prep (once)
+- HOL/Tools/Predicate_Compile predicate_compile_compilations, Quickcheck_Exhaustive --> Random_Prep (many times)
+- HOL/Tools/Predicate_Compile predicate_compile_core, quickcheck_random --> random_prep (twice), quickcheck_exhaustive --> random_prep (once)
 - record, quickcheck_exhaustive --> random_pred
 - Enum --> rewrite proofs, removed splits
 - Factorial ??
