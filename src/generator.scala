@@ -85,9 +85,15 @@ object Generator {
     // }
 
     if (build) {
-      progress.echo("Generating the root file")
+      progress.echo("Generating the ROOT, deps.mk, and Makefile files")
       val file = new File("ROOT")
       val bw = new BufferedWriter(new FileWriter(file))
+      val filedk = new File("deps.mk")
+      val bwdk = new BufferedWriter(new FileWriter(filedk))
+      bwdk.write("Pure.dko: Pure.dk\n")
+      val filemk = new File("Makefile")
+      val bwmk = new BufferedWriter(new FileWriter(filemk))
+      bwmk.write("include kontroli.mk\n\nall: Pure.koo ")
       var previous_theory = "Pure"
       breakable{
         for (theory <- all_theories.tail) {
@@ -105,13 +111,32 @@ object Generator {
           // if (verbose) {
           //   progress.echo("Generated ROOT file for :" + theory_name)
           // }
+
+          breakable{
+            for ((node,key) <- whole_graph.iterator) {
+              if (node.theory == theory_name) {
+                bwdk.write(node.theory+".dko: ")
+                for {req <- whole_graph.all_preds(List(node)).reverse.map(_.theory)} {
+                  bwdk.write(req+".dk ")
+                }
+                bwdk.write("\n")
+                break()
+              }
+            }
+          }
+
+          bwmk.write(theory_name+".koo ")
+
           if (theory_name == target_theory) {break()}
         }
       }
 
       bw.close()
+      bwdk.close()
+      bwmk.close()
 
       "isabelle build -b -j 4 "+previous_theory !
+
     }
 
     if (recursive) {

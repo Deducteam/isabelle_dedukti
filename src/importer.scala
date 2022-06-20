@@ -269,10 +269,18 @@ object Importer {
     val ext = output_file.get_ext
     ext match {
       case "dk" =>
-        // write into a single file
-        using(new Part_Writer(output_file)) { writer =>
+        // // write into a single file
+        // using(new Part_Writer(output_file)) { writer =>
+        //   val syntax = new DK_Writer(writer)
+        //   write_theory(theory_name, syntax, notations, current_theory.toList)
+
+        def theory_file(theory_name: String): Path =
+          output_file.dir + Path.explode(theory_name + ".dk")
+
+        using(new Part_Writer(theory_file(theory_name))) { writer =>
           val syntax = new DK_Writer(writer)
           write_theory(theory_name, syntax, notations, current_theory.toList)
+
         }
 
       case "lp" =>

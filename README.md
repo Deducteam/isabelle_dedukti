@@ -90,10 +90,16 @@ Notes from Jeremy: The building and translation works only for HOL up to Complex
 
 ## Examples [Jeremy]
 
-A typical way of calling the tool is as follows:
+A typical way of calling the tool is as follows for lambdapi format:
 
 ```
 isabelle dedukti_generate -O main.lp -b -v -r theory session
+```
+
+or for dedukti format:
+
+```
+isabelle dedukti_generate -O something.dk -b -v -r theory session
 ```
 
 About the options and inputs:
@@ -102,16 +108,28 @@ About the options and inputs:
   * The two inputs are:
     - First, a theory until which you want to build/translate. Ex: Complex_Main.
     - Second, a usual session to which the first argument belongs. Ex: HOL.
-  * The option -b is for building: when specified, a ROOT file will be created as follows. The session in second argument will be topologically ordered. Then one session per theory will be created whose parent is the session associated with the predecessor in topological ordering. Finally, the session associated with the first argument will be built (and so all the sessions for the predecessors will be built too).
+  * The option -b is for building: when specified, a `ROOT` file will be created as follows. The session in second argument will be topologically ordered. Then one session per theory will be created whose parent is the session associated with the predecessor in topological ordering. Finally, the session associated with the first argument will be built (and so all the sessions for the predecessors will be built too). Two additional files (`deps.mk` and `Makefile`) will be generated to use to check with kocheck.
   * The option -r is for recursive translation: when this option is not specified, only the theory from the first argument will be translated. Otherwise, all predecessors will be translated as well.
   * The option -p is for postprocessing (work in progress): the goal is to simplify the translations, removing repetitions.
+
+To check the lamdbapi format:
+
+```
+lambdapi check theory.lp
+```
+
+or for the dedukti format (using kocheck):
+
+```
+make
+```
 
 
 ## What was tested? [Jeremy]
 
   * Building: HOL until Complex_Main, except Quickchecks, Record, Nunchaku, and Nitpick (it seems Quickchecks are unsound and should be avoided anyway). Time ~40mins with 16GB memory.
-  * Translating/writing: same as above, only for lambdapi. Time ~15mins.
-  * Checking: No error was found until Transfer but memory blew up.
+  * Translating/writing: same as above, both for lambdapi and dedukti. Time ~15mins for both lambdapi and for dedukti.
+  * Checking: No error was found until Transfer but memory blew up with lambdapi. Goes all the way with kocheck.
 
 
 ## Known issues [Jeremy]
@@ -121,6 +139,7 @@ About the options and inputs:
   * In a database associated with a given theory, there might be proofs labelled from another theory. Fix: those proofs are not too many so they are just translated in this theory.
   * Somehow, the databases for Nat and Sum_type use proofs from Product_Type while they are independent in the dependency graph. Fix: add explictly the connection in the graph. 
   * Quickcheck_random fails to build (it is actually unsound). Fix: remove it from the dependency graph (together with other theories).
+  * The -o is used in a awkward way. You just nee to call with <something>.lp or <something>.dk, whatever the <something> is.
 
 
 ## Project structure
