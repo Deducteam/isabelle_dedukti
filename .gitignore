@@ -6,5 +6,6 @@ output.lp
 isabelle_dedukti_test
 *~
 *.class
-
 *.lp
+Makefile
+deps.mk
