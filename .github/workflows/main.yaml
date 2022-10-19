@@ -45,7 +45,7 @@ jobs:
           # Isabelle2021-1/bin/isabelle components -u .
           # Isabelle2021-1/bin/isabelle scala_build
         run: |
-          ~/Isabelle2021-1/bin/isabelle dedukti_generate -O main.dk HOL.Groups
+          ~/Isabelle2021-1/bin/isabelle dedukti_generate -O main.dk HOL.Groups HOL
           eval $(opam env)
           dk check --eta main.dk
       - name: Test lp output
@@ -54,6 +54,6 @@ jobs:
           # Isabelle2021-1/bin/isabelle components -u .
           # Isabelle2021-1/bin/isabelle scala_build
         run: |
-          ~/Isabelle2021-1/bin/isabelle dedukti_generate -O main.lp HOL.Groups
+          ~/Isabelle2021-1/bin/isabelle dedukti_generate -O main.lp HOL.Groups HOL
           eval $(opam env)
           lambdapi check main.lp
