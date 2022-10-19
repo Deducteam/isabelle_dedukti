@@ -8,3 +8,4 @@ isabelle_dedukti_test
 *.lp
 Makefile
 deps.mk
+*.dk

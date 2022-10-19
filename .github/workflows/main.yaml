@@ -8,8 +8,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ocaml-version: [latest]
-        dedukti-version: [latest]
+        ocaml-version: [4.14.0]
+        dedukti-version: [2.7]
         # isabelle-version: [2021]
     runs-on: ubuntu-latest
     # container: makarius/isabelle:Isabelle2021-1
