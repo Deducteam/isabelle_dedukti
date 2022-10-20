@@ -38,7 +38,7 @@ The building and translation works only for HOL up to Complex_Main for now.
       - Register it to Isabelle as a user component, by providing a
         (relative or absolute) directory name as follows:
         ```bash
-        isabelle components -u isabelle_dedukti
+        isabelle components -u $path_to_isabelle_dedukti
         ```
         The resulting configuration is in `$ISABELLE_HOME_USER/etc/components`
         (e.g. use Isabelle/jEdit / File Browser / Favorites to get there).
@@ -47,10 +47,16 @@ The building and translation works only for HOL up to Complex_Main for now.
         line in `$ISABELLE_HOME_USER/etc/settings` --- these should be
         removed, to avoid duplicate component initialization.
 
+      - Compile it:
+        ```bash
+        isabelle scala_build
+        ```
+
   * Dk file checkers:
 
-    - [dkcheck](https://github.com/Deducteam/Dedukti)
     - [kocheck](https://github.com/01mf02/kontroli-rs)
+    - [dkcheck](https://github.com/Deducteam/Dedukti)
+    - [lambdapi](https://github.com/Deducteam/lambdapi)
     
   * Lp file checkers:
   

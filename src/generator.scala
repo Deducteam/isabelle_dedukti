@@ -304,7 +304,7 @@ object Generator {
         var post_process = false
 
         val getopts = Getopts("""
-Usage: isabelle dedukti_import [OPTIONS] SESSION
+Usage: isabelle dedukti_generate [OPTIONS] THEORY SESSION
 
   Options are:
     -O FILE      output file for Dedukti theory in dk or lp syntax (default: """ + default_output_file + """)
@@ -314,8 +314,10 @@ Usage: isabelle dedukti_import [OPTIONS] SESSION
     -e           remove need for eta flag
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
     -v           verbose mode
+    -r           recursive mode (translate THEORY and all its dependencies)
+    -b           generate the file ROOT declaring one session for THEORY and all its dependencies
 
-  Import specified sessions as Dedukti files.
+  Generates a dk or lp file (depending on -O) for THEORY and all its dependencies (with -r).
 """,
         "O:" -> (arg => output_file = Path.explode(arg)),
         "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
