@@ -10,50 +10,42 @@ jobs:
       matrix:
         ocaml-version: [4.14.0]
         dedukti-version: [2.7]
-        # isabelle-version: [2021]
+        # isabelle-version: [2021-1]
     runs-on: ubuntu-latest
     # container: makarius/isabelle:Isabelle2021-1
     steps:
-      # - name: Install git
-      #   run: |
-      #     apt-get -y update
-      #     apt-get -y install git
       - name: Install Isabelle
         run: |
           wget -q https://isabelle.in.tum.de/dist/Isabelle2021-1_linux.tar.gz
           tar -xzf Isabelle2021-1_linux.tar.gz -C ~
-      - name: Check out isabelle/dedukti repository
+      - name: Check out isabelle_dedukti
         uses: actions/checkout@v3
-      - name: Set up opam ${{ matrix.ocaml-version }}
+      - name: Set up opam with OCaml ${{ matrix.ocaml-version }}
         uses: avsm/setup-ocaml@v2
         with:
           ocaml-compiler: ${{ matrix.ocaml-version }}
-      - name: Recovering cached files...
+      - name: Recover cached files...
         uses: actions/cache@v2
         with:
           path: |
             ~/.opam
             ~/.isabelle
           key: ${{ runner.os }}-cache-${{ matrix.ocaml-version }}-2021-1-dedukti-${{ matrix.dedukti-version }}
-      - name: Build Isabelle/Dedukti
+      - name: Build isabelle_dedukti
         run: |
           ~/Isabelle2021-1/bin/isabelle components -u .
           ~/Isabelle2021-1/bin/isabelle scala_build
+      - name: Patch Isabelle/HOL library
+        run: |
+          chmod -R +w ~/Isabelle2021-1/src/HOL/
+          patch -up0 -d ~/Isabelle2021-1/src/HOL/ < HOL.patch
       - name: Test dk output
-          # wget -q https://isabelle.in.tum.de/dist/Isabelle2021-1_linux.tar.gz
-          # tar -xzf Isabelle2021-1_linux.tar.gz
-          # Isabelle2021-1/bin/isabelle components -u .
-          # Isabelle2021-1/bin/isabelle scala_build
         run: |
           ~/Isabelle2021-1/bin/isabelle dedukti_generate -O main.dk -b -v -r HOL.Groups HOL
           eval $(opam env)
           dk check --eta main.dk
       - name: Test lp output
-          # wget -q https://isabelle.in.tum.de/dist/Isabelle2021-1_linux.tar.gz
-          # tar -xzf Isabelle2021-1_linux.tar.gz
-          # Isabelle2021-1/bin/isabelle components -u .
-          # Isabelle2021-1/bin/isabelle scala_build
         run: |
           ~/Isabelle2021-1/bin/isabelle dedukti_generate -O main.lp -b -v -r HOL.Groups HOL
           eval $(opam env)
-          lambdapi check main.lp
+          lambdapi check --eta main.lp
