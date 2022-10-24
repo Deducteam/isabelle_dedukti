@@ -50,4 +50,4 @@ jobs:
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_generate -O main.lp -b -v -r HOL.Groups HOL
           eval $(opam env)
           opam install lambdapi.${{ matrix.lambdapi-version }}
-          lambdapi check --eta main.lp
+          lambdapi check main.lp
