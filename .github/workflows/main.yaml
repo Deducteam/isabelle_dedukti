@@ -11,7 +11,7 @@ jobs:
         ocaml-version: [4.14.0]
         dedukti-version: [2.7]
         lambdapi-version: [2.2.1]
-        isabelle-version: [2021-1]
+        isabelle-version: [2022]
     runs-on: ubuntu-latest
     steps:
       - name: Cache Opam and Isabelle directories ...
