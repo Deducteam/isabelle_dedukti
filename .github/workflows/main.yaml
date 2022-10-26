@@ -14,23 +14,30 @@ jobs:
         isabelle-version: [2021-1]
     runs-on: ubuntu-latest
     steps:
-      - name: Install Isabelle
-        run: |
-          wget -q https://isabelle.in.tum.de/dist/Isabelle${{ matrix.isabelle-version }}_linux.tar.gz
-          tar -xzf Isabelle${{ matrix.isabelle-version }}_linux.tar.gz -C ~
-      - name: Check out isabelle_dedukti
-        uses: actions/checkout@v3
-      - name: Set up opam with OCaml ${{ matrix.ocaml-version }}
-        uses: avsm/setup-ocaml@v2
-        with:
-          ocaml-compiler: ${{ matrix.ocaml-version }}
-      - name: Recover cached files...
-        uses: actions/cache@v2
+      - name: Cache Opam and Isabelle directories ...
+        id: cache
+        uses: actions/cache@v3
         with:
           path: |
             ~/.opam
             ~/.isabelle
-          key: ${{ runner.os }}-cache-${{ matrix.ocaml-version }}-${{ matrix.isabelle-version }}-dedukti-${{ matrix.dedukti-version }}
+          key: cache-${{ runner.os }}
+      - name: Install Isabelle
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          wget -q https://isabelle.in.tum.de/dist/Isabelle${{ matrix.isabelle-version }}_linux.tar.gz
+          tar -xzf Isabelle${{ matrix.isabelle-version }}_linux.tar.gz -C ~
+      - name: Install Opam and OCaml ${{ matrix.ocaml-version }}
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: avsm/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-version }}
+      - name: Install dkcheck
+        run: opam install dedukti.${{ matrix.dedukti-version }}
+      - name: Install lambdapi
+        run: opam install lambdapi.${{ matrix.lambdapi-version }}
+      - name: Checkout isabelle_dedukti
+        uses: actions/checkout@v3
       - name: Build isabelle_dedukti
         run: |
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle components -u .
@@ -39,15 +46,17 @@ jobs:
         run: |
           chmod -R +w ~/Isabelle${{ matrix.isabelle-version }}/src/HOL/
           patch -up0 -d ~/Isabelle${{ matrix.isabelle-version }}/src/HOL/ < HOL.patch
-      - name: Test dk output
-        run: |
-          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_generate -O main.dk -b -v -r HOL.Groups HOL
-          eval $(opam env)
-          opam install dedukti.${{ matrix.dedukti-version }}
-          #dk check --eta main.dk
-      - name: Test lp output
+      - name: Generate lp output
         run: |
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_generate -O main.lp -b -v -r HOL.Groups HOL
-          eval $(opam env)
-          opam install lambdapi.${{ matrix.lambdapi-version }}
+      - name: Generate dk output
+        run: |
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_generate -O main.dk -b -v -r HOL.Groups HOL
+      - name: Check lp output
+        run: |
+          #eval $(opam env)
           lambdapi check main.lp
+#      - name: Check dk output
+#        run: |
+          #eval $(opam env)
+          #dk check --eta main.dk
