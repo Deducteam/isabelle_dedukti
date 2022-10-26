@@ -4,7 +4,7 @@ on:
   push:
   workflow_dispatch:
 jobs:
-  dedukti:
+  isabelle_dedukti:
     strategy:
       fail-fast: false
       matrix:
