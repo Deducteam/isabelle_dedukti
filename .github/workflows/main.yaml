@@ -32,8 +32,6 @@ jobs:
         uses: avsm/setup-ocaml@v2
         with:
           ocaml-compiler: ${{ matrix.ocaml-version }}
-      - name: Add Opam directory in $PATH
-        run: eval $(opam env)
       - name: Install dkcheck
         run: opam install dedukti.${{ matrix.dedukti-version }}
       - name: Install lambdapi
@@ -56,9 +54,9 @@ jobs:
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_generate -O main.dk -b -v -r HOL.Groups HOL
       - name: Check lp output
         run: |
-#          eval $(opam env)
+          eval $(opam env)
           lambdapi check main.lp
-#      - name: Check dk output
-#        run: |
-#          eval $(opam env)
-#          dk check --eta main.dk
+      - name: Check dk output
+        run: |
+          eval $(opam env)
+          dk check --eta main.dk
