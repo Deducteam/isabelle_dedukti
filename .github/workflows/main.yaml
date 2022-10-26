@@ -40,9 +40,7 @@ jobs:
         run: opam install lambdapi.${{ matrix.lambdapi-version }}
       - name: Install kocheck
         run: |
-          pwd
           cd ~
-          pwd
           git clone https://github.com/01mf02/kontroli-rs.git
           cd ~/kontroli-rs
           cargo install --path kocheck
@@ -65,8 +63,8 @@ jobs:
       - name: Check lp output
         run: |
           opam env
+          echo $PATH
           eval $(opam env)
-          pwd
           echo $PATH
           lambdapi check main.lp
       - name: Check dk output
