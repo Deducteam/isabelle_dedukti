@@ -36,6 +36,11 @@ jobs:
         run: opam install dedukti.${{ matrix.dedukti-version }}
       - name: Install lambdapi
         run: opam install lambdapi.${{ matrix.lambdapi-version }}
+      - name: Install kocheck
+        run: |
+          git checkout git@github.com:01mf02/kontroli-rs.git
+          cd ~/kontroli-rs
+          cargo install --path kocheck
       - name: Checkout isabelle_dedukti
         uses: actions/checkout@v3
       - name: Build isabelle_dedukti
@@ -55,8 +60,10 @@ jobs:
       - name: Check lp output
         run: |
           eval $(opam env)
-          lambdapi check main.lp
+          echo $PATH
+          ~/.opam/${{ matrix.ocaml-version }}/bin/lambdapi check main.lp
       - name: Check dk output
         run: |
           eval $(opam env)
-          dk check --eta main.dk
+          echo $PATH
+          ~/.opam/${{ matrix.ocaml-version }}/bin/dk check --eta main.dk
