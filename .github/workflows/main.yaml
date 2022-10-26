@@ -25,7 +25,7 @@ jobs:
       - name: Install Isabelle
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          wget -q https://isabelle.in.tum.de/dist/Isabelle${{ matrix.isabelle-version }}_linux.tar.gz
+          wget -q https://isabelle.in.tum.de/website-Isabelle${{ matrix.isabelle-version }}/dist/Isabelle${{ matrix.isabelle-version }}_linux.tar.gz
           tar -xzf Isabelle${{ matrix.isabelle-version }}_linux.tar.gz -C ~
       - name: Install Opam and OCaml ${{ matrix.ocaml-version }}
         if: steps.cache.outputs.cache-hit != 'true'
