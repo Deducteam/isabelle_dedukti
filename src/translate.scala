@@ -161,7 +161,8 @@ object Translate {
       case Term.TFree(a, _) =>
         Syntax.Var(a)
       case Term.Type(c, args) =>
-        Syntax.appls(Syntax.Symb(type_ident(c)), args.map(typ), implArgsMap(type_ident(c)))
+        val impl = try implArgsMap(type_ident(c)) catch { case _ : Throwable => Nil }
+        Syntax.appls(Syntax.Symb(type_ident(c)), args.map(typ), impl)
       case Term.TVar(xi, _) => error("Illegal schematic type variable " + xi.toString)
     }
 
@@ -171,7 +172,8 @@ object Translate {
   def term(tm: Term.Term, bounds: Bounds): Syntax.Term =
     tm match {
       case Term.Const(c, typargs) =>
-        Syntax.appls(Syntax.Symb(const_ident(c)), typargs.map(typ), implArgsMap(const_ident(c)))
+        val impl = try implArgsMap(const_ident(c)) catch { case _ : Throwable => Nil }
+        Syntax.appls(Syntax.Symb(const_ident(c)), typargs.map(typ), impl)
       case Term.Free(x, _) =>
         Syntax.Var(var_ident(x))
       case Term.Var(xi, _) => error("Illegal schematic variable " + xi.toString)
@@ -205,10 +207,12 @@ object Translate {
       case Term.AppP(a, b) =>
         Syntax.Appl(proof(a, bounds), proof(b, bounds))
       case axm: Term.PAxm =>
-        Syntax.appls(Syntax.Symb(axiom_ident(axm.name)), axm.types.map(typ), implArgsMap(axiom_ident(axm.name)))
+        val impl = try implArgsMap(axiom_ident(axm.name)) catch { case _ : Throwable => Nil }
+        Syntax.appls(Syntax.Symb(axiom_ident(axm.name)), axm.types.map(typ), impl)
       case thm: Term.PThm =>
         val head = if (thm.name.nonEmpty) thm_ident(thm.name) else proof_ident(thm.serial)
-        Syntax.appls(Syntax.Symb(head), thm.types.map(typ), implArgsMap(head))
+        val impl = try implArgsMap(head) catch { case _ : Throwable => Nil }
+        Syntax.appls(Syntax.Symb(head), thm.types.map(typ), impl)
       case _ => error("Bad proof term encountered:\n" + prf)
     }
 
@@ -610,6 +614,8 @@ object Translate {
         Syntax.Theorem(s, new_args, final_ty, contracted)
       }
     }
-    catch { case ERROR(msg) => error(msg + "\nin " + quote(s)) }
+    catch { case e : Throwable => e.printStackTrace
+      error("oops") }
+//    catch { case ERROR(msg) => error(msg + "\nin " + quote(s)) }
   }
 }
