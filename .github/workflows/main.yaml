@@ -38,7 +38,7 @@ jobs:
         run: opam install lambdapi.${{ matrix.lambdapi-version }}
       - name: Install kocheck
         run: |
-          git checkout git@github.com:01mf02/kontroli-rs.git
+          git clone git@github.com:01mf02/kontroli-rs.git
           cd ~/kontroli-rs
           cargo install --path kocheck
       - name: Checkout isabelle_dedukti
