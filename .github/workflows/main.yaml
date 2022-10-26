@@ -21,6 +21,7 @@ jobs:
           path: |
             ~/.opam
             ~/.isabelle
+            ~/kontroli-rs
           key: cache-${{ runner.os }}
       - name: Install Isabelle
         if: steps.cache.outputs.cache-hit != 'true'
@@ -38,6 +39,7 @@ jobs:
         run: opam install lambdapi.${{ matrix.lambdapi-version }}
       - name: Install kocheck
         run: |
+          cd ~
           git clone https://github.com/01mf02/kontroli-rs.git
           cd ~/kontroli-rs
           cargo install --path kocheck
