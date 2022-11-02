@@ -37,6 +37,7 @@ jobs:
       - name: Add $OPAM_SWITCH_PREFIX in environment
         run: |
           opam env
+          ls ~/.opam/4.14.0/bin
 #          echo $OPAM_SWITCH_PREFIX
 #          echo "OPAM_SWITCH_PREFIX=$OPAM_SWITCH_PREFIX" >> $GITHUB_ENV
       - name: Install dkcheck
