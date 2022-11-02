@@ -5,7 +5,6 @@ on:
   workflow_dispatch:
 jobs:
   isabelle_dedukti:
-    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -13,6 +12,7 @@ jobs:
         dedukti-version: [2.7]
         lambdapi-version: [2.2.1]
         isabelle-version: [2021-1]
+    runs-on: ubuntu-latest
     steps:
       - name: Set up cache ...
         id: cache
@@ -36,7 +36,6 @@ jobs:
           ocaml-compiler: ${{ matrix.ocaml-version }}
       - name: Add $OPAM_SWITCH_PREFIX in environment
         run: |
-          eval (opam env)
           echo $OPAM_SWITCH_PREFIX
           echo "OPAM_SWITCH_PREFIX=$OPAM_SWITCH_PREFIX" >> $GITHUB_ENV
       - name: Install dkcheck
