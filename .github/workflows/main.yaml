@@ -34,6 +34,7 @@ jobs:
         uses: avsm/setup-ocaml@v2
         with:
           ocaml-compiler: ${{ matrix.ocaml-version }}
+      - name: Add $OPAM_SWITCH_PREFIX in environment
         run: |
           eval (opam env)
           echo $OPAM_SWITCH_PREFIX
