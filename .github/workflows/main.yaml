@@ -19,7 +19,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            ~/.opam
+#            ~/.opam
             ~/.isabelle
             ~/kontroli-rs
             ~/Isabelle${{ matrix.isabelle-version }}
@@ -30,7 +30,7 @@ jobs:
           wget -q https://isabelle.in.tum.de/website-Isabelle${{ matrix.isabelle-version }}/dist/Isabelle${{ matrix.isabelle-version }}_linux.tar.gz
           tar -xzf Isabelle${{ matrix.isabelle-version }}_linux.tar.gz -C ~
       - name: Install Opam and OCaml ${{ matrix.ocaml-version }}
-        if: steps.cache.outputs.cache-hit != 'true'
+#        if: steps.cache.outputs.cache-hit != 'true'
         uses: avsm/setup-ocaml@v2
         with:
           ocaml-compiler: ${{ matrix.ocaml-version }}
@@ -55,11 +55,9 @@ jobs:
           chmod -R +w ~/Isabelle${{ matrix.isabelle-version }}/src/HOL/
           patch -up0 -d ~/Isabelle${{ matrix.isabelle-version }}/src/HOL/ < HOL.patch
       - name: Generate lp output for HOL.Goups
-        run: |
-          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_generate -O main.lp -b -v -r HOL.Groups HOL
+        run: ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_generate -O main.lp -b -v -r HOL.Groups HOL
       - name: Generate dk output for HOL.Groups
-        run: |
-          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_generate -O main.dk -b -v -r HOL.Groups HOL
+        run: ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_generate -O main.dk -b -v -r HOL.Groups HOL
       - name: Check lp output
         run: opam exec -- lambdapi check main.lp
       - name: Check dk output
