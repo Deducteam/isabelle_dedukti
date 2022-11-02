@@ -61,6 +61,10 @@ jobs:
       - name: Generate dk output for HOL.Groups
         run: ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_generate -O main.dk -b -v -r HOL.Groups HOL
       - name: Check lp output
-        run: opam exec -- lambdapi check main.lp
+        run: |
+          opam switch ${{ matrix.ocaml-version }}
+          opam exec -- lambdapi check main.lp
 #      - name: Check dk output
-#        run: opam exec -- dk check --eta main.dk
+#        run: |
+#          opam switch ${{ matrix.ocaml-version }}
+#          opam exec -- dk check --eta main.dk
