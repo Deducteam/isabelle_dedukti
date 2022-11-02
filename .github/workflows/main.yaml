@@ -36,8 +36,9 @@ jobs:
           ocaml-compiler: ${{ matrix.ocaml-version }}
       - name: Add $OPAM_SWITCH_PREFIX in environment
         run: |
-          echo $OPAM_SWITCH_PREFIX
-          echo "OPAM_SWITCH_PREFIX=$OPAM_SWITCH_PREFIX" >> $GITHUB_ENV
+          opam env
+#          echo $OPAM_SWITCH_PREFIX
+#          echo "OPAM_SWITCH_PREFIX=$OPAM_SWITCH_PREFIX" >> $GITHUB_ENV
       - name: Install dkcheck
         run: opam install dedukti.${{ matrix.dedukti-version }}
 #      - name: Install lambdapi
