@@ -14,7 +14,7 @@ jobs:
         isabelle-version: [2021-1]
     runs-on: ubuntu-latest
     steps:
-      - name: Set up cache ...
+      - name: Set up cache
         id: cache
         uses: actions/cache@v3
         with:
@@ -34,12 +34,6 @@ jobs:
         uses: avsm/setup-ocaml@v2
         with:
           ocaml-compiler: ${{ matrix.ocaml-version }}
-      - name: Add $OPAM_SWITCH_PREFIX in environment
-        run: |
-          opam env
-          ls ~/.opam/4.14.0/bin
-#          echo $OPAM_SWITCH_PREFIX
-#          echo "OPAM_SWITCH_PREFIX=$OPAM_SWITCH_PREFIX" >> $GITHUB_ENV
       - name: Install dkcheck
         run: opam install dedukti.${{ matrix.dedukti-version }}
 #      - name: Install lambdapi
@@ -68,7 +62,7 @@ jobs:
 #          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_generate -O main.dk -b -v -r HOL.Groups HOL
 #      - name: Check lp output
 #        run: |
-#          ${{ env.OPAM_SWITCH_PREFIX }}/bin/lambdapi check main.lp
+#          opam exec -- lambdapi check main.lp
       - name: Check dk output
         run: |
-          ${{ env.OPAM_SWITCH_PREFIX }}/bin/dk check --version #--eta main.dk
+          opam exec -- dk check --version #--eta main.dk
