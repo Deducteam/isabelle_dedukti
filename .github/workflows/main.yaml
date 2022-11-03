@@ -64,8 +64,9 @@ jobs:
         run: |
           opam switch ${{ matrix.ocaml-version }}
           eval $(opam env)
-          opam exec -- lambdapi check main.lp
+          lambdapi check main.lp
 #      - name: Check dk output
 #        run: |
 #          opam switch ${{ matrix.ocaml-version }}
-#          opam exec -- dk check --eta main.dk
+#          eval $(opam env)
+#          dk check --eta main.dk
