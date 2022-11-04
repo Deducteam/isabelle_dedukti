@@ -40,10 +40,6 @@ jobs:
         run: |
           chmod -R +w ~/Isabelle${{ matrix.isabelle-version }}/src/HOL/
           patch -up0 -d ~/Isabelle${{ matrix.isabelle-version }}/src/HOL/ < HOL.patch
-      - name: Generate lp output for HOL.Goups
-        run: ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_generate -O main.lp -b -v -r HOL.Groups HOL
-      - name: Generate dk output for HOL.Groups
-        run: ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_generate -O main.dk -b -v -r HOL.Groups HOL
       - name: Install opam
 #        if: steps.cache.outputs.cache-hit != 'true'
         uses: avsm/setup-ocaml@v2
@@ -61,12 +57,13 @@ jobs:
           git clone https://github.com/01mf02/kontroli-rs.git
           cd ~/kontroli-rs
           cargo install --path kocheck
-      - name: Check lp output
+      - name: Generate and check lp output for HOL.Groups
         run: |
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_generate -O main.lp -b -v -r HOL.Groups HOL
           eval $(opam env)
           lambdapi check main.lp
-#      - name: Check dk output
-#        run: |
-#          opam switch ${{ matrix.ocaml-version }}
-#          eval $(opam env)
-#          dk check --eta main.dk
+      - name: Generate and check dk output for HOL.Groups
+        run: |
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_generate -O main.dk -b -v -r HOL.Groups HOL
+          eval $(opam env)
+          dk check --eta main.dk
