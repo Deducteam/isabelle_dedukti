@@ -24,11 +24,11 @@ jobs:
 #            ~/Isabelle${{ matrix.isabelle-version }}
 #            ~/.opam
 #          key: cache-${{ runner.os }}
-#      - name: Install Isabelle
+      - name: Download Isabelle
 #        if: steps.cache.outputs.cache-hit != 'true'
-#        run: |
-#          wget -q https://isabelle.in.tum.de/website-Isabelle${{ matrix.isabelle-version }}/dist/Isabelle${{ matrix.isabelle-version }}_linux.tar.gz
-#          tar -xzf Isabelle${{ matrix.isabelle-version }}_linux.tar.gz -C ~
+        run: |
+          wget -q https://isabelle.in.tum.de/website-Isabelle${{ matrix.isabelle-version }}/dist/Isabelle${{ matrix.isabelle-version }}_linux.tar.gz
+          tar -xzf Isabelle${{ matrix.isabelle-version }}_linux.tar.gz -C ~
       - name: Install opam
 #        if: steps.cache.outputs.cache-hit != 'true'
         uses: avsm/setup-ocaml@v2
@@ -46,16 +46,16 @@ jobs:
 #          git clone https://github.com/01mf02/kontroli-rs.git
 #          cd ~/kontroli-rs
 #          cargo install --path kocheck
-#      - name: Checkout isabelle_dedukti
-#        uses: actions/checkout@v3
-#      - name: Build isabelle_dedukti
-#        run: |
-#          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle components -u .
-#          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle scala_build
-#      - name: Patch Isabelle/HOL library
-#        run: |
-#          chmod -R +w ~/Isabelle${{ matrix.isabelle-version }}/src/HOL/
-#          patch -up0 -d ~/Isabelle${{ matrix.isabelle-version }}/src/HOL/ < HOL.patch
+      - name: Checkout isabelle_dedukti
+        uses: actions/checkout@v3
+      - name: Build isabelle_dedukti
+        run: |
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle components -u .
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle scala_build
+      - name: Patch Isabelle/HOL library
+        run: |
+          chmod -R +w ~/Isabelle${{ matrix.isabelle-version }}/src/HOL/
+          patch -up0 -d ~/Isabelle${{ matrix.isabelle-version }}/src/HOL/ < HOL.patch
 #      - name: Generate lp output for HOL.Goups
 #        run: ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_generate -O main.lp -b -v -r HOL.Groups HOL
 #      - name: Generate dk output for HOL.Groups
