@@ -4,7 +4,7 @@ on:
   push:
   workflow_dispatch:
 jobs:
-  dedukti:
+  isabelle_dedukti:
     strategy:
       fail-fast: false
       matrix:
@@ -14,30 +14,24 @@ jobs:
         isabelle-version: [2021-1]
     runs-on: ubuntu-latest
     steps:
-      - name: Cache Opam and Isabelle directories ...
-        id: cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.opam
-            ~/.isabelle
-          key: cache-${{ runner.os }}
-      - name: Install Isabelle
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          wget -q https://isabelle.in.tum.de/dist/Isabelle${{ matrix.isabelle-version }}_linux.tar.gz
-          tar -xzf Isabelle${{ matrix.isabelle-version }}_linux.tar.gz -C ~
-      - name: Install Opam and OCaml ${{ matrix.ocaml-version }}
-        if: steps.cache.outputs.cache-hit != 'true'
-        uses: avsm/setup-ocaml@v2
-        with:
-          ocaml-compiler: ${{ matrix.ocaml-version }}
-      - name: Install dkcheck
-        run: opam install dedukti.${{ matrix.dedukti-version }}
-      - name: Install lambdapi
-        run: opam install lambdapi.${{ matrix.lambdapi-version }}
+    # actions/checkout must be done BEFORE avsm/setup-ocaml
       - name: Checkout isabelle_dedukti
         uses: actions/checkout@v3
+#      - name: Set up cache
+#        id: cache
+#        uses: actions/cache@v3
+#        with:
+#          path: |
+#            ~/.isabelle
+#            ~/kontroli-rs
+#            ~/Isabelle${{ matrix.isabelle-version }}
+#            ~/.opam
+#          key: cache-${{ runner.os }}
+      - name: Download Isabelle
+#        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          wget -q https://isabelle.in.tum.de/website-Isabelle${{ matrix.isabelle-version }}/dist/Isabelle${{ matrix.isabelle-version }}_linux.tar.gz
+          tar -xzf Isabelle${{ matrix.isabelle-version }}_linux.tar.gz -C ~
       - name: Build isabelle_dedukti
         run: |
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle components -u .
@@ -46,17 +40,30 @@ jobs:
         run: |
           chmod -R +w ~/Isabelle${{ matrix.isabelle-version }}/src/HOL/
           patch -up0 -d ~/Isabelle${{ matrix.isabelle-version }}/src/HOL/ < HOL.patch
-      - name: Generate lp output
+      - name: Install opam
+#        if: steps.cache.outputs.cache-hit != 'true'
+        uses: avsm/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-version }}
+#      - name: Create opam switch for ocaml ${{ matrix.ocaml-version }}
+#        run: opam switch create ${{ matrix.ocaml-version }}
+      - name: Install dkcheck
+        run: opam install dedukti.${{ matrix.dedukti-version }}
+      - name: Install lambdapi
+        run: opam install lambdapi.${{ matrix.lambdapi-version }}
+      - name: Install kocheck
+        run: |
+          cd ~
+          git clone https://github.com/01mf02/kontroli-rs.git
+          cd ~/kontroli-rs
+          cargo install --path kocheck
+      - name: Generate and check lp output for HOL.Groups
         run: |
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_generate -O main.lp -b -v -r HOL.Groups HOL
-      - name: Generate dk output
-        run: |
-          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_generate -O main.dk -b -v -r HOL.Groups HOL
-      - name: Check lp output
-        run: |
-          #eval $(opam env)
-          lambdapi check main.lp
-#      - name: Check dk output
+          eval $(opam env)
+          lambdapi check HOL.Groups.lp
+#      - name: Generate and check dk output for HOL.Groups
 #        run: |
-          #eval $(opam env)
-          #dk check --eta main.dk
+#          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_generate -O main.dk -b -v -r HOL.Groups HOL
+#          eval $(opam env)
+#          dk check --eta main.dk
