@@ -61,9 +61,9 @@ jobs:
         run: |
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_generate -O main.lp -b -v -r HOL.Groups HOL
           eval $(opam env)
-          lambdapi check main.lp
-      - name: Generate and check dk output for HOL.Groups
-        run: |
-          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_generate -O main.dk -b -v -r HOL.Groups HOL
-          eval $(opam env)
-          dk check --eta main.dk
+          lambdapi check HOL.Groups.lp
+#      - name: Generate and check dk output for HOL.Groups
+#        run: |
+#          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_generate -O main.dk -b -v -r HOL.Groups HOL
+#          eval $(opam env)
+#          dk check --eta main.dk
