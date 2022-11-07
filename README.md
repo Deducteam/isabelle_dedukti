@@ -115,7 +115,6 @@ About the options and inputs:
     - Second, a usual session to which the first argument belongs. Ex: HOL.
   * The option -b is for building: when specified, a `ROOT` file will be created as follows. The session in second argument will be topologically ordered. Then one session per theory will be created whose parent is the session associated with the predecessor in topological ordering. Finally, the session associated with the first argument will be built (and so all the sessions for the predecessors will be built too). Two additional files (`deps.mk` and `Makefile`) will be generated to check the generated dk files with kocheck.
   * The option -r is for recursive translation: when this option is not specified, only the theory from the first argument will be translated. Otherwise, all predecessors will be translated as well.
-  * The option -p is for postprocessing (work in progress): the goal is to simplify the translations, removing repetitions.
 
 To check the lamdbapi format:
 

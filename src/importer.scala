@@ -45,7 +45,7 @@ object Importer {
     val db = store.open_database(session)
     val provider = Export.Provider.database(db, store.cache, session, theory_name)
     // progress.echo("DB: " + db)
-        // gets provider for the thy
+
     val theory =
       if (theory_name == Thy_Header.PURE) {
         Export_Theory.read_pure_theory(store, cache = term_cache)
@@ -69,14 +69,6 @@ object Importer {
       }
 
     // progress.echo("Graph: " + whole_graph)
-
-    // val whole_graph2 = whole_graph.iterator.foldLeft(whole_graph) {
-    //     case (g, (x,_)) =>
-    //       whole_graph.iterator.foldLeft(g) {
-    //         case (gp, (y,_)) => if ((x.theory == "HOL.Product_Type" && y.theory == "HOL.Nat")) {gp.add_edge(x,y)} else {gp}
-    //       }
-    //   }
-
     
     for ((k,e) <- whole_graph.iterator) {
       if (k.theory.startsWith("HOL.Quickcheck") || 
@@ -84,7 +76,7 @@ object Importer {
         whole_graph = whole_graph.del_node(k)
       }
     }
-    for ((k,e) <- whole_graph.iterator) { //HERE
+    for ((k,e) <- whole_graph.iterator) {
       for ((kp,ep) <- whole_graph.iterator) {
         if ((k.theory == "HOL.Product_Type" && (kp.theory == "HOL.Nat" || kp.theory == "HOL.Sum_Type"))) {
           whole_graph = whole_graph.add_edge(k,kp)
@@ -114,31 +106,8 @@ object Importer {
 
     var exported_proofs = Set.empty[Long]
 
-    /*def proof_boxes(
-      thm: Export_Theory.Entity[Export_Theory.Thm],
-      provider: Export.Provider
-    ) : List[(Export_Theory.Thm_Id, Export_Theory.Proof)] = {
-      try {
-        Export_Theory.read_proof_boxes(
-          store, provider, thm.the_content.proof,
-          suppress = id => exported_proofs(id.serial), cache = term_cache)
-      }
-      catch { case ERROR(msg) => error(msg + "\nin " + thm) }
-    }*/
-
-    // def translate_theory(
-    //   theory: Export_Theory.Theory,
-    //   previous_theories: Map[String, mutable.Queue[Syntax.Command]],
-    //   with_prf : Boolean )
-    //     : Map[String, mutable.Queue[Syntax.Command]] = {
     progress.echo("Translating theory " + theory_name)
 
-    // val current_theories = {
-    //   if (previous_theories contains theory.name)
-    //     previous_theories
-    //   else
-    //     previous_theories + (theory.name -> mutable.Queue[Syntax.Command]())
-    // }
     val current_theory = mutable.Queue[Syntax.Command]()
 
     if (theory_name == Thy_Header.PURE) {
@@ -231,8 +200,6 @@ object Importer {
       case thm :: thms => prf_loop(prfs.sortBy(_._1),thm,thms,get_thm_prf(thm))
       case _ => prf_loop(prfs.sortBy(_._1),null,null,Long.MaxValue)
     }
-      
-
 
     def write_theory(
       theory_name: String,
@@ -253,27 +220,13 @@ object Importer {
       }
     }
 
-
-
-
-
     Translate.global_eta_expand = eta_expand
-
-      // val translated_theory =
-      //   all_theories
-      //     .foldLeft(Map[String, mutable.Queue[Syntax.Command]]())((n, m) => translate_theory_by_name(m.theory, n))
-      //     .view.mapValues(_.toList).toMap
 
     val notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation] = collection.mutable.Map()
 
     val ext = output_file.get_ext
     ext match {
       case "dk" =>
-        // // write into a single file
-        // using(new Part_Writer(output_file)) { writer =>
-        //   val syntax = new DK_Writer(writer)
-        //   write_theory(theory_name, syntax, notations, current_theory.toList)
-
         def theory_file(theory_name: String): Path =
           output_file.dir + Path.explode(theory_name + ".dk")
 
@@ -308,16 +261,9 @@ object Importer {
           write_theory(theory_name, syntax, notations, current_theory.toList)
         }
 
-          // // write one file that loads all the other ones
-          // using(new Part_Writer(output_file)) { output =>
-          //   val syntax = new LP_Writer(output_file.dir, use_notations, output)
-          //   all_theories.foreach(name => syntax.require_open(name.theory))
-          // }
-
       case ext => error("Unknown output format " + ext)
       }
   }
-
 
   /* Isabelle tool wrapper and CLI handler */
 
@@ -387,5 +333,6 @@ Usage: isabelle dedukti_import [OPTIONS] SESSION
             progress.echo((end_date.time - start_date.time).message_hms + " elapsed time")
           }
         }
-      })
+      }
+    )
 }
