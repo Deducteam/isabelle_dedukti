@@ -1,4 +1,4 @@
-/** Isabelle/Dedukti generator of root files **/
+/** Generator of ROOT files **/
 
 package isabelle.dedukti
 
@@ -14,7 +14,6 @@ import scala.language.postfixOps
 import scala.io.Source
 
 object Generator {
-  /* generator */
 
   val default_output_file: Path = Path.explode("ROOT")
 
@@ -31,11 +30,8 @@ object Generator {
     output_file: Path = default_output_file,
     verbose: Boolean = false,
     build: Boolean = false,
-    recursive: Boolean = false,
-    post_process: Boolean = false
+    recursive: Boolean = false
     ): Unit = {
-
-    // val full_name = session + "." + target_theory
 
     if (verbose) {
       progress.echo("We are aiming for: " + target_theory + " in " + session)
@@ -190,102 +186,7 @@ object Generator {
               verbose = verbose)
       }
     }
-
-    val proof_regexp = "proof[0-9]+"
-
-    if (post_process) {
-      breakable{
-        val proof_mem: collection.mutable.AnyRefMap[String, String] = collection.mutable.AnyRefMap()
-        val proof_equiv: collection.mutable.AnyRefMap[String, String] = collection.mutable.AnyRefMap()
-        for (theory <- all_theories) {
-          val theory_name = theory.toString
-          val bufferedSource = Source.fromFile(theory_name+".lp")
-          val lines = bufferedSource.getLines().toList
-          val nb_lines = lines.length
-          // progress.echo("Number of lines: " + nb_lines)
-          // progress.echo("Number of keys mem: " + proof_mem.keySet.toList.length)
-          // progress.echo("Number of keys equiv: " + proof_equiv.keySet.toList.length)
-          var compt = 0
-          var pct = 10
-          var pctl = 10*nb_lines/100
-          bufferedSource.close
-          val fp_lines = lines.foldLeft(Nil: List[String]) {
-            case (plines:List[String],line) => 
-              if (line.startsWith("opaque symbol ")) {
-                val id = line.substring(14).split(" ").head
-                val len_pref = 15+id.length
-                val prop_proof = line.substring(len_pref).split(" ≔ ")
-                val prop = prop_proof.head
-                val proof = prop_proof.tail.head
-                val original_proof_id = proof_mem.getOrElse(prop,id)
-                if (id == original_proof_id) {
-                  proof_mem += (prop -> id)
-                }
-                if (id != original_proof_id && id.startsWith("proof")) {
-                  proof_equiv += (id -> original_proof_id)
-                  // progress.echo("Removed line")
-                  // progress.echo("The original id of " + id + " is " + original_proof_id)
-                  compt += 1
-                  if (compt >= pctl) {
-                    // progress.echo("We've done " + pct + "pct")
-                    // progress.echo("Number of keys mem: " + proof_mem.keySet.toList.length)
-                    // progress.echo("Number of keys equiv: " + proof_equiv.keySet.toList.length)
-                    pct += 10
-                    pctl = pct*nb_lines/100
-                  }
-                  plines
-                }
-                else {
-                  // val psplit = proof.split("((?<=proof[0-9]+)(?=[^0-9]))|(?=proof)")
-                  // progress.echo("Changing line with length " + psplit.length)
-                  val new_line = proof.split("((?<=[0-9]{3})(?=[^0-9]))|(?=proof)").foldLeft("opaque symbol "+id+" "+prop+" ≔ ") {
-                    case (pref,item) =>
-                      val new_item = if (item.startsWith("proof")) {proof_equiv.getOrElse(item,item)} else {item}
-                      pref.concat(new_item)
-                  }
-                  // progress.echo("... to :" + new_line)
-                  compt += 1
-                  if (compt >= pctl) {
-                    // progress.echo("We've done " + pct + "pct")
-                    // progress.echo("Number of keys mem: " + proof_mem.keySet.toList.length)
-                    // progress.echo("Number of keys equiv: " + proof_equiv.keySet.toList.length)
-                    pct += 10
-                    pctl = pct*nb_lines/100
-                  }
-                  plines:::List(new_line)
-                }
-              }
-              else {
-                // progress.echo("Kept line")
-                compt += 1
-                if (compt >= pctl) {
-                  // progress.echo("We've done " + pct + "pct")
-                  // progress.echo("Number of keys mem: " + proof_mem.keySet.toList.length)
-                  // progress.echo("Number of keys equiv: " + proof_equiv.keySet.toList.length)
-                  pct += 10
-                  pctl = pct*nb_lines/100
-                }
-                plines:::List(line)
-              }
-          }
-          "mv "+theory_name+".lp old_"+theory_name+".lp" !
-          val file = new File(theory_name+".lp")
-          val bw = new BufferedWriter(new FileWriter(file))
-          for (line <- fp_lines) {
-            bw.write(line+"\n")
-          }
-          bw.close
-          if (verbose) {
-            progress.echo("Post-processing " + theory_name + ".lp")
-          }
-          if (theory_name == target_theory) {
-            break()
-          }
-        }
-      }
-    }
   }
-
 
   /* Isabelle tool wrapper and CLI handler */
 
@@ -301,7 +202,6 @@ object Generator {
         var verbose = false
         var build = false
         var recursive = false
-        var post_process = false
 
         val getopts = Getopts("""
 Usage: isabelle dedukti_generate [OPTIONS] THEORY SESSION
@@ -327,8 +227,7 @@ Usage: isabelle dedukti_generate [OPTIONS] THEORY SESSION
         "o:" -> (arg => { options += arg }),
         "v" -> (_ => verbose = true),
         "b" -> (_ => build = true),
-        "r" -> (_ => recursive = true),
-        "p" -> (_ => post_process = true))
+        "r" -> (_ => recursive = true))
 
         val more_args = getopts(args)
 
@@ -355,8 +254,7 @@ Usage: isabelle dedukti_generate [OPTIONS] THEORY SESSION
               output_file = output_file,
               verbose = verbose,
               build = build,
-              recursive = recursive,
-              post_process = post_process)
+              recursive = recursive)
           }
           catch {case x: Exception =>
             progress.echo(x.getStackTrace.mkString("\n"))
