@@ -18,6 +18,17 @@ object Prelude {
 
   var namesSet: Set[String] = Set()
   var namesMap: Map[String, String] = Map()
+  var moduleOf: Map[String, String] = Map()
+  var current_module: String = "STTfa"
+
+  def set_current_module(m: String) = { current_module = m }
+
+  def module_of(a: String):String = {
+    moduleOf get a match {
+      case None => error("unknown name:" + a)
+      case Some(m) => m
+    }
+  }
 
   def full_name(a: String, kind: String): String =
     a.replace(".", "__") + "__" + kind
@@ -38,12 +49,14 @@ object Prelude {
       error("duplicate name")
 
     namesSet += new_id
-    namesMap += full_name(id, kind) -> new_id
+    val name = full_name(id, kind)
+    namesMap += name -> new_id
+    moduleOf += new_id -> current_module
     new_id
   }
 
   def name_get(a: String, kind: String): String = {
-    namesMap get full_name(a, kind) match {
+    namesMap get (full_name(a, kind)) match {
       case None => names_add(a, kind)
       case Some(s) => s
     }
@@ -58,7 +71,7 @@ object Prelude {
   def   thm_ident(a: String): String = name_get(a, Export_Theory.Kind.THM  )
   def   var_ident(a: String): String = name_get(a, "var")
 
-  def proof_ident(serial: Long): String = "proof" + serial
+  def proof_ident(serial: Long): String = name_get(f"$serial", "proof")
 
 
   /* prologue proper */

@@ -5,7 +5,11 @@ lib/classes/dedukti.jar
 isabelle_dedukti_test
 *~
 *.class
-*.lp
-Makefile
 deps.mk
-*.dk
+HOL.*.dk
+HOL.*.lp
+Pure.dk
+Pure.lp
+Tools.*.dk
+Tools.*.lp
+ROOT
