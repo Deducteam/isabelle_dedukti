@@ -111,11 +111,6 @@ object Importer {
 
     val current_theory = mutable.Queue[Syntax.Command]()
 
-    /*if (theory_name == Thy_Header.PURE) {
-      current_theory.append(Prelude.typeD)
-      current_theory.append(Prelude.etaD)
-    }*/
-
     for (a <- theory.classes) {
       // if (verbose) progress.echo("  " + a.toString + a.serial)
       current_theory.append(Translate.class_decl(a.name))
@@ -124,25 +119,11 @@ object Importer {
     for (a <- theory.types) {
       // if (verbose) progress.echo("  " + a.toString + a.serial)
       current_theory.append(Translate.type_decl(a.name, a.the_content.args, a.the_content.abbrev, a.the_content.syntax))
-
-      /*if (a.name == Pure_Thy.FUN ) {
-        current_theory.append(Prelude.funR)
-      }
-      if (a.name == Pure_Thy.PROP) {
-        current_theory.append(Prelude.epsD)
-      }*/
     }
 
     for (a <- theory.consts) {
       // if (verbose) progress.echo("  " + a.toString + " " + a.serial)
       current_theory.append(Translate.const_decl(a.name, a.the_content.typargs, a.the_content.typ, a.the_content.abbrev, a.the_content.syntax))
-
-      /*if (a.name == Pure_Thy.ALL) {
-        current_theory.append(Prelude.allR)
-      }
-      if (a.name == Pure_Thy.IMP) {
-        current_theory.append(Prelude.impR);
-      }*/
     }
 
     for (axm <- theory.axioms) {
