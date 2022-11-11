@@ -66,4 +66,5 @@ jobs:
         run: |
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_generate -O main.dk -b -v -r HOL.Groups HOL
           eval $(opam env)
+          dk dep *.dk > deps.mk
           make -f dedukti.mk
