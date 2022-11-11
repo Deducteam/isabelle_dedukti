@@ -46,6 +46,8 @@ object Importer {
     val provider = Export.Provider.database(db, store.cache, session, theory_name)
     // progress.echo("DB: " + db)
 
+    Prelude.set_current_module(theory_name)
+
     val theory =
       if (theory_name == Thy_Header.PURE) {
         Export_Theory.read_pure_theory(store, cache = term_cache)
@@ -110,11 +112,6 @@ object Importer {
 
     val current_theory = mutable.Queue[Syntax.Command]()
 
-    if (theory_name == Thy_Header.PURE) {
-      current_theory.append(Prelude.typeD)
-      current_theory.append(Prelude.etaD)
-    }
-
     for (a <- theory.classes) {
       // if (verbose) progress.echo("  " + a.toString + a.serial)
       current_theory.append(Translate.class_decl(a.name))
@@ -123,25 +120,11 @@ object Importer {
     for (a <- theory.types) {
       // if (verbose) progress.echo("  " + a.toString + a.serial)
       current_theory.append(Translate.type_decl(a.name, a.the_content.args, a.the_content.abbrev, a.the_content.syntax))
-
-      if (a.name == Pure_Thy.FUN ) {
-        current_theory.append(Prelude.funR)
-      }
-      if (a.name == Pure_Thy.PROP) {
-        current_theory.append(Prelude.epsD)
-      }
     }
 
     for (a <- theory.consts) {
       // if (verbose) progress.echo("  " + a.toString + " " + a.serial)
       current_theory.append(Translate.const_decl(a.name, a.the_content.typargs, a.the_content.typ, a.the_content.abbrev, a.the_content.syntax))
-
-      if (a.name == Pure_Thy.ALL) {
-        current_theory.append(Prelude.allR)
-      }
-      if (a.name == Pure_Thy.IMP) {
-        current_theory.append(Prelude.impR);
-      }
     }
 
     for (axm <- theory.axioms) {
@@ -208,10 +191,6 @@ object Importer {
       theory: List[Syntax.Command]
     ): Unit = {
       progress.echo("Writing theory " + theory_name)
-
-      output.comment("theory " + theory_name)
-      output.nl()
-
       for (command <- theory) {
         command match {
           case Syntax.Definition(_,_,_,_,_) =>
@@ -225,39 +204,38 @@ object Importer {
     val notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation] = collection.mutable.Map()
 
     val ext = output_file.get_ext
+    val filename = Path.explode (Prelude.mod_name(theory_name) + "." + ext)
+    val deps = Prelude.deps_of(theory_name)
+
     ext match {
       case "dk" =>
-        def theory_file(theory_name: String): Path =
-          output_file.dir + Path.explode(theory_name + ".dk")
-
-        using(new Part_Writer(theory_file(theory_name))) { writer =>
+        using(new Part_Writer(filename)) { writer =>
           val syntax = new DK_Writer(writer)
+          syntax.comment("translation of " + theory_name)
+          for (dep <- deps.iterator) { syntax.require(dep) }
           write_theory(theory_name, syntax, notations, current_theory.toList)
-
         }
 
       case "lp" =>
-        def theory_file(theory_name: String): Path =
-          output_file.dir + Path.explode(theory_name + ".lp")
-
-        using(new Part_Writer(theory_file(theory_name))) { writer =>
-          val syntax = new LP_Writer(output_file.dir, use_notations, writer)
+        using(new Part_Writer(filename)) { writer =>
+          val syntax = new LP_Writer(use_notations, writer)
+          syntax.comment("translation of " + theory_name)
           if (!eta_expand) syntax.eta_equality()
 
-        breakable{
+        /*breakable{
           for ((node,key) <- whole_graph.iterator) {
             if (node.theory == theory_name) {
               // progress.echo("Requirements after: " + whole_graph.all_preds(List(node)).reverse.map(_.theory))
               for {
                 req <- whole_graph.all_preds(List(node)).reverse.map(_.theory)
                 if req != theory_name
-              } syntax.require_open(req)
+              } syntax.require(req)
               break()
               }
             }
-        }
-            
+        }*/
 
+          for (dep <- deps.iterator) { syntax.require(dep) }
           write_theory(theory_name, syntax, notations, current_theory.toList)
         }
 
