@@ -88,7 +88,7 @@ abstract class Abstract_Writer(root: String, writer: Writer) extends Ident_Write
   }
 
   def mod_ident(a: String): Unit = {
-    write(root + escape_if_needed(a))
+    write(root + escape_if_needed(Prelude.mod_name(a)))
   }
 
   def sym_ident(a: String): Unit = {
@@ -96,7 +96,7 @@ abstract class Abstract_Writer(root: String, writer: Writer) extends Ident_Write
   }
 
   def sym_qident(a: String): Unit = {
-    write(root + escape_if_needed(Prelude.module_of(a)) + "." + escape_if_needed(a))
+    write(root + Prelude.mod_name(Prelude.module_of(a)) + "." + escape_if_needed(a))
   }
 
   def term(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation],

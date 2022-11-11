@@ -108,9 +108,9 @@ object Generator {
           breakable{
             for ((node,key) <- whole_graph.iterator) {
               if (node.theory == theory_name) {
-                bwdk.write(node.theory+".dko: STTfa.dko ")
+                bwdk.write(Prelude.mod_name(node.theory) + ".dko: STTfa.dko ")
                 for {req <- whole_graph.all_preds(List(node)).reverse.map(_.theory) if req != theory_name} {
-                  bwdk.write(req+".dko ")
+                  bwdk.write(Prelude.mod_name(req) + ".dko ")
                 }
                 bwdk.write("\n")
                 break()

@@ -7,10 +7,10 @@ OBJ := $(SRC:%=%o)
 
 default: $(OBJ)
 
-include deps.mk
-
 %.dko: %.dk
 	$(CHK) $<
 
 clean:
 	rm -f $(wildcard *.dko)
+
+include deps.mk

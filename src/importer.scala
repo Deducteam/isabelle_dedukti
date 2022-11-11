@@ -47,6 +47,7 @@ object Importer {
     // progress.echo("DB: " + db)
 
     Prelude.set_current_module(theory_name)
+
     val theory =
       if (theory_name == Thy_Header.PURE) {
         Export_Theory.read_pure_theory(store, cache = term_cache)
@@ -190,9 +191,6 @@ object Importer {
       theory: List[Syntax.Command]
     ): Unit = {
       progress.echo("Writing theory " + theory_name)
-
-      output.comment("theory " + theory_name)
-
       for (command <- theory) {
         command match {
           case Syntax.Definition(_,_,_,_,_) =>
@@ -206,24 +204,25 @@ object Importer {
     val notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation] = collection.mutable.Map()
 
     val ext = output_file.get_ext
-    val filename = output_file.dir + Path.explode(theory_name + "." + ext)
+    val filename = Path.explode (Prelude.mod_name(theory_name) + "." + ext)
+    val deps = Prelude.deps_of(theory_name)
 
     ext match {
       case "dk" =>
         using(new Part_Writer(filename)) { writer =>
           val syntax = new DK_Writer(writer)
-          syntax.require("STTfa")
+          syntax.comment("translation of " + theory_name)
+          for (dep <- deps.iterator) { syntax.require(dep) }
           write_theory(theory_name, syntax, notations, current_theory.toList)
-
         }
 
       case "lp" =>
         using(new Part_Writer(filename)) { writer =>
           val syntax = new LP_Writer(use_notations, writer)
+          syntax.comment("translation of " + theory_name)
           if (!eta_expand) syntax.eta_equality()
-          syntax.require("STTfa")
 
-        breakable{
+        /*breakable{
           for ((node,key) <- whole_graph.iterator) {
             if (node.theory == theory_name) {
               // progress.echo("Requirements after: " + whole_graph.all_preds(List(node)).reverse.map(_.theory))
@@ -234,9 +233,9 @@ object Importer {
               break()
               }
             }
-        }
-            
+        }*/
 
+          for (dep <- deps.iterator) { syntax.require(dep) }
           write_theory(theory_name, syntax, notations, current_theory.toList)
         }
 

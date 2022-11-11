@@ -19,17 +19,32 @@ object Prelude {
   var namesSet: Set[String] = Set()
   var namesMap: Map[String, String] = Map()
   var moduleOf: Map[String, String] = Map()
+  var depsOf: Map[String, Set[String]] = Map()
   var current_module: String = "STTfa"
 
   def set_current_module(m: String) = { current_module = m }
 
-  def module_of(a: String):String = {
+  def deps_of(m: String): Set[String] = {
+    depsOf get m match {
+      case None => Set()
+      case Some(set) => set
+    }
+  }
+
+  def add_dep(m: String) = {
+    if (m != current_module)
+      depsOf += (current_module -> (deps_of(current_module) + m))
+  }
+
+  def module_of(a: String): String = {
     moduleOf get a match {
       case None => error("unknown name:" + a)
       case Some(m) => m
     }
   }
 
+  def mod_name(m: String): String = m.replace(".", "_")
+  
   def full_name(a: String, kind: String): String =
     a.replace(".", "__") + "__" + kind
 
@@ -58,7 +73,7 @@ object Prelude {
   def name_get(a: String, kind: String): String = {
     namesMap get (full_name(a, kind)) match {
       case None => names_add(a, kind)
-      case Some(s) => s
+      case Some(s) => { add_dep(module_of(s)); s }
     }
   }
 
