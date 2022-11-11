@@ -1,7 +1,5 @@
 - eliminate odd mutable datastructures: irrelevant for performance, and the cost of clear semantics;
 
-- import_theory_by_name: support stack of sessions, no longer restrict to Pure as parent;
-
 - clarify OfClass proofs (normally expanded by Isabelle);
 
 - clarify Oracle proofs (normally expanded by Isabelle);
