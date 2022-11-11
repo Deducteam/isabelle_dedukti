@@ -81,12 +81,12 @@ object Generator {
     // }
 
     if (build) {
-      progress.echo("Generating the files ROOT and deps.mk")
+      progress.echo("Generating the ROOT file")
       val file = new File("ROOT")
       val bw = new BufferedWriter(new FileWriter(file))
-      val filedk = new File("deps.mk")
+      /*val filedk = new File("deps.mk")
       val bwdk = new BufferedWriter(new FileWriter(filedk))
-      bwdk.write("Pure.dko: STTfa.dko\n")
+      bwdk.write("Pure.dko: STTfa.dko\n")*/
       var previous_theory = "Pure"
       breakable{
         for (theory <- all_theories.tail) {
@@ -105,7 +105,7 @@ object Generator {
           //   progress.echo("Generated ROOT file for :" + theory_name)
           // }
 
-          breakable{
+          /*breakable{
             for ((node,key) <- whole_graph.iterator) {
               if (node.theory == theory_name) {
                 bwdk.write(Prelude.mod_name(node.theory) + ".dko: STTfa.dko ")
@@ -116,13 +116,13 @@ object Generator {
                 break()
               }
             }
-          }
+          }*/
           if (theory_name == target_theory) {break()}
         }
       }
 
       bw.close()
-      bwdk.close()
+      //bwdk.close()
 
       "isabelle build -b -j 4 "+previous_theory !
 
