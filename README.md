@@ -1,11 +1,25 @@
 # Isabelle component exporting Isabelle proofs to Dedukti
 
+## Dependencies
+
+* [Isabelle2021-1](https://isabelle.sketis.net/website-Isabelle2021-1)
+
+* one dk file checker among:
+
+    - [kocheck](https://github.com/01mf02/kontroli-rs)
+    - [dkcheck](https://github.com/Deducteam/Dedukti) 2.7
+    - [lambdapi](https://github.com/Deducteam/lambdapi) >= 2.2.1
+
+* or one lp file checker among
+
+    - [lambdapi](https://github.com/Deducteam/lambdapi) >= 2.2.1
+
+
 ## Prerequisites
 
-  * Isabelle:
+  * **Isabelle**
 
-      - Download Isabelle2021-1
-        https://isabelle.sketis.net/website-Isabelle2021-1
+      - Download [Isabelle2021-1](https://isabelle.sketis.net/website-Isabelle2021-1)
 
       - Unpack and run `Isabelle2021-1/bin/isabelle jedit` at least
         once, to ensure that everything works (e.g. see Documentation
@@ -25,7 +39,7 @@
             Isabelle2021-1/bin/isabelle install "$HOME/bin"
             ```
 
-  * Isabelle/Dedukti:
+  * **isabelle_dedukti**
 
       - Clone the repository:
         ```bash
@@ -49,17 +63,15 @@
         isabelle scala_build
         ```
 
-  * Dk file checkers:
+  * **Deleting the Isabelle databases**
 
-    - [kocheck](https://github.com/01mf02/kontroli-rs)
-    - [dkcheck](https://github.com/Deducteam/Dedukti)
-    - [lambdapi](https://github.com/Deducteam/lambdapi)
-    
-  * Lp file checkers:
-  
-    - [lambdapi](https://github.com/Deducteam/lambdapi)
+    - If something goes wrong, you may want to try deleting the databases (which means the proof terms will be rebuilt anew) located somewhere like:
 
-  * Patching the Isabelle/HOL library:
+    ```
+    $ISABELLE_HOME_USER/Isabelle2021-1/heaps/polyml-<something>/log/
+    ```
+
+  * **Patching the Isabelle/HOL library**
 
     - You may want to start with changing the permission on the HOL folder:
 
@@ -79,15 +91,26 @@
     patch -uREp0 -d <path to your Isabelle distribution>/src/HOL/ < HOL.patch
     ```
 
-    - The list of changes can be found in `changes.txt`
+    - Changes:
 
-  * Deleting the Isabelle databases:
-
-    - If something goes wrong, you may want to try deleting the databases (which means the proof terms will be rebuilt anew) located somewhere like:
-
-    ```
-    $ISABELLE_HOME_USER/Isabelle2021-1/heaps/polyml-<something>/log/
-    ```
+        - Main, removed quickcheck and nunchaku
+        - Mirabelle removed quickcheck
+        - split quickcheck_random --> random_prep
+        - split quickcheck_exhaustive --> random_prep
+        - HOL/Tools/Quickcheck random_generator, random_fun_lift --> Random_Prep.random_fun_lift
+        - random_pred, quickcheck_random --> random_prep
+        - predicate_compile, quickcheck_exhaustive --> random_prep
+        - HOL/Tools/Predicate_Compile predicate_compile_compilations, Quickcheck_Exhaustive --> Random_Prep (many times)
+        - HOL/Tools/Predicate_Compile predicate_compile_core, quickcheck_random --> random_prep (twice), quickcheck_exhaustive --> random_prep (once)
+        - record, quickcheck_exhaustive --> random_pred
+        - Enum --> rewrite proofs, removed splits
+        - Factorial ??
+        - List --> rewrite proofs, remove subproofs
+        - Rat, Real --> remove nitpick + quickcheck setups
+        - String --> rewrite function + proof
+        - Transcendental --> rewrite proof to remove arith+
+        - MacLaurin --> rewrite proof quite a lot
+        - Bit_operations: trying to rewrite some proofs (a problem remains that a simp rule in Parity is of the shape 1 + something while it would be used as something + 1)
 
 
 ## Usage
@@ -104,7 +127,9 @@ This command generates:
 - a file `ROOT` (if the option `-b` is given) with the declaration of a session for each theory of $session, in the order of their dependencies,
 - a file $theory.$ext containing the transation of $theory and, if the option `-r` is given, a file $theory'.$ext for each $theory' on which $theory depends.
 
-Remark: a theory whose name contains a `.` is translated to a file where every `.` is replaced by `_` because dkcheck does not accept dots in module names.
+Some details are printed if the option `-v` is given.
+
+Remark: a theory whose name contains a "." is translated to a file where every "." is replaced by "_" because dkcheck does not accept dots in module names.
 
 Remark: [dependency graph the HOL session](https://isabelle.in.tum.de/website-Isabelle2022/dist/library/HOL/HOL/session_graph.pdf)
 
