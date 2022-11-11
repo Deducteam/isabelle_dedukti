@@ -98,7 +98,7 @@ object Generator {
           bw.write("   theories\n")
           bw.write("      " + theory_name + "\n\n")
           if (!Files.exists(Paths.get("Ex/"+theory_name))) {
-            "mkdir Ex/"+theory_name !
+            "mkdir -p Ex/"+theory_name !
           }
           previous_theory = "Dedukti_"+theory_name
           // if (verbose) {
