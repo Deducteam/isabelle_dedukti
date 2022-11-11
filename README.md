@@ -1,8 +1,5 @@
 # Isabelle component exporting Isabelle proofs to Dedukti
 
-The building and translation works only for HOL up to Complex_Main for now.
-
-
 ## Prerequisites
 
   * Isabelle:
@@ -84,7 +81,7 @@ The building and translation works only for HOL up to Complex_Main for now.
 
     - The list of changes can be found in `changes.txt`
 
-  * Deleting the databases:
+  * Deleting the Isabelle databases:
 
     - If something goes wrong, you may want to try deleting the databases (which means the proof terms will be rebuilt anew) located somewhere like:
 
@@ -93,47 +90,45 @@ The building and translation works only for HOL up to Complex_Main for now.
     ```
 
 
-## Examples
-
-A typical way of calling the tool is as follows for lambdapi format:
+## Usage
 
 ```
-isabelle dedukti_generate -O main.lp -b -v -r theory session
+isabelle dedukti_generate -O main.$ext -b -v -r $theory $session
 ```
 
-or for dedukti format:
+where:
+- $theory is a theory of the session $session. For instance, the theory `HOL.Groups` in the session `HOL`,
+- $ext is either `dk` or `lp`,
+
+This command generates:
+- a file `ROOT` (if the option `-b` is given) with the declaration of a session for each theory of $session, in the order of their dependencies,
+- a file $theory.$ext containing the transation of $theory and, if the option `-r` is given, a file $theory'.$ext for each $theory' on which $theory depends.
+
+Remark: a theory whose name contains a `.` is translated to a file where every `.` is replaced by `_` because dkcheck does not accept dots in module names.
+
+Remark: [dependency graph the HOL session](https://isabelle.in.tum.de/website-Isabelle2021-1/dist/library/HOL/HOL/session_graph.pdf)
+
+
+## Checking the lp output with lambdapi
 
 ```
-isabelle dedukti_generate -O main.dk -b -v -r theory session
+lambdapi check $theory.lp
 ```
 
-About the options and inputs:
 
-  * You have the same options as in `dedukti_import`. In particular, you should specify the output format with -o.
-  * The two inputs are:
-    - First, a theory until which you want to build/translate. Ex: Complex_Main.
-    - Second, a usual session to which the first argument belongs. Ex: HOL.
-  * The option -b is for building: when specified, a `ROOT` file will be created as follows. The session in second argument will be topologically ordered. Then one session per theory will be created whose parent is the session associated with the predecessor in topological ordering. Finally, the session associated with the first argument will be built (and so all the sessions for the predecessors will be built too). Two additional files (`deps.mk` and `Makefile`) will be generated to check the generated dk files with kocheck.
-  * The option -r is for recursive translation: when this option is not specified, only the theory from the first argument will be translated. Otherwise, all predecessors will be translated as well.
-
-To check the lamdbapi format:
+## Checking the dk output with dkcheck
 
 ```
-lambdapi check theory.lp
-```
-
-or for the dedukti format (using kocheck):
-
-```
-make
+dk dep *.dk > deps.mk
+make -f dedukti.mk
 ```
 
 
 ## What was tested?
 
   * Building: HOL until Complex_Main, except Quickchecks, Record, Nunchaku and Nitpick (it seems Quickchecks is unsound and should be avoided anyway). Time ~40mins with 16GB memory.
-  * Translating/writing: same as above, both for lambdapi and dedukti. Time ~15mins for both lambdapi and dedukti.
-  * Checking: No error was found until Transfer but memory blew up with lambdapi. Goes all the way with kocheck.
+  * Translating/writing: same as above, both for lambdapi and dedukti. Time ~26mins for lp, and the same for dk.
+  * Checking: No error was found until Transfer but memory blew up with lambdapi. Goes all the way with dkcheck or kocheck.
 
 
 ## Known issues
@@ -141,16 +136,15 @@ make
   * Bit_operations are slow to build because of the way they are defined compared to some simplification rules in Parity. Not fixed.
   * Presburger is slow to build because of the examples at the end. Not fixed.
   * In a database associated with a given theory, there might be proofs labelled from another theory. Fix: those proofs are not too many so they are just translated in this theory.
-  * Somehow, the databases for Nat and Sum_type use proofs from Product_Type while they are independent in the dependency graph. Fix: add explictly the connection in the graph. 
+  * Somehow, the databases for Nat and Sum_type use proofs from Product_Type while they are independent in the dependency graph. Fix: add explictly the connection in the dependency graph.
   * Quickcheck_random fails to build (it is actually unsound). Fix: remove it from the dependency graph (together with other theories).
-  * The -o is used in a awkward way. You just need to call with <something>.lp or <something>.dk, whatever the <something> is.
 
 
 ## Project structure
 
 - `ast.scala` defines the AST of the exported material. It is common for dedukti and lambdapi, and is a (very) strict subset of the ASTs of these languages
 - `translate.scala` translates from Isabelle/Pure to the common dedukti/lambdapi AST
-- `writers.scala` write out either dedukti output or lambdapi output
+- `writers.scala` writes out either dedukti output or lambdapi output
 - `importer.scala` wraps the previous files into an Isabelle component, defining the CLI and interacting with other components. [Jeremy]: Note it has been changed a lot. It will now create one file by session, because it is expected to be ran on a single-theory session. However, the ancestor of this session does not need to be Pure, and nothing from previous theories will be translated.
 - `generator.scala` wraps the previous files into an Isabelle component, creating a ROOT file, building, calling the translator and postprocessing the output file
 - `tools.scala` defines the `isabelle dedukti_import` and `isabelle dedukti_generate` command-line tools, which is registered via `services` in `etc/build.props`
