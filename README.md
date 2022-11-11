@@ -106,7 +106,7 @@ This command generates:
 
 Remark: a theory whose name contains a `.` is translated to a file where every `.` is replaced by `_` because dkcheck does not accept dots in module names.
 
-Remark: [dependency graph the HOL session](https://isabelle.in.tum.de/website-Isabelle2021-1/dist/library/HOL/HOL/session_graph.pdf)
+Remark: [dependency graph the HOL session](https://isabelle.in.tum.de/website-Isabelle2022/dist/library/HOL/HOL/session_graph.pdf)
 
 
 ## Checking the lp output with lambdapi
