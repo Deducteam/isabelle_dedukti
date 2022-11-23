@@ -33,7 +33,7 @@ object Generator {
     // theory graph
     var theory_graph =
       if (session == "Pure") {
-        (Document.Node.Name.make_graph(List(((Document.Node.Name("Pure", theory = "Pure"), ()),List[Document.Node.Name]()))))
+        (Document.Node.Name.make_graph(List(((Document.Node.Name("Pure", theory = Thy_Header.PURE), ()),List[Document.Node.Name]()))))
       } else {
         val base_info = Sessions.base_info(options, "Pure", progress, dirs)
         val session_info =
@@ -71,8 +71,8 @@ object Generator {
       breakable{
         for (theory <- theories) {
           val theory_name = theory.toString
-          if (theory_name == "Pure") {
-            Importer.importer(options, "Pure", "Pure",
+          if (theory_name == Thy_Header.PURE) {
+            Importer.importer(options, "Pure", Thy_Header.PURE,
               progress = progress,
               dirs = dirs,
               fresh_build = fresh_build,
@@ -98,8 +98,8 @@ object Generator {
       }
     } else {
       val theory_name = target_theory
-      if (theory_name == "Pure") {
-        Importer.importer(options, "Pure", "Pure",
+      if (theory_name == Thy_Header.PURE) {
+        Importer.importer(options, "Pure", Thy_Header.PURE,
           progress = progress,
           dirs = dirs,
           fresh_build = fresh_build,

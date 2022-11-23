@@ -26,7 +26,7 @@ object Rootfile {
     // theory graph
     var theory_graph =
       if (session == "Pure") {
-        (Document.Node.Name.make_graph(List(((Document.Node.Name("Pure", theory = "Pure"), ()),List[Document.Node.Name]()))))
+        (Document.Node.Name.make_graph(List(((Document.Node.Name("Pure", theory = Thy_Header.PURE), ()),List[Document.Node.Name]()))))
       } else {
         val base_info = Sessions.base_info(options, "Pure", progress, dirs)
         val session_info =
@@ -64,7 +64,7 @@ object Rootfile {
     if (verbose) progress.echo("Generates ROOT file ...")
     val file = new File("ROOT")
     val bw = new BufferedWriter(new FileWriter(file))
-    var previous_theory = "Pure"
+    var previous_theory = Thy_Header.PURE
     for (theory <- theories.tail) {
       val theory_name = theory.toString
       bw.write("session Dedukti_" + theory_name + " in \"Ex/" + theory_name + "\" = " + previous_theory + " +\n")

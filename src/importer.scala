@@ -9,8 +9,6 @@ import scala.util.control.Breaks._
 
 object Importer {
 
-  val default_output_file: Path = Path.explode("main.lp")
-
   def importer(
     options: Options,
     session: String,
@@ -21,7 +19,7 @@ object Importer {
     fresh_build: Boolean = false,
     use_notations: Boolean = false,
     eta_expand: Boolean = false,
-    output_file: Path = default_output_file,
+    output_file: Path,
     verbose: Boolean = false
   ): Unit = {
 
@@ -48,7 +46,6 @@ object Importer {
       } else {
         Export_Theory.read_theory(provider, session, theory_name, cache = term_cache)
       } 
-    val full_sessions = Sessions.load_structure(options, dirs = dirs)
     val base_info = Sessions.base_info(options, "Pure", progress = progress, dirs = dirs)
     val session_info =
       base_info.sessions_structure.get(base_session) match {
@@ -57,25 +54,26 @@ object Importer {
       }
     val resources = new Resources(base_info.sessions_structure, base_info.check.base)
 
-    var whole_graph =
+    // theory graph
+    var theory_graph =
       if (session == "Pure") {
-        (Document.Node.Name.make_graph(List(((Document.Node.Name("Pure", theory = "Pure"), ()),List[Document.Node.Name]()))))
+        (Document.Node.Name.make_graph(List(((Document.Node.Name("Pure", theory = Thy_Header.PURE), ()),List[Document.Node.Name]()))))
       } else {
         resources.session_dependencies(session_info, progress = progress).theory_graph
       }
-
-    // progress.echo("Graph: " + whole_graph)
-    
-    for ((k,e) <- whole_graph.iterator) {
+    // progress.echo("Graph: " + theory_graph)
+    // remove HOL.Quickcheck*, HOL.Record, HOL.Nitpick and HOL.Nunchaku
+    for ((k,e) <- theory_graph.iterator) {
       if (k.theory.startsWith("HOL.Quickcheck") || 
           Set[String]("HOL.Record","HOL.Nitpick","HOL.Nunchaku")(k.theory)) {
-        whole_graph = whole_graph.del_node(k)
+        theory_graph = theory_graph.del_node(k)
       }
     }
-    for ((k,e) <- whole_graph.iterator) {
-      for ((kp,ep) <- whole_graph.iterator) {
+    // add an edge from HOL.Product_Type to HOL.Nat and HOL.Sum_Type
+    for ((k,e) <- theory_graph.iterator) {
+      for ((kp,ep) <- theory_graph.iterator) {
         if ((k.theory == "HOL.Product_Type" && (kp.theory == "HOL.Nat" || kp.theory == "HOL.Sum_Type"))) {
-          whole_graph = whole_graph.add_edge(k,kp)
+          theory_graph = theory_graph.add_edge(k,kp)
         }
       }
     }
@@ -92,8 +90,7 @@ object Importer {
         }
         val env = args.toMap
         val prop = Term_XML.Decode.term_env(env)(prop_body)
-        val proof = Term_XML.Decode.proof_env(env)(proof_body)
-        
+        val proof = Term_XML.Decode.proof_env(env)(proof_body)        
         val result = Export_Theory.Proof(typargs, args, prop, proof)
         if (term_cache.no_cache) result else result.cache(term_cache)
       }
@@ -121,9 +118,9 @@ object Importer {
       current_theory.append(Translate.const_decl(a.name, a.the_content.typargs, a.the_content.typ, a.the_content.abbrev, a.the_content.syntax))
     }
 
-    for (axm <- theory.axioms) {
+    for (a <- theory.axioms) {
       // if (verbose) progress.echo("  " + axm.toString + " " + axm.serial)
-      current_theory.append(Translate.stmt_decl(Prelude.axiom_ident(axm.name), axm.the_content.prop, None))
+      current_theory.append(Translate.stmt_decl(Prelude.axiom_ident(a.name), a.the_content.prop, None))
     }
 
     def get_thm_prf(thm : Export_Theory.Entity[Export_Theory.Thm]) = {
@@ -196,7 +193,6 @@ object Importer {
     Translate.global_eta_expand = eta_expand
 
     val notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation] = collection.mutable.Map()
-
     val ext = output_file.get_ext
     val filename = Path.explode (Prelude.mod_name(theory_name) + "." + ext)
     val deps = Prelude.deps_of(theory_name)
@@ -209,30 +205,14 @@ object Importer {
           for (dep <- deps.iterator) { syntax.require(dep) }
           write_theory(theory_name, syntax, notations, current_theory.toList)
         }
-
       case "lp" =>
         using(new Part_Writer(filename)) { writer =>
           val syntax = new LP_Writer(use_notations, writer)
           syntax.comment("translation of " + theory_name)
           if (!eta_expand) syntax.eta_equality()
-
-        /*breakable{
-          for ((node,key) <- whole_graph.iterator) {
-            if (node.theory == theory_name) {
-              // progress.echo("Requirements after: " + whole_graph.all_preds(List(node)).reverse.map(_.theory))
-              for {
-                req <- whole_graph.all_preds(List(node)).reverse.map(_.theory)
-                if req != theory_name
-              } syntax.require(req)
-              break()
-              }
-            }
-        }*/
-
           for (dep <- deps.iterator) { syntax.require(dep) }
           write_theory(theory_name, syntax, notations, current_theory.toList)
         }
-
       case ext => error("Unknown output format " + ext)
       }
   }
@@ -241,7 +221,7 @@ object Importer {
   val isabelle_tool: Isabelle_Tool =
     Isabelle_Tool("export", "export theory content to Dedukti or Lambdapi", Scala_Project.here,
       { args =>
-        var output_file = default_output_file
+        var output_file = Path.explode("main.dk")
         var dirs: List[Path] = Nil
         var fresh_build = false
         var use_notations = false
@@ -252,7 +232,7 @@ object Importer {
         val getopts = Getopts("""
 Usage: isabelle export [OPTIONS] SESSION THEORY
   Options are:
-    -O FILE      output file for Dedukti theory in dk or lp syntax (default: """ + default_output_file + """)
+    -O FILE      output file for Dedukti theory in dk or lp syntax (default: main.dk)
     -d DIR       include session directory
     -n           use lambdapi notations
     -e           remove need for eta flag
