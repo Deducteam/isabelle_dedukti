@@ -1,5 +1,19 @@
+All notable changes to this project will be documented in this file.
 
-#### Code factorisation, improvement and update (2021-11-22, Yann Leray)
+The format is based on [Keep a Changelog](https://keepachangelog.com/),
+and this project adheres to [Semantic Versioning](https://semver.org/).
+
+## Modular export of all Isabelle/HOL standard library (November 2021, Jérémy Dubut, Akihisa Yamada and Frédéric Blanqui)
+
+- patch Isabelle/HOL standard library
+- introduce command isabelle dedukti_generate
+- creates a ROOT file with a session for each theory
+- fix Dedukti and Lambapi outputs
+- make Dedukti output modular
+
+## Use Isabelle 2021-1 (November 2021, Makarius Wenzel)
+
+## Code factorisation, improvement and update (November 2021, Yann Leray)
 
 - Update translator to 2021-03 lambdapi syntax
 - Escaping :ddd identifiers
@@ -20,3 +34,15 @@
 - Reach the limits of eta_expansion
 - Only write optional arguments if no other argument follows
 - Update to Isabelle-2021-1-RC1 by Makarius Wenzel
+
+## Improvements (March-June 2021, Makarius Wenzel)
+
+## Use Isabelle 2020 (April 2020, Makarius Wenzel)
+
+## Improvements (February-March 2020, Makarius Wenzel)
+
+## Add Lambdapi output (October 2019, Michael Färber)
+
+## Improvements (July-November 2019, Makarius Wenzel)
+
+## First version (June 2019, Makarius Wenzel)
