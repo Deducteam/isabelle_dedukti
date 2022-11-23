@@ -11,5 +11,4 @@ sources = \
   src/writers.scala \
   src/generator.scala
 services = \
-  isabelle.dedukti.Tools \
   isabelle.dedukti.Tools2 \
