@@ -15,9 +15,6 @@ import scala.io.Source
 
 object Generator {
 
-  val default_output_file: Path = Path.explode("ROOT")
-
-  // Main function called by the CLI handler
   def generator(
     options: Options,
     target_theory: String,
@@ -27,87 +24,52 @@ object Generator {
     fresh_build: Boolean = false,
     use_notations: Boolean = false,
     eta_expand: Boolean = false,
-    output_file: Path = default_output_file,
+    output_file: Path,
     verbose: Boolean = false,
     build: Boolean = false,
     recursive: Boolean = false
     ): Unit = {
 
-    val build_options = {
-      val options1 = options + "export_theory" + "record_proofs=2"
-      if (options.bool("export_standard_proofs")) options1
-      else options1 + "export_proofs"
-    }
-
-    val base_info = Sessions.base_info(options, "Pure", progress, dirs)
-
-    val session_info =
-      base_info.sessions_structure.get(session) match {
-        case Some(info) => info
-        case None => error("Bad session " + quote(session))
-      }
-
-    val resources = new Resources(base_info.sessions_structure, base_info.check.base)
-
     // theory graph
-    var whole_graph =
+    var theory_graph =
       if (session == "Pure") {
         (Document.Node.Name.make_graph(List(((Document.Node.Name("Pure", theory = "Pure"), ()),List[Document.Node.Name]()))))
       } else {
+        val base_info = Sessions.base_info(options, "Pure", progress, dirs)
+        val session_info =
+          base_info.sessions_structure.get(session) match {
+            case Some(info) => info
+            case None => error("Bad session " + quote(session))
+          }
+        val resources = new Resources(base_info.sessions_structure, base_info.check.base)
         resources.session_dependencies(session_info, progress = progress).theory_graph
       }
     // remove HOL.Quickcheck*, HOL.Record, HOL.Nitpick and HOL.Nunchaku
-    for ((k,e) <- whole_graph.iterator) {
+    for ((k,e) <- theory_graph.iterator) {
       if (k.theory.startsWith("HOL.Quickcheck") || 
           Set[String]("HOL.Record","HOL.Nitpick","HOL.Nunchaku")(k.theory)) {
-        whole_graph = whole_graph.del_node(k)
+        theory_graph = theory_graph.del_node(k)
       }
     }
     // add an edge from HOL.Product_Type to HOL.Nat and HOL.Sum_Type
-    for ((k,e) <- whole_graph.iterator) {
-      for ((kp,ep) <- whole_graph.iterator) {
+    for ((k,e) <- theory_graph.iterator) {
+      for ((kp,ep) <- theory_graph.iterator) {
         if ((k.theory == "HOL.Product_Type" && (kp.theory == "HOL.Nat" || kp.theory == "HOL.Sum_Type"))) {
-          whole_graph = whole_graph.add_edge(k,kp)
+          theory_graph = theory_graph.add_edge(k,kp)
         }
       }
     }
 
-    // if (verbose) { progress.echo("graph: " +whole_graph) }
+    // if (verbose) { progress.echo("graph: " +theory_graph) }
 
-    val all_theories : List[Document.Node.Name] = whole_graph.topological_order
+    val theories : List[Document.Node.Name] = theory_graph.topological_order
 
-    // if (verbose) { progress.echo("Session graph top ordered: " + all_theories) }
-
-    // Generate ROOT file with one session for each theory
-    // and call isabelle build
-    if (build) {
-      progress.echo("Generates the file ROOT ...")
-      val file = new File("ROOT")
-      val bw = new BufferedWriter(new FileWriter(file))
-      var previous_theory = "Pure"
-      for (theory <- all_theories.tail) {
-        val theory_name = theory.toString
-        bw.write("session Dedukti_" + theory_name + " in \"Ex/" + theory_name + "\" = " + previous_theory + " +\n")
-        bw.write("   options [export_theory, export_proofs, record_proofs = 2]\n")
-        bw.write("   sessions\n")
-        bw.write("      " + session + "\n")
-        bw.write("   theories\n")
-        bw.write("      " + theory_name + "\n\n")
-
-        //if (!Files.exists(Paths.get("Ex/"+theory_name))) { }
-        "mkdir -p Ex/"+theory_name !
-
-        previous_theory = "Dedukti_"+theory_name
-      }
-      bw.close()
-      progress.echo("isabelle build -b -j 4 "+previous_theory+" ...")
-      "isabelle build -b -j 4 "+previous_theory !
-    }
+    // if (verbose) { progress.echo("Session graph top ordered: " + theories) }
 
     // Generate a dk or lp file for each theory
     if (recursive) {
       breakable{
-        for (theory <- all_theories) {
+        for (theory <- theories) {
           val theory_name = theory.toString
           if (theory_name == "Pure") {
             Importer.importer(options, "Pure", "Pure",
@@ -135,7 +97,8 @@ object Generator {
         }
       }
     } else {
-      if (target_theory == "Pure") {
+      val theory_name = target_theory
+      if (theory_name == "Pure") {
         Importer.importer(options, "Pure", "Pure",
           progress = progress,
           dirs = dirs,
@@ -146,7 +109,7 @@ object Generator {
           verbose = verbose)
       }
       else {
-        Importer.importer(options, "Dedukti_"+target_theory, target_theory,
+        Importer.importer(options, "Dedukti_"+theory_name, theory_name,
               progress = progress,
               dirs = dirs,
               fresh_build = fresh_build,
@@ -162,7 +125,7 @@ object Generator {
   val isabelle_tool: Isabelle_Tool =
     Isabelle_Tool("dedukti_generate", "generate incremental sessions in ROOT", Scala_Project.here,
       { args =>
-        var output_file = default_output_file
+        var output_file = Path.explode("main.dk")
         var dirs: List[Path] = Nil
         var fresh_build = false
         var use_notations = false
@@ -176,7 +139,7 @@ object Generator {
 Usage: isabelle dedukti_generate [OPTIONS] THEORY SESSION
 
   Options are:
-    -O FILE      output file for Dedukti theory in dk or lp syntax (default: """ + default_output_file + """)
+    -O FILE      output file for Dedukti theory in dk or lp syntax (default: main.dk)
     -d DIR       include session directory
     -f           fresh build
     -n           use lambdapi notations
