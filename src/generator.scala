@@ -35,38 +35,8 @@ object Generator {
     val theories : List[Document.Node.Name] = theory_graph.topological_order
     // if (verbose) { progress.echo("Session graph top ordered: " + theories) }
 
-    // Generate a dk or lp file for each theory
-    if (recursive) {
-      breakable{
-        for (theory <- theories) {
-          val theory_name = theory.toString
-          if (theory_name == Thy_Header.PURE) {
-            Importer.importer(options, "Pure", Thy_Header.PURE,
-              progress = progress,
-              dirs = dirs,
-              fresh_build = fresh_build,
-              use_notations = use_notations,
-              eta_expand = eta_expand,
-              output_file = output_file,
-              verbose = verbose)
-          }
-          else {
-            Importer.importer(options, "Dedukti_"+theory_name, theory_name,
-              progress = progress,
-              dirs = dirs,
-              fresh_build = fresh_build,
-              use_notations = use_notations,
-              eta_expand = eta_expand,
-              output_file = output_file,
-              verbose = verbose)
-          }
-          if (theory_name == target_theory) {
-            break()
-          }
-        }
-      }
-    } else {
-      val theory_name = target_theory
+    // Generate a dk or lp file for a theory
+    def gen_theory(theory_name: String): Unit = {
       if (theory_name == Thy_Header.PURE) {
         Importer.importer(options, "Pure", Thy_Header.PURE,
           progress = progress,
@@ -79,15 +49,26 @@ object Generator {
       }
       else {
         Importer.importer(options, "Dedukti_"+theory_name, theory_name,
-              progress = progress,
-              dirs = dirs,
-              fresh_build = fresh_build,
-              use_notations = use_notations,
-              eta_expand = eta_expand,
-              output_file = output_file,
-              verbose = verbose)
+          progress = progress,
+          dirs = dirs,
+          fresh_build = fresh_build,
+          use_notations = use_notations,
+          eta_expand = eta_expand,
+          output_file = output_file,
+          verbose = verbose)
       }
     }
+
+    // Generate a dk or lp file for each theory
+    if (recursive) {
+      breakable{
+        for (theory <- theories) {
+          val theory_name = theory.toString
+          gen_theory(theory_name)
+          if (theory_name == target_theory) { break() }
+        }
+      }
+    } else { gen_theory(target_theory) }
   }
 
   // Isabelle tool wrapper and CLI handler
