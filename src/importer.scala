@@ -23,101 +23,44 @@ object Importer {
     verbose: Boolean = false
   ): Unit = {
 
+    Prelude.set_current_module(theory_name)
+
     val build_options = {
       val options1 = options + "export_theory" + "record_proofs=2"
       if (options.bool("export_standard_proofs")) options1
       else options1 + "export_proofs"
     }
-
     Build.build_logic(build_options, session, progress = progress, dirs = dirs,
       fresh = fresh_build, strict = true)
 
     val store = Sessions.store(options)
     val term_cache = Term.Cache.make()
     val db = store.open_database(session)
-    val provider = Export.Provider.database(db, store.cache, session, theory_name)
     //progress.echo("DB: " + db)
+    val provider = Export.Provider.database(db, store.cache, session, theory_name)
 
-    Prelude.set_current_module(theory_name)
-
+    progress.echo("Read theory " + theory_name + " ...")
     val theory =
       if (theory_name == Thy_Header.PURE) {
         Export_Theory.read_pure_theory(store, cache = term_cache)
       } else {
         Export_Theory.read_theory(provider, session, theory_name, cache = term_cache)
-      } 
-    val base_info = Sessions.base_info(options, "Pure", progress = progress, dirs = dirs)
-    val session_info =
-      base_info.sessions_structure.get(base_session) match {
-        case Some(info) => info
-        case None => error("Bad session " + quote(session))
       }
-    val resources = new Resources(base_info.sessions_structure, base_info.check.base)
 
-    // theory graph
-    var theory_graph =
-      if (session == "Pure") {
-        (Document.Node.Name.make_graph(List(((Document.Node.Name("Pure", theory = Thy_Header.PURE), ()),List[Document.Node.Name]()))))
-      } else {
-        resources.session_dependencies(session_info, progress = progress).theory_graph
-      }
-    // progress.echo("Graph: " + theory_graph)
-    // remove HOL.Quickcheck*, HOL.Record, HOL.Nitpick and HOL.Nunchaku
-    for ((k,e) <- theory_graph.iterator) {
-      if (k.theory.startsWith("HOL.Quickcheck") || 
-          Set[String]("HOL.Record","HOL.Nitpick","HOL.Nunchaku")(k.theory)) {
-        theory_graph = theory_graph.del_node(k)
-      }
-    }
-    // add an edge from HOL.Product_Type to HOL.Nat and HOL.Sum_Type
-    for ((k,e) <- theory_graph.iterator) {
-      for ((kp,ep) <- theory_graph.iterator) {
-        if ((k.theory == "HOL.Product_Type" && (kp.theory == "HOL.Nat" || kp.theory == "HOL.Sum_Type"))) {
-          theory_graph = theory_graph.add_edge(k,kp)
-        }
-      }
-    }
-
-    def decode_proof : XML.Decode.T[Export_Theory.Proof] = {
-    import XML.Decode._
-    variant(List(
-      { case (_,body) =>
-        val (typargs, (args, (prop_body, proof_body))) =
-        {
-          import XML.Decode._
-          import Term_XML.Decode._
-          pair(list(pair(string, sort)), pair(list(pair(string, typ)), pair(x => x, x => x)))(body)
-        }
-        val env = args.toMap
-        val prop = Term_XML.Decode.term_env(env)(prop_body)
-        val proof = Term_XML.Decode.proof_env(env)(proof_body)        
-        val result = Export_Theory.Proof(typargs, args, prop, proof)
-        if (term_cache.no_cache) result else result.cache(term_cache)
-      }
-    ))
-    }
-
-    var exported_proofs = Set.empty[Long]
-
-    progress.echo("Translating theory " + theory_name)
-
+    progress.echo("Translate theory " + theory_name + " ...")
     val current_theory = mutable.Queue[Syntax.Command]()
-
     for (a <- theory.classes) {
       // if (verbose) progress.echo("  " + a.toString + a.serial)
       current_theory.append(Translate.class_decl(a.name))
     }
-
     for (a <- theory.types) {
       // if (verbose) progress.echo("  " + a.toString + a.serial)
       current_theory.append(Translate.type_decl(a.name, a.the_content.args, a.the_content.abbrev, a.the_content.syntax))
     }
-
     for (a <- theory.consts) {
       // if (verbose) progress.echo("  " + a.toString + " " + a.serial)
       current_theory.append(Translate.const_decl(a.name, a.the_content.typargs, a.the_content.typ, a.the_content.abbrev, a.the_content.syntax))
     }
-
     for (a <- theory.axioms) {
       // if (verbose) progress.echo("  " + axm.toString + " " + axm.serial)
       current_theory.append(Translate.stmt_decl(Prelude.axiom_ident(a.name), a.the_content.prop, None))
@@ -134,6 +77,7 @@ object Importer {
       }
       sub(thm.the_content.proof)
     }
+
     def translate_thm(thm : Export_Theory.Entity[Export_Theory.Thm]) = {
       // if (verbose) progress.echo("  " + thm.toString + " " + thm.serial)
       current_theory.append(Translate.stmt_decl(Prelude.thm_ident(thm.name), thm.the_content.prop, Some(thm.the_content.proof)))
@@ -181,7 +125,7 @@ object Importer {
       notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation],
       theory: List[Syntax.Command]
     ): Unit = {
-      progress.echo("Writing theory " + theory_name)
+      progress.echo("Write theory " + theory_name + " ...")
       for (command <- theory) {
         command match {
           case Syntax.Definition(_,_,_,_,_) =>

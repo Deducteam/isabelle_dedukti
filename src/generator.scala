@@ -31,39 +31,8 @@ object Generator {
     ): Unit = {
 
     // theory graph
-    var theory_graph =
-      if (session == "Pure") {
-        (Document.Node.Name.make_graph(List(((Document.Node.Name("Pure", theory = Thy_Header.PURE), ()),List[Document.Node.Name]()))))
-      } else {
-        val base_info = Sessions.base_info(options, "Pure", progress, dirs)
-        val session_info =
-          base_info.sessions_structure.get(session) match {
-            case Some(info) => info
-            case None => error("Bad session " + quote(session))
-          }
-        val resources = new Resources(base_info.sessions_structure, base_info.check.base)
-        resources.session_dependencies(session_info, progress = progress).theory_graph
-      }
-    // remove HOL.Quickcheck*, HOL.Record, HOL.Nitpick and HOL.Nunchaku
-    for ((k,e) <- theory_graph.iterator) {
-      if (k.theory.startsWith("HOL.Quickcheck") || 
-          Set[String]("HOL.Record","HOL.Nitpick","HOL.Nunchaku")(k.theory)) {
-        theory_graph = theory_graph.del_node(k)
-      }
-    }
-    // add an edge from HOL.Product_Type to HOL.Nat and HOL.Sum_Type
-    for ((k,e) <- theory_graph.iterator) {
-      for ((kp,ep) <- theory_graph.iterator) {
-        if ((k.theory == "HOL.Product_Type" && (kp.theory == "HOL.Nat" || kp.theory == "HOL.Sum_Type"))) {
-          theory_graph = theory_graph.add_edge(k,kp)
-        }
-      }
-    }
-
-    // if (verbose) { progress.echo("graph: " +theory_graph) }
-
+    val theory_graph = Rootfile.graph(options, session, progress, dirs, verbose)    // if (verbose) { progress.echo("graph: " +theory_graph) }
     val theories : List[Document.Node.Name] = theory_graph.topological_order
-
     // if (verbose) { progress.echo("Session graph top ordered: " + theories) }
 
     // Generate a dk or lp file for each theory

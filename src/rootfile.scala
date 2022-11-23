@@ -15,15 +15,14 @@ import scala.io.Source
 
 object Rootfile {
 
-  def rootfile(
+  // theory graph of a session
+  def graph(
     options: Options,
     session: String,
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
     verbose: Boolean = false,
-    ): Unit = {
-
-    // theory graph
+    ) = {
     var theory_graph =
       if (session == "Pure") {
         (Document.Node.Name.make_graph(List(((Document.Node.Name("Pure", theory = Thy_Header.PURE), ()),List[Document.Node.Name]()))))
@@ -52,11 +51,21 @@ object Rootfile {
         }
       }
     }
+    theory_graph
+  }
 
+  def rootfile(
+    options: Options,
+    session: String,
+    progress: Progress = new Progress(),
+    dirs: List[Path] = Nil,
+    verbose: Boolean = false,
+    ): Unit = {
+
+    // theory graph
+    val theory_graph = graph(options, session, progress, dirs, verbose)
     // if (verbose) progress.echo("graph: " +theory_graph)
-
     val theories : List[Document.Node.Name] = theory_graph.topological_order
-
     // if (verbose) progress.echo("Session graph top ordered: " + theories)
 
     // Generate ROOT file with one session for each theory
@@ -117,7 +126,7 @@ Usage: isabelle gen_root [OPTIONS] SESSION
         val progress = new Console_Progress(verbose = true)
 
         val start_date = Date.now()
-        if (verbose) progress.echo("Started at " + Build_Log.print_date(start_date) + "\n")
+        //if (verbose) progress.echo("Started at " + Build_Log.print_date(start_date) + "\n")
 
         progress.interrupt_handler {
           try {
@@ -131,7 +140,7 @@ Usage: isabelle gen_root [OPTIONS] SESSION
             println(x)}
           finally {
             val end_date = Date.now()
-            if (verbose) progress.echo("\nFinished at " + Build_Log.print_date(end_date))
+            //if (verbose) progress.echo("\nFinished at " + Build_Log.print_date(end_date))
             progress.echo((end_date.time - start_date.time).message_hms + " elapsed time")
           }
         }
