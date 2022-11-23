@@ -1,6 +1,5 @@
 /** Isabelle/Dedukti importer **/
 
-
 package isabelle.dedukti
 
 import isabelle._
@@ -8,13 +7,10 @@ import isabelle._
 import scala.collection.mutable
 import scala.util.control.Breaks._
 
-
 object Importer {
-  /* importer */
 
   val default_output_file: Path = Path.explode("main.lp")
 
-  // Main function called by the CLI handler
   def importer(
     options: Options,
     session: String,
@@ -28,7 +24,6 @@ object Importer {
     output_file: Path = default_output_file,
     verbose: Boolean = false
   ): Unit = {
-    /* build session with exports */
 
     val build_options = {
       val options1 = options + "export_theory" + "record_proofs=2"
@@ -39,12 +34,11 @@ object Importer {
     Build.build_logic(build_options, session, progress = progress, dirs = dirs,
       fresh = fresh_build, strict = true)
 
-
     val store = Sessions.store(options)
     val term_cache = Term.Cache.make()
     val db = store.open_database(session)
     val provider = Export.Provider.database(db, store.cache, session, theory_name)
-    // progress.echo("DB: " + db)
+    //progress.echo("DB: " + db)
 
     Prelude.set_current_module(theory_name)
 
@@ -243,4 +237,70 @@ object Importer {
       }
   }
 
+  // Isabelle tool wrapper and CLI handler
+  val isabelle_tool: Isabelle_Tool =
+    Isabelle_Tool("export", "export theory content to Dedukti or Lambdapi", Scala_Project.here,
+      { args =>
+        var output_file = default_output_file
+        var dirs: List[Path] = Nil
+        var fresh_build = false
+        var use_notations = false
+        var eta_expand = false
+        var options = Options.init()
+        var verbose = false
+
+        val getopts = Getopts("""
+Usage: isabelle export [OPTIONS] SESSION THEORY
+  Options are:
+    -O FILE      output file for Dedukti theory in dk or lp syntax (default: """ + default_output_file + """)
+    -d DIR       include session directory
+    -n           use lambdapi notations
+    -e           remove need for eta flag
+    -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
+    -v           verbose mode
+  Export the specified THEORY in SESSION to a Dedukti or Lambdapi file.
+""",
+        "O:" -> (arg => output_file = Path.explode(arg)),
+        "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
+        "f" -> (_ => fresh_build = true),
+        "e" -> (_ => eta_expand = true),
+        "n" -> (_ => use_notations = true),
+        "o:" -> (arg => { options += arg }),
+        "v" -> (_ => verbose = true))
+
+        val more_args = getopts(args)
+
+        val (session,theory) =
+          more_args match {
+            case List(session,theory) => (session,theory)
+            case _ => getopts.usage()
+          }
+
+        val progress = new Console_Progress(verbose = true)
+
+        val start_date = Date.now()
+        if (verbose) progress.echo("Started at " + Build_Log.print_date(start_date) + "\n")
+
+        progress.interrupt_handler {
+          try {
+            importer(options, session, theory,
+              progress = progress,
+              dirs = dirs,
+              fresh_build = fresh_build,
+              use_notations = use_notations,
+              eta_expand = eta_expand,
+              output_file = output_file,
+              verbose = verbose)
+          }
+          catch {case x: Exception =>
+            progress.echo(x.getStackTrace.mkString("\n"))
+            println(x)}
+          finally {
+            val end_date = Date.now()
+            if (verbose) progress.echo("\nFinished at " + Build_Log.print_date(end_date))
+            progress.echo((end_date.time - start_date.time).message_hms + " elapsed time")
+          }
+        }
+      }
+    )
 }

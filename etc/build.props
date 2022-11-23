@@ -9,6 +9,9 @@ sources = \
   src/tools.scala \
   src/translate.scala \
   src/writers.scala \
-  src/generator.scala
+  src/generator.scala \
+  src/rootfile.scala
 services = \
-  isabelle.dedukti.Tools2 \
+  isabelle.dedukti.ImporterTool \
+  isabelle.dedukti.RootfileTool \
+  isabelle.dedukti.GeneratorTool

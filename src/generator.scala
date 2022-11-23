@@ -33,35 +33,37 @@ object Generator {
     recursive: Boolean = false
     ): Unit = {
 
-    if (verbose) {
-      progress.echo("We are aiming for: " + target_theory + " in " + session)
-    }
-
     val build_options = {
       val options1 = options + "export_theory" + "record_proofs=2"
       if (options.bool("export_standard_proofs")) options1
       else options1 + "export_proofs"
     }
 
-    val base_info = Sessions.base_info(options, "Pure", progress = progress, dirs = dirs)
+    val base_info = Sessions.base_info(options, "Pure", progress, dirs)
+
     val session_info =
       base_info.sessions_structure.get(session) match {
         case Some(info) => info
         case None => error("Bad session " + quote(session))
       }
+
     val resources = new Resources(base_info.sessions_structure, base_info.check.base)
+
+    // theory graph
     var whole_graph =
       if (session == "Pure") {
         (Document.Node.Name.make_graph(List(((Document.Node.Name("Pure", theory = "Pure"), ()),List[Document.Node.Name]()))))
       } else {
         resources.session_dependencies(session_info, progress = progress).theory_graph
       }
+    // remove HOL.Quickcheck*, HOL.Record, HOL.Nitpick and HOL.Nunchaku
     for ((k,e) <- whole_graph.iterator) {
       if (k.theory.startsWith("HOL.Quickcheck") || 
           Set[String]("HOL.Record","HOL.Nitpick","HOL.Nunchaku")(k.theory)) {
         whole_graph = whole_graph.del_node(k)
       }
     }
+    // add an edge from HOL.Product_Type to HOL.Nat and HOL.Sum_Type
     for ((k,e) <- whole_graph.iterator) {
       for ((kp,ep) <- whole_graph.iterator) {
         if ((k.theory == "HOL.Product_Type" && (kp.theory == "HOL.Nat" || kp.theory == "HOL.Sum_Type"))) {
@@ -70,64 +72,39 @@ object Generator {
       }
     }
 
-    // if (verbose) {
-    //   progress.echo("graph: " +whole_graph)
-    // }
+    // if (verbose) { progress.echo("graph: " +whole_graph) }
 
     val all_theories : List[Document.Node.Name] = whole_graph.topological_order
 
-    // if (verbose) {
-    //   progress.echo("Session graph top ordered: " + all_theories)
-    // }
+    // if (verbose) { progress.echo("Session graph top ordered: " + all_theories) }
 
+    // Generate ROOT file with one session for each theory
+    // and call isabelle build
     if (build) {
-      progress.echo("Generating the ROOT file")
+      progress.echo("Generates the file ROOT ...")
       val file = new File("ROOT")
       val bw = new BufferedWriter(new FileWriter(file))
-      /*val filedk = new File("deps.mk")
-      val bwdk = new BufferedWriter(new FileWriter(filedk))
-      bwdk.write("Pure.dko: STTfa.dko\n")*/
       var previous_theory = "Pure"
-      breakable{
-        for (theory <- all_theories.tail) {
-          val theory_name = theory.toString
-          bw.write("session Dedukti_" + theory_name + " in \"Ex/" + theory_name + "\" = " + previous_theory + " +\n")
-          bw.write("   options [export_theory, export_proofs, record_proofs = 2]\n")
-          bw.write("   sessions\n")
-          bw.write("      " + session + "\n")
-          bw.write("   theories\n")
-          bw.write("      " + theory_name + "\n\n")
-          if (!Files.exists(Paths.get("Ex/"+theory_name))) {
-            "mkdir -p Ex/"+theory_name !
-          }
-          previous_theory = "Dedukti_"+theory_name
-          // if (verbose) {
-          //   progress.echo("Generated ROOT file for :" + theory_name)
-          // }
+      for (theory <- all_theories.tail) {
+        val theory_name = theory.toString
+        bw.write("session Dedukti_" + theory_name + " in \"Ex/" + theory_name + "\" = " + previous_theory + " +\n")
+        bw.write("   options [export_theory, export_proofs, record_proofs = 2]\n")
+        bw.write("   sessions\n")
+        bw.write("      " + session + "\n")
+        bw.write("   theories\n")
+        bw.write("      " + theory_name + "\n\n")
 
-          /*breakable{
-            for ((node,key) <- whole_graph.iterator) {
-              if (node.theory == theory_name) {
-                bwdk.write(Prelude.mod_name(node.theory) + ".dko: STTfa.dko ")
-                for {req <- whole_graph.all_preds(List(node)).reverse.map(_.theory) if req != theory_name} {
-                  bwdk.write(Prelude.mod_name(req) + ".dko ")
-                }
-                bwdk.write("\n")
-                break()
-              }
-            }
-          }*/
-          if (theory_name == target_theory) {break()}
-        }
+        //if (!Files.exists(Paths.get("Ex/"+theory_name))) { }
+        "mkdir -p Ex/"+theory_name !
+
+        previous_theory = "Dedukti_"+theory_name
       }
-
       bw.close()
-      //bwdk.close()
-
+      progress.echo("isabelle build -b -j 4 "+previous_theory+" ...")
       "isabelle build -b -j 4 "+previous_theory !
-
     }
 
+    // Generate a dk or lp file for each theory
     if (recursive) {
       breakable{
         for (theory <- all_theories) {
@@ -181,8 +158,7 @@ object Generator {
     }
   }
 
-  /* Isabelle tool wrapper and CLI handler */
-
+  // Isabelle tool wrapper and CLI handler
   val isabelle_tool: Isabelle_Tool =
     Isabelle_Tool("dedukti_generate", "generate incremental sessions in ROOT", Scala_Project.here,
       { args =>
@@ -235,7 +211,6 @@ Usage: isabelle dedukti_generate [OPTIONS] THEORY SESSION
         val start_date = Date.now()
         if (verbose) progress.echo("Started at " + Build_Log.print_date(start_date) + "\n")
 
-
         progress.interrupt_handler {
           try {
             generator(options, target_theory, session,
@@ -254,13 +229,10 @@ Usage: isabelle dedukti_generate [OPTIONS] THEORY SESSION
             println(x)}
           finally {
             val end_date = Date.now()
-            // "mv ROOT ROOTtrace" !
-            // if (Files.exists(Paths.get("ROOT_temp1369836102"))) {
-            //   "mv ROOT_temp1369836102 ROOT" !
-            // }
             if (verbose) progress.echo("\nFinished at " + Build_Log.print_date(end_date))
             progress.echo((end_date.time - start_date.time).message_hms + " elapsed time")
           }
         }
-      })
+      }
+    )
 }
