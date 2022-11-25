@@ -184,7 +184,7 @@ object Exporter {
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
     -v           verbose mode
 
-Export the specified THEORY in SESSION to a Dedukti or Lambdapi file.""",
+Export the specified THEORY in SESSION to a Dedukti or Lambdapi file with the same name except that every dot is replaced by an underscore.""",
 
         "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
         "e" -> (_ => eta_expand = true),

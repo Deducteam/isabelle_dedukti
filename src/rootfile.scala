@@ -107,7 +107,7 @@ object Rootfile {
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
     -v           verbose mode
 
-Generate a ROOT file with a proof-exporting session for each theory of SESSION.""",
+Generate a ROOT file with a proof-exporting session named Dedukti_$theory for each $theory of SESSION.""",
         "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
         "o:" -> (arg => { options += arg }),
         "v" -> (_ => verbose = true))

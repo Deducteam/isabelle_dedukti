@@ -115,7 +115,7 @@
 
 ## Provided commands
 
-- `isabelle dedukti_root $session`: generates a ROOT file defining a session for each theory of $session.
+- `isabelle dedukti_root $session`: generates a ROOT file defining a proof-exporting session Dedukti_$theory for each $theory of $session.
 
 - `isabelle dedukti_session $session`: generates a dk or lp file for each theory of $session.
 
