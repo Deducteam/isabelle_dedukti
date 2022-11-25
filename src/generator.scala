@@ -17,8 +17,8 @@ object Generator {
 
   def generator(
     options: Options,
-    target_theory: String,
     session: String,
+    target_theory: String,
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
     fresh_build: Boolean = false,
@@ -26,54 +26,36 @@ object Generator {
     eta_expand: Boolean = false,
     output_file: Path,
     verbose: Boolean = false,
-    build: Boolean = false,
-    recursive: Boolean = false
     ): Unit = {
 
     // theory graph
-    val theory_graph = Rootfile.graph(options, session, progress, dirs, verbose)    // if (verbose) { progress.echo("graph: " +theory_graph) }
+    val theory_graph = Rootfile.graph(options, session, progress, dirs, verbose)    // if (verbose) { progress.echo("graph: " + theory_graph) }
     val theories : List[Document.Node.Name] = theory_graph.topological_order
-    // if (verbose) { progress.echo("Session graph top ordered: " + theories) }
-
-    // Generate a dk or lp file for a theory
-    def gen_theory(theory_name: String): Unit = {
-      if (theory_name == Thy_Header.PURE) {
-        Importer.importer(options, "Pure", Thy_Header.PURE,
-          progress = progress,
-          dirs = dirs,
-          fresh_build = fresh_build,
-          use_notations = use_notations,
-          eta_expand = eta_expand,
-          output_file = output_file,
-          verbose = verbose)
-      }
-      else {
-        Importer.importer(options, "Dedukti_"+theory_name, theory_name,
-          progress = progress,
-          dirs = dirs,
-          fresh_build = fresh_build,
-          use_notations = use_notations,
-          eta_expand = eta_expand,
-          output_file = output_file,
-          verbose = verbose)
-      }
-    }
+    // if (verbose) { progress.echo("topological order: " + theories) }
 
     // Generate a dk or lp file for each theory
-    if (recursive) {
-      breakable{
-        for (theory <- theories) {
-          val theory_name = theory.toString
-          gen_theory(theory_name)
-          if (theory_name == target_theory) { break() }
-        }
+    breakable{
+      for (theory <- theories) {
+        val theory_name = theory.toString
+        val session =
+          if (theory_name == Thy_Header.PURE) "Pure" else "Dedukti_"+theory_name
+        Importer.importer(options, session, theory_name,
+          progress = progress,
+          dirs = dirs,
+          fresh_build = fresh_build,
+          use_notations = use_notations,
+          eta_expand = eta_expand,
+          output_file = output_file,
+          verbose = verbose)
+        if (theory_name == target_theory) { break() }
       }
-    } else { gen_theory(target_theory) }
+    }
   }
 
   // Isabelle tool wrapper and CLI handler
+  val cmd_name = "dedukti_generate"
   val isabelle_tool: Isabelle_Tool =
-    Isabelle_Tool("dedukti_generate", "generate incremental sessions in ROOT", Scala_Project.here,
+    Isabelle_Tool(cmd_name, "generate a dk or lp file for every theory of a session", Scala_Project.here,
       { args =>
         var output_file = Path.explode("main.dk")
         var dirs: List[Path] = Nil
@@ -82,40 +64,33 @@ object Generator {
         var eta_expand = false
         var options = Options.init()
         var verbose = false
-        var build = false
-        var recursive = false
 
-        val getopts = Getopts("""
-Usage: isabelle dedukti_generate [OPTIONS] THEORY SESSION
+        val getopts = Getopts("Usage: isabelle " + cmd_name + """ [OPTIONS] SESSION [THEORY]
 
   Options are:
-    -O FILE      output file for Dedukti theory in dk or lp syntax (default: main.dk)
     -d DIR       include session directory
+    -e           remove need for eta flag
     -f           fresh build
     -n           use lambdapi notations
-    -e           remove need for eta flag
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
+    -O FILE      output file for Dedukti theory in dk or lp syntax (default: main.dk)
     -v           verbose mode
-    -r           recursive mode (translate THEORY and all its dependencies)
-    -b           generate the file ROOT declaring one session for THEORY and all its dependencies
 
-  Generates a dk or lp file (depending on -O) for THEORY and all its dependencies (with -r).
-""",
-        "O:" -> (arg => output_file = Path.explode(arg)),
+Generate a dk or lp file (depending on -O) for every theory of SESSION (up to THEORY).""",
         "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
-        "f" -> (_ => fresh_build = true),
         "e" -> (_ => eta_expand = true),
+        "f" -> (_ => fresh_build = true),
         "n" -> (_ => use_notations = true),
         "o:" -> (arg => { options += arg }),
-        "v" -> (_ => verbose = true),
-        "b" -> (_ => build = true),
-        "r" -> (_ => recursive = true))
+        "O:" -> (arg => output_file = Path.explode(arg)),
+        "v" -> (_ => verbose = true))
 
         val more_args = getopts(args)
 
-        val (target_theory,session) =
+        val (session, target_theory) =
           more_args match {
-            case List(target_theory, session) => (target_theory,session)
+            case List(session) => (session, "")
+            case List(session, target_theory) => (session, target_theory)
             case _ => getopts.usage()
           }
 
@@ -126,16 +101,7 @@ Usage: isabelle dedukti_generate [OPTIONS] THEORY SESSION
 
         progress.interrupt_handler {
           try {
-            generator(options, target_theory, session,
-              progress = progress,
-              dirs = dirs,
-              fresh_build = fresh_build,
-              use_notations = use_notations,
-              eta_expand = eta_expand,
-              output_file = output_file,
-              verbose = verbose,
-              build = build,
-              recursive = recursive)
+            generator(options, session, target_theory, progress, dirs, fresh_build, use_notations, eta_expand, output_file, verbose)
           }
           catch {case x: Exception =>
             progress.echo(x.getStackTrace.mkString("\n"))
