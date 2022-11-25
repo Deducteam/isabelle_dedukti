@@ -115,7 +115,7 @@
 
 ## Provided commands
 
-- `isabelle dedukti_root $session`: generates a ROOT file defining a proof-exporting session Dedukti_$theory for each $theory of $session.
+- `isabelle dedukti_root $session`: generates a ROOT file defining a proof-exporting session Dedukti_$theory for each $theory of $session, as well as the scripts kocheck.sh and dkcheck.sh to check dk files.
 
 - `isabelle dedukti_session $session`: generates a dk or lp file for each theory of $session.
 
@@ -131,7 +131,7 @@ Remark: [dependency graph of the HOL session](https://isabelle.in.tum.de/website
 ## Example usage
 
 ```
-isabelle dedukti_root HOL
+isabelle dedukti_root HOL HOL.Groups
 isabelle build -b Dedukti_HOL.Groups
 isabelle dedukti_session -v HOL HOL.Groups
 ```
@@ -148,7 +148,23 @@ lambdapi check $theory.lp
 
 ```
 dk dep *.dk > deps.mk
-make -f dedukti.mk
+make -f dkcheck.mk
+```
+
+or (if dk dep is too slow):
+
+```
+bash ./dkcheck.sh
+```
+
+## Checking the dk output with kocheck
+
+The verification of dk files by kocheck requires to slightly modify those files because kocheck does not accept require commands and self-qualified identifiers.
+
+```
+./remove-requires.sh *.dk
+cd kocheck
+bash ../kocheck.sh
 ```
 
 
@@ -156,7 +172,7 @@ make -f dedukti.mk
 
   * Building: HOL until Complex_Main, except Quickchecks, Record, Nunchaku and Nitpick (it seems Quickchecks is unsound and should be avoided anyway). Time: about 47 minutes.
   * Translating/writing: same as above, both for lambdapi and dedukti. Time: about 26 minutes for lp, and the same for dk.
-  * Checking: No error was found until Transfer but memory blew up with lambdapi. Goes all the way with dkcheck or kocheck. Time: about 26 minutes with dkcheck.
+  * Checking: No error was found until Transfer but memory blew up with lambdapi. Goes all the way with dkcheck or kocheck. Time: about 3 minutes with kocheck -j 7, and about 10 minutes with dkcheck.
 
 
 ## Known issues

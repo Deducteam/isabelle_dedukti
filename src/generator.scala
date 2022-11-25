@@ -46,7 +46,7 @@ object Generator {
           eta_expand = eta_expand,
           output_lp = output_lp,
           verbose = verbose)
-        if (theory_name == target_theory) { break() }
+        if (theory_name == target_theory) break()
       }
     }
   }

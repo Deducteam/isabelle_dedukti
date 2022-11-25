@@ -17,5 +17,8 @@ Complex_Main.lp
 Main.dk
 Main.lp
 
-ROOT
 deps.mk
+
+ROOT
+dkcheck.sh
+kocheck.sh
