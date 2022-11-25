@@ -69,8 +69,9 @@ object Rootfile {
     // if (verbose) progress.echo("Session graph top ordered: " + theories)
 
     // Generate ROOT file with one session for each theory
-    if (verbose) progress.echo("Generates ROOT file ...")
-    val file = new File("ROOT")
+    val filename = "ROOT"
+    if (verbose) progress.echo("Generates " + filename + " ...")
+    val file = new File(filename)
     val bw = new BufferedWriter(new FileWriter(file))
     var previous_session = "Pure"
     for (theory <- theories.tail) {
@@ -89,6 +90,26 @@ object Rootfile {
       previous_session = session_name
     }
     bw.close()
+
+    // Generate script for checking dk files with kocheck
+    val filename2 = "kocheck.sh"
+    if (verbose) progress.echo("Generates " + filename2 + " ...")
+    val file2 = new File(filename2)
+    val bw2 = new BufferedWriter(new FileWriter(file2))
+    bw2.write("#!/bin/sh\nkocheck --eta -j ${JOBS:-7} STTfa.dk")
+    for (theory <- theories) bw2.write(" " + Prelude.mod_name(theory.toString) + ".dk")
+    bw2.write("\n")
+    bw2.close()
+
+    // Generate script for checking dk files with dkcheck
+    val filename3 = "dkcheck.sh"
+    if (verbose) progress.echo("Generates " + filename3 + " ...")
+    val file3 = new File(filename3)
+    val bw3 = new BufferedWriter(new FileWriter(file3))
+    bw3.write("#!/bin/sh\nfor f in STTfa.dk")
+    for (theory <- theories) bw3.write(" " + Prelude.mod_name(theory.toString) + ".dk")
+    bw3.write("\ndo\n  dk check -e --eta $f\ndone\n")
+    bw3.close()
   }
 
   // Isabelle tool wrapper and CLI handler
@@ -131,9 +152,9 @@ Generate a ROOT file with a proof-exporting session named Dedukti_$theory for ea
             progress.echo(x.getStackTrace.mkString("\n"))
             println(x)}
           finally {
-            val end_date = Date.now()
+            //val end_date = Date.now()
             //if (verbose) progress.echo("\nFinished at " + Build_Log.print_date(end_date))
-            progress.echo((end_date.time - start_date.time).message_hms + " elapsed time")
+            //progress.echo((end_date.time - start_date.time).message_hms + " elapsed time")
           }
         }
       }
