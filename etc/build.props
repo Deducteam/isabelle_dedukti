@@ -4,12 +4,14 @@ no_build = false
 requirements = \
   env:ISABELLE_SCALA_JAR
 sources = \
-  src/importer.scala \
+  src/exporter.scala \
   src/ast.scala \
   src/tools.scala \
   src/translate.scala \
   src/writers.scala \
-  src/generator.scala
+  src/generator.scala \
+  src/rootfile.scala
 services = \
-  isabelle.dedukti.Tools \
-  isabelle.dedukti.Tools2 \
+  isabelle.dedukti.ExporterTool \
+  isabelle.dedukti.RootfileTool \
+  isabelle.dedukti.GeneratorTool

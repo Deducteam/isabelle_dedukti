@@ -59,12 +59,16 @@ jobs:
           cargo install --path kocheck
       - name: Generate and check lp output for HOL.Groups
         run: |
-          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_generate -O main.lp -b -v -r HOL.Groups HOL
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_root HOL
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle build -b Dedukti_HOL.Groups
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_session -l -v HOL HOL.Groups
           eval $(opam env)
           lambdapi check HOL_Groups.lp
       - name: Generate and check dk output for HOL.Groups
         run: |
-          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_generate -O main.dk -b -v -r HOL.Groups HOL
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_root HOL
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle build -b Dedukti_HOL.Groups
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_session -v HOL HOL.Groups
           eval $(opam env)
           dk dep *.dk > deps.mk
           make -f dedukti.mk
