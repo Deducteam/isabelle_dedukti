@@ -70,5 +70,10 @@ jobs:
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle build -b Dedukti_HOL.Groups
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_session -v HOL HOL.Groups
           eval $(opam env)
-          dk dep *.dk > deps.mk
-          make -f dedukti.mk
+          bash ./dkcheck.sh
+          mkdir -p kocheck
+          ./remove-requires *.dk
+          cd kocheck
+          bash ../kocheck.sh
+#          dk dep *.dk > deps.mk
+#          make -f dedukti.mk
