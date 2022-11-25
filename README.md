@@ -113,26 +113,28 @@
         - Bit_operations: trying to rewrite some proofs (a problem remains that a simp rule in Parity is of the shape 1 + something while it would be used as something + 1)
 
 
-## Usage
+## Provided commands
+
+- `isabelle dedukti_root $session`: generates a ROOT file defining a proof-exporting session Dedukti_$theory for each $theory of $session.
+
+- `isabelle dedukti_session $session`: generates a dk or lp file for each theory of $session.
+
+- `isabelle dedukti_theory $session $theory`: generates a dk or lp file for $theory in $session
+
+Run `isabelle $command` with no argument for more details.
+
+Remark: a theory whose name contains a "." is translated to a dk or lp file where every "." is replaced by "_" because dkcheck does not accept dots in module names.
+
+Remark: [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2021-1/dist/library/HOL/HOL/session_graph.pdf)
+
+
+## Example usage
 
 ```
-isabelle dedukti_generate -O main.$ext -b -v -r $theory $session
+isabelle dedukti_root HOL
+isabelle build -b Dedukti_HOL.Groups
+isabelle dedukti_session -v HOL HOL.Groups
 ```
-
-where:
-- $theory is a theory of the session $session. For instance, the theory `HOL.Groups` in the session `HOL`,
-- $ext is either `dk` or `lp`,
-
-This command generates:
-- a file `ROOT` (if the option `-b` is given) with the declaration of a session for each theory of $session, in the order of their dependencies,
-- a file $theory.$ext containing the transation of $theory and, if the option `-r` is given, a file $theory'.$ext for each $theory' on which $theory depends.
-
-Some details are printed if the option `-v` is given.
-
-Remark: a theory whose name contains a "." is translated to a file where every "." is replaced by "_" because dkcheck does not accept dots in module names.
-
-Remark: [dependency graph the HOL session](https://isabelle.in.tum.de/website-Isabelle2021-1/dist/library/HOL/HOL/session_graph.pdf)
-
 
 ## Checking the lp output with lambdapi
 
@@ -151,9 +153,9 @@ make -f dedukti.mk
 
 ## What was tested?
 
-  * Building: HOL until Complex_Main, except Quickchecks, Record, Nunchaku and Nitpick (it seems Quickchecks is unsound and should be avoided anyway). Time ~40mins with 16GB memory.
-  * Translating/writing: same as above, both for lambdapi and dedukti. Time ~26mins for lp, and the same for dk.
-  * Checking: No error was found until Transfer but memory blew up with lambdapi. Goes all the way with dkcheck or kocheck.
+  * Building: HOL until Complex_Main, except Quickchecks, Record, Nunchaku and Nitpick (it seems Quickchecks is unsound and should be avoided anyway). Time: about 47 minutes.
+  * Translating/writing: same as above, both for lambdapi and dedukti. Time: about 26 minutes for lp, and the same for dk.
+  * Checking: No error was found until Transfer but memory blew up with lambdapi. Goes all the way with dkcheck or kocheck. Time: about 26 minutes with dkcheck.
 
 
 ## Known issues

@@ -1,5 +1,4 @@
-/** Isabelle/Dedukti importer **/
-
+/** Generator of dk or lp file for a theory **/
 
 package isabelle.dedukti
 
@@ -8,128 +7,65 @@ import isabelle._
 import scala.collection.mutable
 import scala.util.control.Breaks._
 
+object Exporter {
 
-object Importer {
-  /* importer */
-
-  val default_output_file: Path = Path.explode("main.lp")
-
-  // Main function called by the CLI handler
-  def importer(
+  def exporter(
     options: Options,
     session: String,
     theory_name: String,
-    base_session: String = "HOL",
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
     fresh_build: Boolean = false,
     use_notations: Boolean = false,
     eta_expand: Boolean = false,
-    output_file: Path = default_output_file,
+    output_lp: Boolean = false,
     verbose: Boolean = false
   ): Unit = {
-    /* build session with exports */
+
+    // to generate qualified identifiers
+    Prelude.set_current_module(theory_name)
+
+    progress.echo("Read theory " + theory_name + " ...")
 
     val build_options = {
       val options1 = options + "export_theory" + "record_proofs=2"
       if (options.bool("export_standard_proofs")) options1
       else options1 + "export_proofs"
     }
-
     Build.build_logic(build_options, session, progress = progress, dirs = dirs,
       fresh = fresh_build, strict = true)
-
 
     val store = Sessions.store(options)
     val term_cache = Term.Cache.make()
     val db = store.open_database(session)
+    //progress.echo("DB: " + db)
     val provider = Export.Provider.database(db, store.cache, session, theory_name)
-    // progress.echo("DB: " + db)
-
-    Prelude.set_current_module(theory_name)
 
     val theory =
       if (theory_name == Thy_Header.PURE) {
         Export_Theory.read_pure_theory(store, cache = term_cache)
       } else {
         Export_Theory.read_theory(provider, session, theory_name, cache = term_cache)
-      } 
-    val full_sessions = Sessions.load_structure(options, dirs = dirs)
-    val base_info = Sessions.base_info(options, "Pure", progress = progress, dirs = dirs)
-    val session_info =
-      base_info.sessions_structure.get(base_session) match {
-        case Some(info) => info
-        case None => error("Bad session " + quote(session))
-      }
-    val resources = new Resources(base_info.sessions_structure, base_info.check.base)
-
-    var whole_graph =
-      if (session == "Pure") {
-        (Document.Node.Name.make_graph(List(((Document.Node.Name("Pure", theory = "Pure"), ()),List[Document.Node.Name]()))))
-      } else {
-        resources.session_dependencies(session_info, progress = progress).theory_graph
       }
 
-    // progress.echo("Graph: " + whole_graph)
-    
-    for ((k,e) <- whole_graph.iterator) {
-      if (k.theory.startsWith("HOL.Quickcheck") || 
-          Set[String]("HOL.Record","HOL.Nitpick","HOL.Nunchaku")(k.theory)) {
-        whole_graph = whole_graph.del_node(k)
-      }
-    }
-    for ((k,e) <- whole_graph.iterator) {
-      for ((kp,ep) <- whole_graph.iterator) {
-        if ((k.theory == "HOL.Product_Type" && (kp.theory == "HOL.Nat" || kp.theory == "HOL.Sum_Type"))) {
-          whole_graph = whole_graph.add_edge(k,kp)
-        }
-      }
-    }
-
-    def decode_proof : XML.Decode.T[Export_Theory.Proof] = {
-    import XML.Decode._
-    variant(List(
-      { case (_,body) =>
-        val (typargs, (args, (prop_body, proof_body))) =
-        {
-          import XML.Decode._
-          import Term_XML.Decode._
-          pair(list(pair(string, sort)), pair(list(pair(string, typ)), pair(x => x, x => x)))(body)
-        }
-        val env = args.toMap
-        val prop = Term_XML.Decode.term_env(env)(prop_body)
-        val proof = Term_XML.Decode.proof_env(env)(proof_body)
-        
-        val result = Export_Theory.Proof(typargs, args, prop, proof)
-        if (term_cache.no_cache) result else result.cache(term_cache)
-      }
-    ))
-    }
-
-    var exported_proofs = Set.empty[Long]
-
-    progress.echo("Translating theory " + theory_name)
+    progress.echo("Translate theory " + theory_name + " ...")
 
     val current_theory = mutable.Queue[Syntax.Command]()
-
     for (a <- theory.classes) {
       // if (verbose) progress.echo("  " + a.toString + a.serial)
       current_theory.append(Translate.class_decl(a.name))
     }
-
     for (a <- theory.types) {
       // if (verbose) progress.echo("  " + a.toString + a.serial)
       current_theory.append(Translate.type_decl(a.name, a.the_content.args, a.the_content.abbrev, a.the_content.syntax))
     }
-
     for (a <- theory.consts) {
       // if (verbose) progress.echo("  " + a.toString + " " + a.serial)
       current_theory.append(Translate.const_decl(a.name, a.the_content.typargs, a.the_content.typ, a.the_content.abbrev, a.the_content.syntax))
     }
-
-    for (axm <- theory.axioms) {
+    for (a <- theory.axioms) {
       // if (verbose) progress.echo("  " + axm.toString + " " + axm.serial)
-      current_theory.append(Translate.stmt_decl(Prelude.axiom_ident(axm.name), axm.the_content.prop, None))
+      current_theory.append(Translate.stmt_decl(Prelude.axiom_ident(a.name), a.the_content.prop, None))
     }
 
     def get_thm_prf(thm : Export_Theory.Entity[Export_Theory.Thm]) = {
@@ -143,6 +79,7 @@ object Importer {
       }
       sub(thm.the_content.proof)
     }
+
     def translate_thm(thm : Export_Theory.Entity[Export_Theory.Thm]) = {
       // if (verbose) progress.echo("  " + thm.toString + " " + thm.serial)
       current_theory.append(Translate.stmt_decl(Prelude.thm_ident(thm.name), thm.the_content.prop, Some(thm.the_content.proof)))
@@ -186,15 +123,15 @@ object Importer {
 
     def write_theory(
       theory_name: String,
-      output: Abstract_Writer,
+      writer: Abstract_Writer,
       notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation],
       theory: List[Syntax.Command]
     ): Unit = {
-      progress.echo("Writing theory " + theory_name)
+      progress.echo("Write theory " + theory_name + " ...")
       for (command <- theory) {
         command match {
           case Syntax.Definition(_,_,_,_,_) =>
-          case command => output.command(command, notations)
+          case command => writer.command(command, notations)
         }
       }
     }
@@ -202,53 +139,34 @@ object Importer {
     Translate.global_eta_expand = eta_expand
 
     val notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation] = collection.mutable.Map()
-
-    val ext = output_file.get_ext
+    val ext = if (output_lp) "lp" else "dk"
     val filename = Path.explode (Prelude.mod_name(theory_name) + "." + ext)
     val deps = Prelude.deps_of(theory_name)
 
-    ext match {
-      case "dk" =>
-        using(new Part_Writer(filename)) { writer =>
-          val syntax = new DK_Writer(writer)
-          syntax.comment("translation of " + theory_name)
-          for (dep <- deps.iterator) { syntax.require(dep) }
-          write_theory(theory_name, syntax, notations, current_theory.toList)
-        }
-
-      case "lp" =>
-        using(new Part_Writer(filename)) { writer =>
-          val syntax = new LP_Writer(use_notations, writer)
-          syntax.comment("translation of " + theory_name)
-          if (!eta_expand) syntax.eta_equality()
-
-        /*breakable{
-          for ((node,key) <- whole_graph.iterator) {
-            if (node.theory == theory_name) {
-              // progress.echo("Requirements after: " + whole_graph.all_preds(List(node)).reverse.map(_.theory))
-              for {
-                req <- whole_graph.all_preds(List(node)).reverse.map(_.theory)
-                if req != theory_name
-              } syntax.require(req)
-              break()
-              }
-            }
-        }*/
-
-          for (dep <- deps.iterator) { syntax.require(dep) }
-          write_theory(theory_name, syntax, notations, current_theory.toList)
-        }
-
-      case ext => error("Unknown output format " + ext)
+    if (output_lp) {
+      using(new Part_Writer(filename)) { writer =>
+        val syntax = new LP_Writer(use_notations, writer)
+        syntax.comment("translation of " + theory_name)
+        if (!eta_expand) syntax.eta_equality()
+        for (dep <- deps.iterator) { syntax.require(dep) }
+        write_theory(theory_name, syntax, notations, current_theory.toList)
       }
+    } else {
+      using(new Part_Writer(filename)) { writer =>
+        val syntax = new DK_Writer(writer)
+        syntax.comment("translation of " + theory_name)
+        for (dep <- deps.iterator) { syntax.require(dep) }
+        write_theory(theory_name, syntax, notations, current_theory.toList)
+      }
+    }
   }
 
-  /* Isabelle tool wrapper and CLI handler */
-
+  // Isabelle tool wrapper and CLI handler
+  val cmd_name = "dedukti_theory"
   val isabelle_tool: Isabelle_Tool =
-    Isabelle_Tool("dedukti_import", "import theory content into Dedukti", Scala_Project.here,
+    Isabelle_Tool(cmd_name, "export theory content to Dedukti or Lambdapi", Scala_Project.here,
       { args =>
-        var output_file = default_output_file
+        var output_lp = false
         var dirs: List[Path] = Nil
         var fresh_build = false
         var use_notations = false
@@ -256,24 +174,22 @@ object Importer {
         var options = Options.init()
         var verbose = false
 
-        val getopts = Getopts("""
-Usage: isabelle dedukti_import [OPTIONS] SESSION
+        val getopts = Getopts("Usage: isabelle " + cmd_name + """ [OPTIONS] SESSION THEORY
 
   Options are:
-    -O FILE      output file for Dedukti theory in dk or lp syntax (default: """ + default_output_file + """)
     -d DIR       include session directory
-    -f           fresh build
-    -n           use lambdapi notations
     -e           remove need for eta flag
+    -l           generate Lambdapi files instead of Dedukti files
+    -n           use lambdapi notations
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
     -v           verbose mode
 
-  Import specified sessions as Dedukti files.
-""",
-        "O:" -> (arg => output_file = Path.explode(arg)),
+Export the specified THEORY in SESSION to a Dedukti or Lambdapi file with the same name except that every dot is replaced by an underscore.""",
+
         "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
-        "f" -> (_ => fresh_build = true),
         "e" -> (_ => eta_expand = true),
+        "f" -> (_ => fresh_build = true),
+        "l" -> (arg => output_lp = true),
         "n" -> (_ => use_notations = true),
         "o:" -> (arg => { options += arg }),
         "v" -> (_ => verbose = true))
@@ -292,16 +208,7 @@ Usage: isabelle dedukti_import [OPTIONS] SESSION
         if (verbose) progress.echo("Started at " + Build_Log.print_date(start_date) + "\n")
 
         progress.interrupt_handler {
-          try {
-            importer(options, session, theory,
-              progress = progress,
-              dirs = dirs,
-              fresh_build = fresh_build,
-              use_notations = use_notations,
-              eta_expand = eta_expand,
-              output_file = output_file,
-              verbose = verbose)
-          }
+          try exporter(options, session, theory, progress, dirs, fresh_build, use_notations, eta_expand, output_lp, verbose)
           catch {case x: Exception =>
             progress.echo(x.getStackTrace.mkString("\n"))
             println(x)}
