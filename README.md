@@ -131,7 +131,7 @@ Remark: [dependency graph of the HOL session](https://isabelle.in.tum.de/website
 ## Example usage
 
 ```
-isabelle dedukti_root HOL
+isabelle dedukti_root HOL HOL.Groups
 isabelle build -b Dedukti_HOL.Groups
 isabelle dedukti_session -v HOL HOL.Groups
 ```

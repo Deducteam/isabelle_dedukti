@@ -72,7 +72,7 @@ jobs:
           eval $(opam env)
           bash ./dkcheck.sh
           mkdir -p kocheck
-          ./remove-requires *.dk
+          ./remove-requires.sh *.dk
           cd kocheck
           bash ../kocheck.sh
 #          dk dep *.dk > deps.mk
