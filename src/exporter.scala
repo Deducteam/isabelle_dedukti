@@ -13,13 +13,12 @@ object Exporter {
     options: Options,
     session: String,
     theory_name: String,
-    base_session: String = "HOL",
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
     fresh_build: Boolean = false,
     use_notations: Boolean = false,
     eta_expand: Boolean = false,
-    output_file: Path,
+    output_lp: Boolean = false,
     verbose: Boolean = false
   ): Unit = {
 
@@ -121,7 +120,7 @@ object Exporter {
 
     def write_theory(
       theory_name: String,
-      output: Abstract_Writer,
+      writer: Abstract_Writer,
       notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation],
       theory: List[Syntax.Command]
     ): Unit = {
@@ -129,7 +128,7 @@ object Exporter {
       for (command <- theory) {
         command match {
           case Syntax.Definition(_,_,_,_,_) =>
-          case command => output.command(command, notations)
+          case command => writer.command(command, notations)
         }
       }
     }
@@ -137,28 +136,26 @@ object Exporter {
     Translate.global_eta_expand = eta_expand
 
     val notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation] = collection.mutable.Map()
-    val ext = output_file.get_ext
+    val ext = if (output_lp) "lp" else "dk"
     val filename = Path.explode (Prelude.mod_name(theory_name) + "." + ext)
     val deps = Prelude.deps_of(theory_name)
 
-    ext match {
-      case "dk" =>
-        using(new Part_Writer(filename)) { writer =>
-          val syntax = new DK_Writer(writer)
-          syntax.comment("translation of " + theory_name)
-          for (dep <- deps.iterator) { syntax.require(dep) }
-          write_theory(theory_name, syntax, notations, current_theory.toList)
-        }
-      case "lp" =>
-        using(new Part_Writer(filename)) { writer =>
-          val syntax = new LP_Writer(use_notations, writer)
-          syntax.comment("translation of " + theory_name)
-          if (!eta_expand) syntax.eta_equality()
-          for (dep <- deps.iterator) { syntax.require(dep) }
-          write_theory(theory_name, syntax, notations, current_theory.toList)
-        }
-      case ext => error("Unknown output format " + ext)
+    if (output_lp) {
+      using(new Part_Writer(filename)) { writer =>
+        val syntax = new LP_Writer(use_notations, writer)
+        syntax.comment("translation of " + theory_name)
+        if (!eta_expand) syntax.eta_equality()
+        for (dep <- deps.iterator) { syntax.require(dep) }
+        write_theory(theory_name, syntax, notations, current_theory.toList)
       }
+    } else {
+      using(new Part_Writer(filename)) { writer =>
+        val syntax = new DK_Writer(writer)
+        syntax.comment("translation of " + theory_name)
+        for (dep <- deps.iterator) { syntax.require(dep) }
+        write_theory(theory_name, syntax, notations, current_theory.toList)
+      }
+    }
   }
 
   // Isabelle tool wrapper and CLI handler
@@ -166,7 +163,7 @@ object Exporter {
   val isabelle_tool: Isabelle_Tool =
     Isabelle_Tool(cmd_name, "export theory content to Dedukti or Lambdapi", Scala_Project.here,
       { args =>
-        var output_file = Path.explode("main.dk")
+        var output_lp = false
         var dirs: List[Path] = Nil
         var fresh_build = false
         var use_notations = false
@@ -179,9 +176,9 @@ object Exporter {
   Options are:
     -d DIR       include session directory
     -e           remove need for eta flag
+    -lp          generate Lambdapi files instead of Dedukti files
     -n           use lambdapi notations
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
-    -O FILE      output file for Dedukti theory in dk or lp syntax (default: main.dk)
     -v           verbose mode
 
 Export the specified THEORY in SESSION to a Dedukti or Lambdapi file.""",
@@ -189,9 +186,9 @@ Export the specified THEORY in SESSION to a Dedukti or Lambdapi file.""",
         "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
         "e" -> (_ => eta_expand = true),
         "f" -> (_ => fresh_build = true),
+        "lp" -> (arg => output_lp = true),
         "n" -> (_ => use_notations = true),
         "o:" -> (arg => { options += arg }),
-        "O:" -> (arg => output_file = Path.explode(arg)),
         "v" -> (_ => verbose = true))
 
         val more_args = getopts(args)
@@ -208,7 +205,7 @@ Export the specified THEORY in SESSION to a Dedukti or Lambdapi file.""",
         if (verbose) progress.echo("Started at " + Build_Log.print_date(start_date) + "\n")
 
         progress.interrupt_handler {
-          try exporter(options, session, theory, progress, dirs, fresh_build, use_notations, eta_expand, output_file, verbose)
+          try exporter(options, session, theory, progress, dirs, fresh_build, use_notations, eta_expand, output_lp, verbose)
           catch {case x: Exception =>
             progress.echo(x.getStackTrace.mkString("\n"))
             println(x)}

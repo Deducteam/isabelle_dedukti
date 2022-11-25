@@ -24,7 +24,7 @@ object Generator {
     fresh_build: Boolean = false,
     use_notations: Boolean = false,
     eta_expand: Boolean = false,
-    output_file: Path,
+    output_lp: Boolean = false,
     verbose: Boolean = false,
     ): Unit = {
 
@@ -45,7 +45,7 @@ object Generator {
           fresh_build = fresh_build,
           use_notations = use_notations,
           eta_expand = eta_expand,
-          output_file = output_file,
+          output_lp = output_lp,
           verbose = verbose)
         if (theory_name == target_theory) { break() }
       }
@@ -57,7 +57,7 @@ object Generator {
   val isabelle_tool: Isabelle_Tool =
     Isabelle_Tool(cmd_name, "generate a dk or lp file for every theory of a session", Scala_Project.here,
       { args =>
-        var output_file = Path.explode("main.dk")
+        var output_lp = false
         var dirs: List[Path] = Nil
         var fresh_build = false
         var use_notations = false
@@ -71,18 +71,18 @@ object Generator {
     -d DIR       include session directory
     -e           remove need for eta flag
     -f           fresh build
-    -n           use lambdapi notations
+    -lp          output Lambdapi files instead of Dedukti files
+    -n           use Lambdapi notations (with -lp)
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
-    -O FILE      output file for Dedukti theory in dk or lp syntax (default: main.dk)
     -v           verbose mode
 
 Generate a dk or lp file (depending on -O) for every theory of SESSION (up to THEORY).""",
         "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
         "e" -> (_ => eta_expand = true),
         "f" -> (_ => fresh_build = true),
+        "lp" -> (arg => output_lp = true),
         "n" -> (_ => use_notations = true),
         "o:" -> (arg => { options += arg }),
-        "O:" -> (arg => output_file = Path.explode(arg)),
         "v" -> (_ => verbose = true))
 
         val more_args = getopts(args)
@@ -101,7 +101,7 @@ Generate a dk or lp file (depending on -O) for every theory of SESSION (up to TH
 
         progress.interrupt_handler {
           try {
-            generator(options, session, target_theory, progress, dirs, fresh_build, use_notations, eta_expand, output_file, verbose)
+            generator(options, session, target_theory, progress, dirs, fresh_build, use_notations, eta_expand, output_lp, verbose)
           }
           catch {case x: Exception =>
             progress.echo(x.getStackTrace.mkString("\n"))

@@ -133,7 +133,7 @@ Remark: [dependency graph of the HOL session](https://isabelle.in.tum.de/website
 ```
 isabelle dedukti_root HOL
 isabelle build -b Dedukti_HOL.Groups
-isabelle dedukti_session -O main.dk -v HOL HOL.Groups
+isabelle dedukti_session -v HOL HOL.Groups
 ```
 
 ## Checking the lp output with lambdapi
