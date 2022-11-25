@@ -162,8 +162,9 @@ object Exporter {
   }
 
   // Isabelle tool wrapper and CLI handler
+  val cmd_name = "dedukti_theory"
   val isabelle_tool: Isabelle_Tool =
-    Isabelle_Tool("export", "export theory content to Dedukti or Lambdapi", Scala_Project.here,
+    Isabelle_Tool(cmd_name, "export theory content to Dedukti or Lambdapi", Scala_Project.here,
       { args =>
         var output_file = Path.explode("main.dk")
         var dirs: List[Path] = Nil
@@ -173,23 +174,24 @@ object Exporter {
         var options = Options.init()
         var verbose = false
 
-        val getopts = Getopts("""
-Usage: isabelle export [OPTIONS] SESSION THEORY
+        val getopts = Getopts("Usage: isabelle " + cmd_name + """ [OPTIONS] SESSION THEORY
+
   Options are:
-    -O FILE      output file for Dedukti theory in dk or lp syntax (default: main.dk)
     -d DIR       include session directory
-    -n           use lambdapi notations
     -e           remove need for eta flag
+    -n           use lambdapi notations
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
+    -O FILE      output file for Dedukti theory in dk or lp syntax (default: main.dk)
     -v           verbose mode
-  Export the specified THEORY in SESSION to a Dedukti or Lambdapi file.
-""",
-        "O:" -> (arg => output_file = Path.explode(arg)),
+
+Export the specified THEORY in SESSION to a Dedukti or Lambdapi file.""",
+
         "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
-        "f" -> (_ => fresh_build = true),
         "e" -> (_ => eta_expand = true),
+        "f" -> (_ => fresh_build = true),
         "n" -> (_ => use_notations = true),
         "o:" -> (arg => { options += arg }),
+        "O:" -> (arg => output_file = Path.explode(arg)),
         "v" -> (_ => verbose = true))
 
         val more_args = getopts(args)
@@ -206,16 +208,7 @@ Usage: isabelle export [OPTIONS] SESSION THEORY
         if (verbose) progress.echo("Started at " + Build_Log.print_date(start_date) + "\n")
 
         progress.interrupt_handler {
-          try {
-            exporter(options, session, theory,
-              progress = progress,
-              dirs = dirs,
-              fresh_build = fresh_build,
-              use_notations = use_notations,
-              eta_expand = eta_expand,
-              output_file = output_file,
-              verbose = verbose)
-          }
+          try exporter(options, session, theory, progress, dirs, fresh_build, use_notations, eta_expand, output_file, verbose)
           catch {case x: Exception =>
             progress.echo(x.getStackTrace.mkString("\n"))
             println(x)}

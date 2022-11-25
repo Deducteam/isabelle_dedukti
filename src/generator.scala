@@ -53,7 +53,7 @@ object Generator {
   }
 
   // Isabelle tool wrapper and CLI handler
-  val cmd_name = "dedukti_generate"
+  val cmd_name = "dedukti_session"
   val isabelle_tool: Isabelle_Tool =
     Isabelle_Tool(cmd_name, "generate a dk or lp file for every theory of a session", Scala_Project.here,
       { args =>

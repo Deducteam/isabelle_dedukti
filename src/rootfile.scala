@@ -69,7 +69,6 @@ object Rootfile {
     // if (verbose) progress.echo("Session graph top ordered: " + theories)
 
     // Generate ROOT file with one session for each theory
-    // and call isabelle build
     if (verbose) progress.echo("Generates ROOT file ...")
     val file = new File("ROOT")
     val bw = new BufferedWriter(new FileWriter(file))
@@ -89,28 +88,25 @@ object Rootfile {
       previous_theory = "Dedukti_"+theory_name
     }
     bw.close()
-    //progress.echo("isabelle build -b -j 4 "+previous_theory+" ...")
-    //"isabelle build -b -j 4 "+previous_theory !
   }
 
   // Isabelle tool wrapper and CLI handler
+  val cmd_name = "dedukti_root"
   val isabelle_tool: Isabelle_Tool =
-    Isabelle_Tool("gen_root", "generate ROOT file with a proof-exporting session for each theory", Scala_Project.here,
+    Isabelle_Tool(cmd_name, "generate a ROOT file with a proof-exporting session for each theory of a session", Scala_Project.here,
       { args =>
         var dirs: List[Path] = Nil
         var options = Options.init()
         var verbose = false
 
-        val getopts = Getopts("""
-Usage: isabelle gen_root [OPTIONS] SESSION
+        val getopts = Getopts("Usage: isabelle " + cmd_name + """ [OPTIONS] SESSION
 
   Options are:
     -d DIR       include session directory
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
     -v           verbose mode
 
-  Generates a ROOT file with a proof-exporting session for each theory of SESSION.
-""",
+Generate a ROOT file with a proof-exporting session for each theory of SESSION.""",
         "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
         "o:" -> (arg => { options += arg }),
         "v" -> (_ => verbose = true))
@@ -129,12 +125,7 @@ Usage: isabelle gen_root [OPTIONS] SESSION
         //if (verbose) progress.echo("Started at " + Build_Log.print_date(start_date) + "\n")
 
         progress.interrupt_handler {
-          try {
-            rootfile(options, session,
-              progress = progress,
-              dirs = dirs,
-              verbose = verbose)
-          }
+          try rootfile(options, session, progress, dirs, verbose)
           catch {case x: Exception =>
             progress.echo(x.getStackTrace.mkString("\n"))
             println(x)}
