@@ -70,7 +70,7 @@ object Generator {
     -d DIR       include session directory
     -e           remove need for eta flag
     -f           fresh build
-    -lp          output Lambdapi files instead of Dedukti files
+    -l           output Lambdapi files instead of Dedukti files
     -n           use Lambdapi notations (with -lp)
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
     -v           verbose mode
@@ -79,7 +79,7 @@ Generate a dk or lp file (depending on -O) for every theory of SESSION (up to TH
         "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
         "e" -> (_ => eta_expand = true),
         "f" -> (_ => fresh_build = true),
-        "lp" -> (arg => output_lp = true),
+        "l" -> (arg => output_lp = true),
         "n" -> (_ => use_notations = true),
         "o:" -> (arg => { options += arg }),
         "v" -> (_ => verbose = true))

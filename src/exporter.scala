@@ -179,7 +179,7 @@ object Exporter {
   Options are:
     -d DIR       include session directory
     -e           remove need for eta flag
-    -lp          generate Lambdapi files instead of Dedukti files
+    -l           generate Lambdapi files instead of Dedukti files
     -n           use lambdapi notations
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
     -v           verbose mode
@@ -189,7 +189,7 @@ Export the specified THEORY in SESSION to a Dedukti or Lambdapi file with the sa
         "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
         "e" -> (_ => eta_expand = true),
         "f" -> (_ => fresh_build = true),
-        "lp" -> (arg => output_lp = true),
+        "l" -> (arg => output_lp = true),
         "n" -> (_ => use_notations = true),
         "o:" -> (arg => { options += arg }),
         "v" -> (_ => verbose = true))
