@@ -71,7 +71,7 @@ object Generator {
     -e           remove need for eta flag
     -f           fresh build
     -l           output Lambdapi files instead of Dedukti files
-    -n           use Lambdapi notations (with -lp)
+    -n           use Lambdapi notations (with option -l only)
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
     -v           verbose mode
 
