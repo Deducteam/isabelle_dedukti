@@ -1,4 +1,4 @@
-/** Isabelle/Dedukti importer **/
+/** Generator of dk or lp file for a theory **/
 
 package isabelle.dedukti
 
@@ -7,9 +7,9 @@ import isabelle._
 import scala.collection.mutable
 import scala.util.control.Breaks._
 
-object Importer {
+object Exporter {
 
-  def importer(
+  def exporter(
     options: Options,
     session: String,
     theory_name: String,
@@ -207,7 +207,7 @@ Usage: isabelle export [OPTIONS] SESSION THEORY
 
         progress.interrupt_handler {
           try {
-            importer(options, session, theory,
+            exporter(options, session, theory,
               progress = progress,
               dirs = dirs,
               fresh_build = fresh_build,

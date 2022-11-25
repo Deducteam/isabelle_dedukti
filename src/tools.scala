@@ -4,7 +4,7 @@ package isabelle.dedukti
 
 import isabelle._
 
-class ImporterTool extends isabelle.Isabelle_Scala_Tools(dedukti.Importer.isabelle_tool)
+class ExporterTool extends isabelle.Isabelle_Scala_Tools(dedukti.Exporter.isabelle_tool)
 
 class RootfileTool extends isabelle.Isabelle_Scala_Tools(dedukti.Rootfile.isabelle_tool)
 
