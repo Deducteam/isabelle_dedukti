@@ -1,30 +1,42 @@
-SRC := $(wildcard src/*.scala)
+ISABELLE ?= isabelle
 
-default: dk dko
+THY_NAME ?= HOL.Groups #Complex_Main
+
+THY_FILE := $(shell echo $(THY_NAME) | sed -e 's/\./_/g')
+
+SCALA_SRC := $(wildcard src/*.scala)
+
+default: dk lp
+
+dk: $(THY_FILE).dko
+
+lp: $(THY_FILE).lpo
 
 component:
-	isabelle components -u .
+	$(ISABELLE) components -u .
 
-build:
-	isabelle scala_build
+scala:
+	$(ISABELLE) scala_build
 
-THY := HOL.Groups
-FILE := HOL_Groups
+ROOT: $(SCALA_SRC)
+	$(ISABELLE) dedukti_root HOL
 
-#THY := Complex_Main
-#FILE := $(THY)
+build: ROOT
+	$(ISABELLE) build -b Dedukti_$(THY_NAME)
 
-lp: $(SRC)
-	isabelle dedukti_generate -O main.lp -b -v -r $(THY) HOL
+$(THY_FILE).lp: $(SCALA_SRC)
+	$(ISABELLE) dedukti_session -l -v HOL $(THY_NAME)
 
-lpo: $(FILE).lp
-	lambdapi check $<
+$(THY_FILE).lpo: $(THY_FILE).lp
+	lambdapi check $(THY_FILE).lp
 
-dk: $(SRC)
-	isabelle dedukti_generate -O main.dk -b -v -r $(THY) HOL
+$(THY_FILE).dk: $(SCALA_SRC)
+	$(ISABELLE) dedukti_session -v HOL $(THY_NAME)
 
-dko: $(FILE).dk
+deps.mk: $(THY_FILE).dk
 	dk dep *.dk > deps.mk
+
+$(THY_FILE).dko: $(THY_FILE).dk deps.mk
 	make -f dedukti.mk
 
 clean:
