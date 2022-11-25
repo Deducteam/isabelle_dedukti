@@ -22,7 +22,10 @@ object Exporter {
     verbose: Boolean = false
   ): Unit = {
 
+    // to generate qualified identifiers
     Prelude.set_current_module(theory_name)
+
+    progress.echo("Read theory " + theory_name + " ...")
 
     val build_options = {
       val options1 = options + "export_theory" + "record_proofs=2"
@@ -38,7 +41,6 @@ object Exporter {
     //progress.echo("DB: " + db)
     val provider = Export.Provider.database(db, store.cache, session, theory_name)
 
-    progress.echo("Read theory " + theory_name + " ...")
     val theory =
       if (theory_name == Thy_Header.PURE) {
         Export_Theory.read_pure_theory(store, cache = term_cache)
@@ -47,6 +49,7 @@ object Exporter {
       }
 
     progress.echo("Translate theory " + theory_name + " ...")
+
     val current_theory = mutable.Queue[Syntax.Command]()
     for (a <- theory.classes) {
       // if (verbose) progress.echo("  " + a.toString + a.serial)
