@@ -37,9 +37,8 @@ object Generator {
     breakable{
       for (theory <- theories) {
         val theory_name = theory.toString
-        val session =
-          if (theory_name == Thy_Header.PURE) "Pure" else "Dedukti_"+theory_name
-        Exporter.exporter(options, session, theory_name,
+        val session_name = if (theory_name == Thy_Header.PURE) "Pure" else "Dedukti_" + theory_name
+        Exporter.exporter(options, session_name, theory_name,
           progress = progress,
           dirs = dirs,
           fresh_build = fresh_build,

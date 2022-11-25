@@ -72,10 +72,11 @@ object Rootfile {
     if (verbose) progress.echo("Generates ROOT file ...")
     val file = new File("ROOT")
     val bw = new BufferedWriter(new FileWriter(file))
-    var previous_theory = Thy_Header.PURE
+    var previous_session = "Pure"
     for (theory <- theories.tail) {
       val theory_name = theory.toString
-      bw.write("session Dedukti_" + theory_name + " in \"Ex/" + theory_name + "\" = " + previous_theory + " +\n")
+      val session_name = "Dedukti_" + theory_name
+      bw.write("session " + session_name + " in \"Ex/" + theory_name + "\" = " + previous_session + " +\n")
       bw.write("   options [export_theory, export_proofs, record_proofs = 2]\n")
       bw.write("   sessions\n")
       bw.write("      " + session + "\n")
@@ -85,7 +86,7 @@ object Rootfile {
       //if (!Files.exists(Paths.get("Ex/"+theory_name))) { }
       "mkdir -p Ex/"+theory_name !
 
-      previous_theory = "Dedukti_"+theory_name
+      previous_session = session_name
     }
     bw.close()
   }
