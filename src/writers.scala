@@ -1,8 +1,4 @@
 /** Concrete syntax for various lambda-Pi implementations **/
-/*
-  For Dedukti lp syntax
-  see https://github.com/Deducteam/lambdapi/blob/master/doc/syntax.bnf
-*/
 
 package isabelle.dedukti
 
