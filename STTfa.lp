@@ -1,13 +1,13 @@
-constant symbol Typ : TYPE;
-constant symbol fun : Typ → Typ → Typ;
+constant symbol Set : TYPE;
+constant symbol arr : Set → Set → Set;
 
-injective symbol eta : Typ → TYPE;
-rule eta (fun $a $b) ↪ eta $a → eta $b;
+injective symbol El : Set → TYPE;
+rule El (arr $a $b) ↪ El $a → El $b;
 
-constant symbol prop : Typ;
-constant symbol imp : eta prop → eta prop → eta prop;
-constant symbol all [a] : (eta a → eta prop) → eta prop;
+constant symbol prop : Set;
+constant symbol imp : El prop → El prop → El prop;
+constant symbol all [a] : (El a → El prop) → El prop;
 
-symbol eps : eta prop → TYPE;
-rule eps (imp $a $b) ↪ eps $a → eps $b
-with eps (@all $a $b) ↪ Π x: eta $a, eps ($b x);
+symbol Prf : El prop → TYPE;
+rule Prf (imp $a $b) ↪ Prf $a → Prf $b
+with Prf (@all $a $b) ↪ Π x: El $a, Prf ($b x);

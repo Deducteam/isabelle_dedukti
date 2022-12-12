@@ -1,13 +1,13 @@
-Typ : Type.
-fun : Typ -> Typ -> Typ.
+Set : Type.
+arr : Set -> Set -> Set.
 
-def eta : Typ -> Type.
-[a, b] eta (fun a b) --> eta a -> eta b.
+def El : Set -> Type.
+[a, b] El (arr a b) --> El a -> El b.
 
-prop : Typ.
-imp : eta prop -> eta prop -> eta prop.
-all : a:Typ -> (eta a -> eta prop) -> eta prop.
+prop : Set.
+imp : El prop -> El prop -> El prop.
+all : a:Set -> (El a -> El prop) -> El prop.
 
-def eps : eta prop -> Type.
-[a, b] eps (imp a b) --> eps a -> eps b.
-[a, b] eps (all a b) --> x:eta a -> eps (b x).
+def Prf : El prop -> Type.
+[a, b] Prf (imp a b) --> Prf a -> Prf b.
+[a, b] Prf (all a b) --> x:El a -> Prf (b x).
