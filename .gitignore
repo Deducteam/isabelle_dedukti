@@ -26,6 +26,10 @@ kocheck.sh
 _CoqProject
 Makefile.coq
 Makefile.coq.conf
-*.v
+HOL*.v
+Pure.v
+Tools*.v
+Complex_Main.v
+Main.v
 *.d
 *.vo
