@@ -6,11 +6,11 @@ THY_FILE := $(shell echo $(THY_NAME) | sed -e 's/\./_/g')
 
 SCALA_SRC := $(wildcard src/*.scala)
 
-default: dk lp
+default: dko lpo
 
-dk: $(THY_FILE).dko
+dko: $(THY_FILE).dko
 
-lp: $(THY_FILE).lpo
+lpo: $(THY_FILE).lpo
 
 component:
 	$(ISABELLE) components -u .
@@ -18,8 +18,8 @@ component:
 scala:
 	$(ISABELLE) scala_build
 
-ROOT: $(SCALA_SRC)
-	$(ISABELLE) dedukti_root HOL
+force_root ROOT dkcheck.sh kocheck.sh: $(SCALA_SRC)
+	$(ISABELLE) dedukti_root HOL $(THY_NAME)
 
 build: ROOT
 	$(ISABELLE) build -b Dedukti_$(THY_NAME)
@@ -27,7 +27,7 @@ build: ROOT
 $(THY_FILE).lp: $(SCALA_SRC)
 	$(ISABELLE) dedukti_session -l -v HOL $(THY_NAME)
 
-$(THY_FILE).lpo: $(THY_FILE).lp
+$(THY_FILE).lpo: STTfa.lp $(THY_FILE).lp
 	lambdapi check $(THY_FILE).lp
 
 $(THY_FILE).dk: $(SCALA_SRC)
@@ -36,8 +36,11 @@ $(THY_FILE).dk: $(SCALA_SRC)
 deps.mk: $(THY_FILE).dk
 	dk dep *.dk > deps.mk
 
-$(THY_FILE).dko: $(THY_FILE).dk deps.mk
-	make -f dedukti.mk
+$(THY_FILE).dko: STTfa.dk $(THY_FILE).dk #deps.mk
+	#make -f dedukti.mk
+	bash ./dkcheck.sh
 
 clean:
-	rm -f HOL*.dk HOL*.lp Pure.dk Pure.lp Tools*.dk Tools*.lp
+	-rm -f ROOT dkcheck.sh kocheck.sh deps.mk
+	-rm -f Pure.dk Tools*.dk HOL*.dk *.dko
+	-rm -f Pure.lp Tools*.lp HOL*.lp *.lpo
