@@ -1,0 +1,28 @@
+SCALA_SRC := $(wildcard src/*.scala)
+
+DK_FILES := $(wildcard *.dk)
+GENERATED_V_FILES := $(shell ls *.dk | sed -e 's/STTfa.dk//' | sed -e 's/.dk/.v/g') #$(DK_FILES:%.dk=%.v)
+V_FILES := STTfa.v $(GENERATED_V_FILES)
+
+dk: $(DK_FILES)
+
+clean:
+	-rm -f _CoqProject Makefile.coq Makefile.coq.conf
+	-rm -f $(GENERATED_V_FILES)
+	-rm -f *.vo *.vok *.vos *.au *.d
+
+_CoqProject: $(V_FILES)
+	echo -R . Isabelle $(V_FILES) > _CoqProject
+
+Makefile.coq: _CoqProject
+	coq_makefile -f _CoqProject -o Makefile.coq
+
+LAMBDAPI ?= lambdapi
+
+%.v: %.dk $(SCALA_SRC)
+	$(LAMBDAPI) export -o stt_coq $*.dk > $*.v
+
+v: $(GENERATED_V_FILES)
+
+vo: Makefile.coq
+	$(MAKE) -f Makefile.coq

@@ -22,3 +22,10 @@ deps.mk
 ROOT
 dkcheck.sh
 kocheck.sh
+
+_CoqProject
+Makefile.coq
+Makefile.coq.conf
+*.v
+*.d
+*.vo
