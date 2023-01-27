@@ -115,7 +115,7 @@
 
 ## Provided commands
 
-- `isabelle dedukti_root $session`: generates a ROOT file defining a proof-exporting session Dedukti_$theory for each $theory of $session, as well as the scripts kocheck.sh and dkcheck.sh to check dk files.
+- `isabelle dedukti_root $session [$theory]`: generates a ROOT file defining a proof-exporting session Dedukti_$theory for each $theory of $session (up to $theory), as well as the scripts kocheck.sh and dkcheck.sh to check dk files.
 
 - `isabelle dedukti_session $session`: generates a dk or lp file for each theory of $session.
 
@@ -147,15 +147,9 @@ lambdapi check $theory.lp
 ## Checking the dk output with dkcheck
 
 ```
-dk dep *.dk > deps.mk
-make -f dkcheck.mk
-```
-
-or (if dk dep is too slow):
-
-```
 bash ./dkcheck.sh
 ```
+
 
 ## Checking the dk output with kocheck
 
@@ -189,9 +183,10 @@ bash ../kocheck.sh
 - `ast.scala` defines the AST of the exported material. It is common for dedukti and lambdapi, and is a (very) strict subset of the ASTs of these languages
 - `translate.scala` translates from Isabelle/Pure to the common dedukti/lambdapi AST
 - `writers.scala` writes out either dedukti output or lambdapi output
-- `importer.scala` wraps the previous files into an Isabelle component, defining the CLI and interacting with other components. [Jeremy]: Note it has been changed a lot. It will now create one file by session, because it is expected to be ran on a single-theory session. However, the ancestor of this session does not need to be Pure, and nothing from previous theories will be translated.
-- `generator.scala` wraps the previous files into an Isabelle component, creating a ROOT file, building, calling the translator and postprocessing the output file
+- `exporter.scala` provides an Isabelle component for exporting the Isabelle proofs of a theory to Dedukti or Lambdapi
+- `generator.scala` provides an Isabelle component for exporting every theory of a session
 - `tools.scala` defines the `isabelle dedukti_import` and `isabelle dedukti_generate` command-line tools, which is registered via `services` in `etc/build.props`
+- `root_file.scala` is an Isabelle component for generating various files from the theory dependency graph
 
 
 ## Isabelle development and browsing of sources
