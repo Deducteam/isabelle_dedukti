@@ -2,7 +2,7 @@
 
 ## Dependencies
 
-* [Isabelle2021-1](https://isabelle.sketis.net/website-Isabelle2021-1)
+* [Isabelle2021-1](https://isabelle.in.tum.de/website-Isabelle2021-1/dist/Isabelle2021-1_linux.tar.gz)
 
 * one dk file checker among:
 
@@ -19,7 +19,7 @@
 
   * **Isabelle**
 
-      - Download [Isabelle2021-1](https://isabelle.sketis.net/website-Isabelle2021-1)
+      - Download [Isabelle2021-1](https://isabelle.in.tum.de/website-Isabelle2021-1/dist/Isabelle2021-1_linux.tar.gz)
 
       - Unpack and run `Isabelle2021-1/bin/isabelle jedit` at least
         once, to ensure that everything works (e.g. see Documentation
