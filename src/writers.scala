@@ -1,8 +1,4 @@
 /** Concrete syntax for various lambda-Pi implementations **/
-/*
-  For Dedukti lp syntax
-  see https://github.com/Deducteam/lambdapi/blob/master/doc/syntax.bnf
-*/
 
 package isabelle.dedukti
 
@@ -46,7 +42,7 @@ trait Ident_Writer {
 }
 
 
-abstract class Abstract_Writer(writer: Writer) extends Ident_Writer {
+abstract class Abstract_Writer(root: String, writer: Writer) extends Ident_Writer {
   def write(c: Char):   Unit = writer.write(c)
   def write(s: String): Unit = writer.write(s)
 
@@ -83,7 +79,21 @@ abstract class Abstract_Writer(writer: Writer) extends Ident_Writer {
     else body
   }
 
-  def ident(a: String): Unit = write(escape_if_needed(a))
+  def var_ident(a: String): Unit = {
+    write(escape_if_needed(a))
+  }
+
+  def mod_ident(a: String): Unit = {
+    write(root + escape_if_needed(Prelude.mod_name(a)))
+  }
+
+  def sym_ident(a: String): Unit = {
+    write(escape_if_needed(a))
+  }
+
+  def sym_qident(a: String): Unit = {
+    write(root + Prelude.mod_name(Prelude.module_of(a)) + "." + escape_if_needed(a))
+  }
 
   def term(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation],
            prevNot: Notation = absNotation, no_impl: Boolean = false, right: Boolean = false): Unit
@@ -97,7 +107,7 @@ abstract class Abstract_Writer(writer: Writer) extends Ident_Writer {
       }
     }
     a.id match {
-      case Some(id) => ident(id)
+      case Some(id) => var_ident(id)
       case None => write('_')
     }
     colon()
@@ -116,8 +126,8 @@ abstract class Abstract_Writer(writer: Writer) extends Ident_Writer {
 }
 
 
-class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer)
-  extends Abstract_Writer(writer) {
+class LP_Writer(use_notations: Boolean, writer: Writer)
+  extends Abstract_Writer("Isabelle.", writer) {
   val reserved = // copied from lambdapi/src/parsing/lpLexer.ml lines 185-240
     Set(
       "abort",
@@ -216,9 +226,6 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer)
     }
   }
 
-
-
-  val root: String = "Isabelle" //root_path.implode.replace('/', '.')
   def comma()       : Unit = write(", ")
   def semicolon()   : Unit = write(";")
   def arrow()       : Unit = write(" → ")
@@ -244,7 +251,7 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer)
           case (Syntax.Quantifier(_), _) => isabelle.error("NotImplemented")
           case (Syntax.Prefix(op, _), List(arg)) if !(no_impl && contains_impl_arg) =>
           block_if(not, prevNot, right)({
-            ident(op)
+            sym_qident(op)
             space()
             term(arg, notations, not, no_impl)
           })
@@ -253,7 +260,7 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer)
               val op = getOperator(not) // Ugly Scala where I can't get that from the pattern
               term(arg1, notations, not, no_impl)
               space()
-              ident(op)
+              sym_qident(op)
               space()
               term(arg2, notations, not, no_impl, right = true)
             })
@@ -262,7 +269,7 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer)
             val not = Syntax.appNotation
             val force_no = pre_spine.isEmpty
             block_if(not, prevNot, right, force_no) {
-              block(ident(op))
+              block(sym_qident(op))
               for ((arg, impl) <- pre_spine) {
                 if (impl) {
                   if (no_impl || spine.isEmpty) { space(); write("["); term(arg, notations, Syntax.justHadPars, no_impl, right = true); write("]") }
@@ -297,9 +304,9 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer)
       case Syntax.Symb(id) if notations contains id =>
         appl(t, notations, prevNot, no_impl, right)
       case Syntax.Symb(id) =>
-        ident(id)
+        sym_qident(id)
       case Syntax.Var(id) =>
-        ident(id)
+        var_ident(id)
       case Syntax.Appl(_, _, _) =>
         appl(t, notations, prevNot, no_impl, right)
       case Syntax.Abst(a, t) =>
@@ -328,9 +335,9 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer)
       case Syntax.Symb(id) if notations contains id =>
         error("There should be no notations in this mode")
       case Syntax.Symb(id) =>
-        ident(id)
+        sym_qident(id)
       case Syntax.Var(id) =>
-        ident(id)
+        var_ident(id)
       case Syntax.Appl(t1, t2, isImplicit) =>
         val not = appNotation
         block_if(not, prevNot, right) {
@@ -393,16 +400,16 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer)
     notations(fullId) = notation
     write ("notation ")
     notation match {
-      case Prefix(op, priority) => ident(op); space(); write("prefix");      space(); write(priority.toString)
-      case Infix (op, priority) => ident(op); space(); write("infix");       space(); write(priority.toString)
-      case InfixL(op, priority) => ident(op); space(); write("infix left");  space(); write(priority.toString)
-      case InfixR(op, priority) => ident(op); space(); write("infix right"); space(); write(priority.toString)
-      case Quantifier(op) => ident(op); space(); write("quantifier")
+      case Prefix(op, priority) => sym_qident(op); space(); write("prefix");      space(); write(priority.toString)
+      case Infix (op, priority) => sym_qident(op); space(); write("infix");       space(); write(priority.toString)
+      case InfixL(op, priority) => sym_qident(op); space(); write("infix left");  space(); write(priority.toString)
+      case InfixR(op, priority) => sym_qident(op); space(); write("infix right"); space(); write(priority.toString)
+      case Quantifier(op) => sym_qident(op); space(); write("quantifier")
     }
   }
 
   def ident_or_notation(id: Syntax.Ident, not: Option[Syntax.Notation]): Unit = {
-    not.fold(ident(id))(not => ident(getOperator(not))) // Ugly
+    not.fold(sym_ident(id))(not => sym_ident(getOperator(not))) // Ugly
   }
 
   def command(c: Syntax.Command, notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit = {
@@ -438,7 +445,7 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer)
         for (not <- not_opt) { end_command(); notation(id, not, notations) }
       case Syntax.Theorem(id, args, ty, prf) =>
         write("opaque symbol ")
-        ident(id)
+        sym_ident(id)
         for (a <- args) { space(); arg(a, block = true, notations) }
         colon(); term(ty, notations)
         colon_equal(); term(prf, notations)
@@ -451,15 +458,15 @@ class LP_Writer(root_path: Path, use_notations: Boolean, writer: Writer)
     end_command()
   }
 
-  def require_open(module: String): Unit = {
-    write("require open " + root + ".")
-    ident(module)
+  def require(module: String): Unit = {
+    write("require ")
+    mod_ident(module)
     end_command()
   }
 }
 
 
-class DK_Writer(writer: Writer) extends Abstract_Writer(writer) {
+class DK_Writer(writer: Writer) extends Abstract_Writer("", writer) {
   val reserved =
     Set(
       "def",
@@ -486,9 +493,9 @@ class DK_Writer(writer: Writer) extends Abstract_Writer(writer) {
       case Syntax.TYPE =>
         write("Type")
       case Syntax.Symb(id) =>
-        ident(id)
+        sym_qident(id)
       case Syntax.Var(id) =>
-        ident(id)
+        var_ident(id)
       case Syntax.Appl(_, _, _) =>
         block_if(appNotation, prevNot, right) {
           val (head, spine) = Syntax.destruct_appls(t)
@@ -519,7 +526,7 @@ class DK_Writer(writer: Writer) extends Abstract_Writer(writer) {
   ): Unit = {
     c match {
       case Syntax.Declaration(id, args, ty, _) =>
-        ident(id)
+        sym_ident(id)
         for (a <- args) {
           space()
           block { arg(a, block = false, notations) }
@@ -527,11 +534,11 @@ class DK_Writer(writer: Writer) extends Abstract_Writer(writer) {
         colon(); term(ty)
       case Syntax.DefableDecl(id, ty, _, _) =>
         write("def ")
-        ident(id)
+        sym_ident(id)
         colon(); term(ty)
       case Syntax.Definition(id, args, ty, tm, _) =>
         write("def ")
-        ident(id)
+        sym_ident(id)
         for (a <- args) {
           space()
           block { arg(a, block = false, notations) }
@@ -540,7 +547,7 @@ class DK_Writer(writer: Writer) extends Abstract_Writer(writer) {
         dfn(); term(tm)
       case Syntax.Theorem(id, args, ty, prf) =>
         write("thm ")
-        ident(id)
+        sym_ident(id)
         for (a <- args) {
           space()
           block { arg(a, block = false, notations) }
@@ -555,4 +562,12 @@ class DK_Writer(writer: Writer) extends Abstract_Writer(writer) {
     dot()
     nl()
   }
+
+  def require(module: String): Unit = {
+    write("#REQUIRE ")
+    mod_ident(module)
+    dot()
+    nl()
+  }
+
 }

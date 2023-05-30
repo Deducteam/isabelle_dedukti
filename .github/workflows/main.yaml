@@ -1,108 +1,79 @@
-
 on:
   pull_request:
     types: [opened, synchronize, edited, reopened]
   push:
   workflow_dispatch:
 jobs:
-  dedukti:
+  isabelle_dedukti:
     strategy:
       fail-fast: false
       matrix:
-        ocaml-version: [4.10.2, 4.11.1, 4.12.0]
-        dedukti-version: [latest]
-        # isabelle-version: [2021]
+        ocaml-version: [4.14.0]
+        dedukti-version: [2.7]
+        lambdapi-version: [2.2.1]
+        isabelle-version: [2021-1]
     runs-on: ubuntu-latest
-    # container: makarius/isabelle:Isabelle2021-1
     steps:
-      # - name: Install git
-      #   run: |
-      #     apt-get -y update
-      #     apt-get -y install git
-      - name: Install Isabelle
+    # actions/checkout must be done BEFORE avsm/setup-ocaml
+      - name: Checkout isabelle_dedukti
+        uses: actions/checkout@v3
+#      - name: Set up cache
+#        id: cache
+#        uses: actions/cache@v3
+#        with:
+#          path: |
+#            ~/.isabelle
+#            ~/kontroli-rs
+#            ~/Isabelle${{ matrix.isabelle-version }}
+#            ~/.opam
+#          key: cache-${{ runner.os }}
+      - name: Download Isabelle
+#        if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          wget -q https://isabelle.in.tum.de/dist/Isabelle2021-1_linux.tar.gz
-          tar -xzf Isabelle2021-1_linux.tar.gz -C ~
-      - name: Check out isabelle/dedukti repository
-        uses: actions/checkout@v2
-      - name: Set up opam ${{ matrix.ocaml-version }}
+          wget -q https://isabelle.in.tum.de/website-Isabelle${{ matrix.isabelle-version }}/dist/Isabelle${{ matrix.isabelle-version }}_linux.tar.gz
+          tar -xzf Isabelle${{ matrix.isabelle-version }}_linux.tar.gz -C ~
+      - name: Build isabelle_dedukti
+        run: |
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle components -u .
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle scala_build
+      - name: Patch Isabelle/HOL library
+        run: |
+          chmod -R +w ~/Isabelle${{ matrix.isabelle-version }}/src/HOL/
+          patch -up0 -d ~/Isabelle${{ matrix.isabelle-version }}/src/HOL/ < HOL.patch
+      - name: Install opam
+#        if: steps.cache.outputs.cache-hit != 'true'
         uses: avsm/setup-ocaml@v2
         with:
           ocaml-compiler: ${{ matrix.ocaml-version }}
-      - name: Recovering cached files...
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.opam
-            ~/.isabelle
-          key: ${{ runner.os }}-cache-${{ matrix.ocaml-version }}-2021-1-dedukti-${{ matrix.dedukti-version }}
-      - name: Install dedukti.${{ matrix.dedukti-version }}
+#      - name: Create opam switch for ocaml ${{ matrix.ocaml-version }}
+#        run: opam switch create ${{ matrix.ocaml-version }}
+      - name: Install dkcheck
+        run: opam install dedukti.${{ matrix.dedukti-version }}
+      - name: Install lambdapi
+        run: opam install lambdapi.${{ matrix.lambdapi-version }}
+      - name: Install kocheck
         run: |
-          opam pin add -n dedukti git+https://github.com/Deducteam/dedukti.git
-          opam update
-          opam install dedukti
-          opam upgrade
+          cd ~
+          git clone https://github.com/01mf02/kontroli-rs.git
+          cd ~/kontroli-rs
+          cargo install --path kocheck
+      - name: Generate and check lp output for HOL.Groups
+        run: |
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_root HOL HOL.Groups
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle build -b Dedukti_HOL.Groups
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_session -l -v HOL HOL.Groups
           eval $(opam env)
-      - name: Build Isabelle/Dedukti
+          lambdapi check HOL_Groups.lp
+      - name: Generate and check dk output for HOL.Groups
         run: |
-          ~/Isabelle2021-1/bin/isabelle components -u .
-          ~/Isabelle2021-1/bin/isabelle scala_build
-      - name: Run tests
-          # wget -q https://isabelle.in.tum.de/dist/Isabelle2021-1_linux.tar.gz
-          # tar -xzf Isabelle2021-1_linux.tar.gz
-          # Isabelle2021-1/bin/isabelle components -u .
-          # Isabelle2021-1/bin/isabelle scala_build
-        run: |
-          ~/Isabelle2021-1/bin/isabelle dedukti_import -O main.dk Dedukti_Base
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_root HOL HOL.Groups
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle build -b Dedukti_HOL.Groups
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_session -v HOL HOL.Groups
           eval $(opam env)
-          dk check --eta main.dk
-
-  lambdapi:
-    strategy:
-      fail-fast: false
-      matrix:
-        ocaml-version: [4.10.2, 4.11.1, 4.12.0]
-        lambdapi-version: [latest]
-        # isabelle-version: [2021]
-        test-notations: [""] # , -n]  # Notations need 30GB RAM, Github won't provide this much
-        # test-eta-contraction: [-e, ]
-    runs-on: ubuntu-latest
-    # container: makarius/isabelle:Isabelle2021-1
-    steps:
-      - name: Install Isabelle
-        run: |
-          wget -q https://isabelle.in.tum.de/dist/Isabelle2021-1_linux.tar.gz
-          tar -xzf Isabelle2021-1_linux.tar.gz -C ~
-      - name: Check out isabelle/dedukti repository
-        uses: actions/checkout@v2
-      - name: Set up opam ${{ matrix.ocaml-version }}
-        uses: avsm/setup-ocaml@v2
-        with:
-          ocaml-compiler: ${{ matrix.ocaml-version }}
-      - name: Recovering cached files
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.opam
-            ~/.isabelle
-          key: ${{ runner.os }}-cache-${{ matrix.ocaml-version }}-2021-1-lambdapi-${{ matrix.lambdapi-version }}
-      - name: Install lambdapi.${{ matrix.lambdapi-version }}
-        run: |
-          opam pin add -n lambdapi git+https://github.com/Deducteam/lambdapi.git
-          opam update
-          opam install lambdapi
-          opam upgrade
-          eval $(opam env)
-      - name: Build Isabelle/Dedukti
-        run: |
-          ~/Isabelle2021-1/bin/isabelle components -u .
-          ~/Isabelle2021-1/bin/isabelle scala_build
-      - name: Run tests
-          # wget -q https://isabelle.in.tum.de/dist/Isabelle2021-1_linux.tar.gz
-          # tar -xzf Isabelle2021-1_linux.tar.gz
-          # Isabelle2021-1/bin/isabelle components -u .
-          # Isabelle2021-1/bin/isabelle scala_build
-        run: |
-          eval $(opam env)
-          ~/Isabelle2021-1/bin/isabelle dedukti_import -O main.lp ${{ matrix.test-notations }} Dedukti_Base
-          lambdapi check main.lp
+          bash ./dkcheck.sh
+          mkdir -p kocheck
+          ./remove-requires.sh *.dk
+          cd kocheck
+          bash ../kocheck.sh
+#          dk dep *.dk > deps.mk
+#          make -f dedukti.mk

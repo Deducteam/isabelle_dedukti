@@ -1,6 +1,8 @@
-- eliminate odd mutable datastructures: irrelevant for performance, and the cost of clear semantics;
+- command dedukti_theory: remove need for session name?
 
-- import_theory_by_name: support stack of sessions, no longer restrict to Pure as parent;
+- what is the option "export_standard_proofs"" vs "export_proofs" ?
+
+- eliminate odd mutable datastructures: irrelevant for performance, and the cost of clear semantics;
 
 - clarify OfClass proofs (normally expanded by Isabelle);
 
