@@ -33,7 +33,7 @@ object Rootfile {
             case Some(info) => info
             case None => error("Bad session " + quote(session))
           }
-        val resources = new Resources(base_info.sessions_structure, base_info.check.base)
+        val resources = new Resources(base_info.sessions_structure, base_info.check_errors.base)
         resources.session_dependencies(session_info, progress = progress).theory_graph
       }
     // remove HOL.Quickcheck*, HOL.Record, HOL.Nitpick and HOL.Nunchaku
