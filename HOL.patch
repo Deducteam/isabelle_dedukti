@@ -229,7 +229,7 @@ diff -urNx '*~' ./Groups_List.thy /cygdrive/c/Isabelle2022/src/HOL/Groups_List.t
  locale monoid_list = monoid
 diff -urNx '*~' ./List.thy /cygdrive/c/Isabelle2022/src/HOL/List.thy
 --- ./List.thy	2023-05-30 11:50:42.721423600 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/List.thy	2023-06-01 12:24:46.988549600 +0900
++++ /cygdrive/c/Isabelle2022/src/HOL/List.thy	2023-06-01 13:37:53.298674500 +0900
 @@ -5,7 +5,7 @@
  section \<open>The datatype of finite lists\<close>
  
@@ -283,7 +283,7 @@ diff -urNx '*~' ./List.thy /cygdrive/c/Isabelle2022/src/HOL/List.thy
  
  lemma length_zip [simp]:
    "length (zip xs ys) = min (length xs) (length ys)"
-@@ -4462,9 +4462,13 @@
+@@ -4462,9 +4462,10 @@
    distinct (removeAll [] xs) \<and>
    (\<forall>ys. ys \<in> set xs \<longrightarrow> distinct ys) \<and>
    (\<forall>ys zs. ys \<in> set xs \<and> zs \<in> set xs \<and> ys \<noteq> zs \<longrightarrow> set ys \<inter> set zs = {})"
@@ -291,34 +291,25 @@ diff -urNx '*~' ./List.thy /cygdrive/c/Isabelle2022/src/HOL/List.thy
 - apply(simp_all, safe, auto)
 -by (metis Int_iff UN_I empty_iff equals0I set_empty)
 +proof(induct xs)
-+  case Nil
-+  then show ?case by simp
-+next
 +  case (Cons a xs)
 +  show ?case by (auto simp: Cons Ball_def disjnt_def[symmetric] disjnt_sym)
-+qed
++qed simp
  
  
  subsubsection \<open>\<^const>\<open>replicate\<close>\<close>
-@@ -5050,7 +5054,16 @@
+@@ -5050,7 +5051,10 @@
    "z # zs \<in> shuffles xs ys \<longleftrightarrow>
      (xs \<noteq> [] \<and> hd xs = z \<and> zs \<in> shuffles (tl xs) ys \<or>
       ys \<noteq> [] \<and> hd ys = z \<and> zs \<in> shuffles xs (tl ys))"
 -  by (induct xs ys rule: shuffles.induct) auto
 +proof(induct xs ys rule: shuffles.induct)
-+  case (1 ys)
-+  then show ?case by auto
-+next
-+  case (2 xs)
-+  then show ?case by auto
-+next
 +  case (3 x xs y ys)
-+  show ?case by (auto simp add: 3)
-+qed
++  show ?case by (auto simp: 3)
++qed auto
  
  lemma splice_in_shuffles [simp, intro]: "splice xs ys \<in> shuffles xs ys"
    by (induction xs ys rule: splice.induct) (simp_all add: Cons_in_shuffles_iff shuffles_commutes)
-@@ -5197,13 +5210,12 @@
+@@ -5197,13 +5201,12 @@
    (is "max _ ?foldB = Suc (max _ ?foldA)")
  proof (cases "(filter (\<lambda>ys. ys \<noteq> []) xss) = []")
    case True
@@ -336,7 +327,7 @@ diff -urNx '*~' ./List.thy /cygdrive/c/Isabelle2022/src/HOL/List.thy
  next
    case False
  
-@@ -6363,7 +6375,7 @@
+@@ -6363,7 +6366,7 @@
  
  lemma sorted_list_of_set_lessThan_Suc [simp]:
    "sorted_list_of_set {..<Suc k} = sorted_list_of_set {..<k} @ [k]"
@@ -345,7 +336,7 @@ diff -urNx '*~' ./List.thy /cygdrive/c/Isabelle2022/src/HOL/List.thy
  
  lemma sorted_list_of_set_atMost_Suc [simp]:
    "sorted_list_of_set {..Suc k} = sorted_list_of_set {..k} @ [Suc k]"
-@@ -6835,7 +6847,7 @@
+@@ -6835,7 +6838,7 @@
      by blast
    hence "((u@v)!i, (w@z)!i) \<in> r"
      unfolding nth_append using less_le_trans[OF \<open>i < length w\<close> assms(2)] \<open>(u!i,w!i) \<in> r\<close>
@@ -356,7 +347,7 @@ diff -urNx '*~' ./List.thy /cygdrive/c/Isabelle2022/src/HOL/List.thy
    moreover have "take i (u@v) = take i (w@z)"
 diff -urNx '*~' ./MacLaurin.thy /cygdrive/c/Isabelle2022/src/HOL/MacLaurin.thy
 --- ./MacLaurin.thy	2023-05-30 11:50:42.798563100 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/MacLaurin.thy	2023-05-31 14:26:38.879025000 +0900
++++ /cygdrive/c/Isabelle2022/src/HOL/MacLaurin.thy	2023-06-01 13:42:54.647162000 +0900
 @@ -22,7 +22,7 @@
  
  lemma eq_diff_eq': "x = y - z \<longleftrightarrow> y = x + z"
@@ -388,31 +379,26 @@ diff -urNx '*~' ./MacLaurin.thy /cygdrive/c/Isabelle2022/src/HOL/MacLaurin.thy
 +  then show ?thesis by auto
 +next
    case False
--  let ?diff = "\<lambda>n x. sin (x + 1/2 * real n * pi)"
+   let ?diff = "\<lambda>n x. sin (x + 1/2 * real n * pi)"
 -  have "\<exists>t. 0 < \<bar>t\<bar> \<and> \<bar>t\<bar> < \<bar>x\<bar> \<and> sin x =
-+    let ?diff = "\<lambda>n x. sin (x + 1/2 * real n * pi)"
-+    have tex: "\<exists>t. 0 < \<bar>t\<bar> \<and> \<bar>t\<bar> < \<bar>x\<bar> \<and> sin x =
-       (\<Sum>m<n. (?diff m 0 / fact m) * x ^ m) + (?diff n t / fact n) * x ^ n"
--  proof (rule Maclaurin_all_lt)
--    show "\<forall>m x. ((\<lambda>t. sin (t + 1/2 * real m * pi)) has_real_derivative
-+    proof (rule Maclaurin_all_lt)
-+      show "\<forall>m x. ((\<lambda>t. sin (t + 1/2 * real m * pi)) has_real_derivative
-            sin (x + 1/2 * real (Suc m) * pi)) (at x)"
--      by (rule allI derivative_eq_intros | use sin_expansion_lemma in force)+
--  qed (use False in auto)
+-      (\<Sum>m<n. (?diff m 0 / fact m) * x ^ m) + (?diff n t / fact n) * x ^ n"
++  have tex: "\<exists>t. 0 < \<bar>t\<bar> \<and> \<bar>t\<bar> < \<bar>x\<bar> \<and> sin x =
++    (\<Sum>m<n. (?diff m 0 / fact m) * x ^ m) + (?diff n t / fact n) * x ^ n"
+   proof (rule Maclaurin_all_lt)
+     show "\<forall>m x. ((\<lambda>t. sin (t + 1/2 * real m * pi)) has_real_derivative
+-           sin (x + 1/2 * real (Suc m) * pi)) (at x)"
++       sin (x + 1/2 * real (Suc m) * pi)) (at x)"
+       by (rule allI derivative_eq_intros | use sin_expansion_lemma in force)+
+   qed (use False in auto)
 -  then show ?thesis
--    apply (rule ex_forward, simp)
--    apply (rule sum.cong[OF refl])
++  from tex show ?thesis
+     apply (rule ex_forward, simp)
+     apply (rule sum.cong[OF refl])
 -    apply (auto simp: sin_coeff_def sin_zero_iff elim: oddE simp del: of_nat_Suc)
 -    done
 -qed auto
-+        by (rule allI derivative_eq_intros | use sin_expansion_lemma in force)+
-+    qed (use False in auto)
-+    from tex show ?thesis
-+      apply (rule ex_forward, simp)
-+      apply (rule sum.cong[OF refl])
-+      by (simp add: sin_coeff_lemma)
-+  qed
++    by (simp add: sin_coeff_lemma)
++qed
  
  lemma Maclaurin_sin_expansion:
    "\<exists>t. sin x = (\<Sum>m<n. sin_coeff m * x ^ m) + (sin (t + 1/2 * real n * pi) / fact n) * x ^ n"
