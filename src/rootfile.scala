@@ -36,9 +36,9 @@ object Rootfile {
         val resources = new Resources(base_info.sessions_structure, base_info.check_errors.base)
         resources.session_dependencies(session_info, progress = progress).theory_graph
       }
-    // remove HOL.Quickcheck*, HOL.Record, HOL.Nitpick and HOL.Nunchaku
+    // remove HOL.Record, HOL.Nitpick and HOL.Nunchaku
     for ((k,e) <- theory_graph.iterator) {
-      if (k.theory.startsWith("HOL.Quickcheck") || 
+      if (
           Set[String]("HOL.Record","HOL.Nitpick","HOL.Nunchaku")(k.theory)) {
         theory_graph = theory_graph.del_node(k)
       }

@@ -191,8 +191,26 @@ diff -urNx '*~' ./Enum.thy /cygdrive/c/Isabelle2022/src/HOL/Enum.thy
  
 diff -urNx '*~' ./Euclidean_Division.thy /cygdrive/c/Isabelle2022/src/HOL/Euclidean_Division.thy
 --- ./Euclidean_Division.thy	2023-05-30 11:50:42.373685700 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/Euclidean_Division.thy	2023-05-31 15:33:10.919027800 +0900
-@@ -2795,8 +2795,8 @@
++++ /cygdrive/c/Isabelle2022/src/HOL/Euclidean_Division.thy	2023-06-01 15:56:45.443491700 +0900
+@@ -1684,7 +1684,8 @@
+ lemma divide_int_unfold:
+   \<open>(sgn k * int m) div (sgn l * int n) = (sgn k * sgn l * int (m div n)
+     - of_bool ((k = 0 \<longleftrightarrow> m = 0) \<and> l \<noteq> 0 \<and> n \<noteq> 0 \<and> sgn k \<noteq> sgn l \<and> \<not> n dvd m))\<close>
+-  by (simp add: divide_int_def sgn_mult nat_mult_distrib abs_mult sgn_eq_0_iff ac_simps)
++  apply (cases "k = 0"; cases "m = 0"; cases "l = 0"; cases "n = 0")
++  by (simp_all add: divide_int_def sgn_mult nat_mult_distrib abs_mult sgn_eq_0_iff)
+ 
+ definition modulo_int :: \<open>int \<Rightarrow> int \<Rightarrow> int\<close>
+   where \<open>k mod l = sgn k * int (nat \<bar>k\<bar> mod nat \<bar>l\<bar>) + l * of_bool (sgn k \<noteq> sgn l \<and> \<not> l dvd k)\<close>
+@@ -1692,6 +1693,7 @@
+ lemma modulo_int_unfold:
+   \<open>(sgn k * int m) mod (sgn l * int n) =
+     sgn k * int (m mod (of_bool (l \<noteq> 0) * n)) + (sgn l * int n) * of_bool ((k = 0 \<longleftrightarrow> m = 0) \<and> sgn k \<noteq> sgn l \<and> \<not> n dvd m)\<close>
++  apply (cases "k = 0"; cases "m = 0"; cases "l = 0"; cases "n = 0")
+   by (auto simp add: modulo_int_def sgn_mult abs_mult)
+ 
+ instance proof
+@@ -2795,8 +2797,8 @@
    finally have *: \<open>\<bar>k\<bar> div \<bar>l\<bar> \<noteq> 0 \<longleftrightarrow> \<bar>l\<bar> \<le> \<bar>k\<bar>\<close> .
    show ?thesis
      using \<open>0 \<le> \<bar>k\<bar> div \<bar>l\<bar>\<close> False
@@ -347,7 +365,7 @@ diff -urNx '*~' ./List.thy /cygdrive/c/Isabelle2022/src/HOL/List.thy
    moreover have "take i (u@v) = take i (w@z)"
 diff -urNx '*~' ./MacLaurin.thy /cygdrive/c/Isabelle2022/src/HOL/MacLaurin.thy
 --- ./MacLaurin.thy	2023-05-30 11:50:42.798563100 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/MacLaurin.thy	2023-06-01 13:42:54.647162000 +0900
++++ /cygdrive/c/Isabelle2022/src/HOL/MacLaurin.thy	2023-06-01 14:01:03.357721800 +0900
 @@ -22,7 +22,7 @@
  
  lemma eq_diff_eq': "x = y - z \<longleftrightarrow> y = x + z"
@@ -357,32 +375,21 @@ diff -urNx '*~' ./MacLaurin.thy /cygdrive/c/Isabelle2022/src/HOL/MacLaurin.thy
  
  lemma fact_diff_Suc: "n < Suc m \<Longrightarrow> fact (Suc m - n) = (Suc m - n) * fact (m - n)"
    by (subst fact_reduce) auto
-@@ -343,25 +343,37 @@
+@@ -343,6 +343,9 @@
  lemma sin_expansion_lemma: "sin (x + real (Suc m) * pi / 2) = cos (x + real m * pi / 2)"
    by (auto simp: cos_add sin_add add_divide_distrib distrib_right)
  
 +lemma sin_coeff_lemma: "sin_coeff m * x ^ m  = sin (1 / 2 * real m * pi) / fact m * x ^ m"
-+proof(cases "even m")
-+  case t: True
-+    then show ?thesis by (simp add: sin_coeff_def sin_zero_iff)
-+ next
-+  case False
-+    then show ?thesis using False 
-+      by (auto simp add: sin_coeff_def elim: oddE simp del: of_nat_Suc) 
-+qed
++  by (cases "even m") (auto simp add: sin_zero_iff sin_coeff_def elim: oddE simp del: of_nat_Suc) 
 +
  lemma Maclaurin_sin_expansion2:
    "\<exists>t. \<bar>t\<bar> \<le> \<bar>x\<bar> \<and>
      sin x = (\<Sum>m<n. sin_coeff m * x ^ m) + (sin (t + 1/2 * real n * pi) / fact n) * x ^ n"
- proof (cases "n = 0 \<or> x = 0")
-+  case True
-+  then show ?thesis by auto
-+next
+@@ -350,17 +353,16 @@
    case False
    let ?diff = "\<lambda>n x. sin (x + 1/2 * real n * pi)"
--  have "\<exists>t. 0 < \<bar>t\<bar> \<and> \<bar>t\<bar> < \<bar>x\<bar> \<and> sin x =
+   have "\<exists>t. 0 < \<bar>t\<bar> \<and> \<bar>t\<bar> < \<bar>x\<bar> \<and> sin x =
 -      (\<Sum>m<n. (?diff m 0 / fact m) * x ^ m) + (?diff n t / fact n) * x ^ n"
-+  have tex: "\<exists>t. 0 < \<bar>t\<bar> \<and> \<bar>t\<bar> < \<bar>x\<bar> \<and> sin x =
 +    (\<Sum>m<n. (?diff m 0 / fact m) * x ^ m) + (?diff n t / fact n) * x ^ n"
    proof (rule Maclaurin_all_lt)
      show "\<forall>m x. ((\<lambda>t. sin (t + 1/2 * real m * pi)) has_real_derivative
@@ -390,19 +397,16 @@ diff -urNx '*~' ./MacLaurin.thy /cygdrive/c/Isabelle2022/src/HOL/MacLaurin.thy
 +       sin (x + 1/2 * real (Suc m) * pi)) (at x)"
        by (rule allI derivative_eq_intros | use sin_expansion_lemma in force)+
    qed (use False in auto)
--  then show ?thesis
-+  from tex show ?thesis
+   then show ?thesis
      apply (rule ex_forward, simp)
      apply (rule sum.cong[OF refl])
 -    apply (auto simp: sin_coeff_def sin_zero_iff elim: oddE simp del: of_nat_Suc)
 -    done
--qed auto
 +    by (simp add: sin_coeff_lemma)
-+qed
+ qed auto
  
  lemma Maclaurin_sin_expansion:
-   "\<exists>t. sin x = (\<Sum>m<n. sin_coeff m * x ^ m) + (sin (t + 1/2 * real n * pi) / fact n) * x ^ n"
-@@ -385,8 +397,7 @@
+@@ -385,8 +387,7 @@
    then show ?thesis
      apply (rule ex_forward, simp)
      apply (rule sum.cong[OF refl])
@@ -412,7 +416,7 @@ diff -urNx '*~' ./MacLaurin.thy /cygdrive/c/Isabelle2022/src/HOL/MacLaurin.thy
  qed
  
  lemma Maclaurin_sin_expansion4:
-@@ -406,8 +417,7 @@
+@@ -406,8 +407,7 @@
    then show ?thesis
      apply (rule ex_forward, simp)
      apply (rule sum.cong[OF refl])
@@ -422,7 +426,7 @@ diff -urNx '*~' ./MacLaurin.thy /cygdrive/c/Isabelle2022/src/HOL/MacLaurin.thy
  qed
  
  
-@@ -419,6 +429,16 @@
+@@ -419,6 +419,16 @@
  lemma cos_expansion_lemma: "cos (x + real (Suc m) * pi / 2) = - sin (x + real m * pi / 2)"
    by (auto simp: cos_add sin_add distrib_right add_divide_distrib)
  
@@ -439,7 +443,7 @@ diff -urNx '*~' ./MacLaurin.thy /cygdrive/c/Isabelle2022/src/HOL/MacLaurin.thy
  lemma Maclaurin_cos_expansion:
    "\<exists>t::real. \<bar>t\<bar> \<le> \<bar>x\<bar> \<and>
      cos x = (\<Sum>m<n. cos_coeff m * x ^ m) + (cos(t + 1/2 * real n * pi) / fact n) * x ^ n"
-@@ -436,8 +456,7 @@
+@@ -436,8 +446,7 @@
    then show ?thesis
      apply (rule ex_forward, simp)
      apply (rule sum.cong[OF refl])
@@ -449,7 +453,7 @@ diff -urNx '*~' ./MacLaurin.thy /cygdrive/c/Isabelle2022/src/HOL/MacLaurin.thy
  qed auto
  
  lemma Maclaurin_cos_expansion2:
-@@ -456,8 +475,7 @@
+@@ -456,8 +465,7 @@
    then show ?thesis
      apply (rule ex_forward, simp)
      apply (rule sum.cong[OF refl])
@@ -459,7 +463,7 @@ diff -urNx '*~' ./MacLaurin.thy /cygdrive/c/Isabelle2022/src/HOL/MacLaurin.thy
  qed
  
  lemma Maclaurin_minus_cos_expansion:
-@@ -476,8 +494,7 @@
+@@ -476,8 +484,7 @@
    then show ?thesis
      apply (rule ex_forward, simp)
      apply (rule sum.cong[OF refl])
@@ -469,7 +473,7 @@ diff -urNx '*~' ./MacLaurin.thy /cygdrive/c/Isabelle2022/src/HOL/MacLaurin.thy
  qed
  
  
-@@ -537,7 +554,7 @@
+@@ -537,7 +544,7 @@
    shows "\<exists>t::real. c < t \<and> t < b \<and>
      f b = (\<Sum>m<n. (diff m c / fact m) * (b - c)^m) + (diff n t / fact n) * (b - c)^n"
  proof -
@@ -478,7 +482,7 @@ diff -urNx '*~' ./MacLaurin.thy /cygdrive/c/Isabelle2022/src/HOL/MacLaurin.thy
    moreover from INIT have "n > 0" "(\<lambda>m x. diff m (x + c)) 0 = (\<lambda>x. f (x + c))"
      by auto
    moreover
-@@ -573,7 +590,7 @@
+@@ -573,7 +580,7 @@
    shows "\<exists>t. a < t \<and> t < c \<and>
      f a = (\<Sum>m<n. (diff m c / fact m) * (a - c)^m) + (diff n t / fact n) * (a - c)^n"
  proof -
@@ -487,7 +491,7 @@ diff -urNx '*~' ./MacLaurin.thy /cygdrive/c/Isabelle2022/src/HOL/MacLaurin.thy
    moreover from INIT have "n > 0" "(\<lambda>m x. diff m (x + c)) 0 = (\<lambda>x. f (x + c))"
      by auto
    moreover
-@@ -627,9 +644,9 @@
+@@ -627,9 +634,9 @@
    moreover have "\<forall>m t. m < n \<and> a \<le> t \<and> t \<le> x \<longrightarrow> DERIV (diff m) t :> diff (Suc m) t"
      using DERIV and INTERV by fastforce
    moreover from INTERV have "a \<le> c"
@@ -501,13 +505,9 @@ diff -urNx '*~' ./MacLaurin.thy /cygdrive/c/Isabelle2022/src/HOL/MacLaurin.thy
      by (rule Taylor_up)
 diff -urNx '*~' ./Main.thy /cygdrive/c/Isabelle2022/src/HOL/Main.thy
 --- ./Main.thy	2023-05-30 11:49:55.729754800 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/Main.thy	2023-05-31 14:26:38.879025000 +0900
-@@ -8,10 +8,10 @@
- theory Main
-   imports
-     Predicate_Compile
--    Quickcheck_Narrowing
-+    (*Quickcheck_Narrowing*)
++++ /cygdrive/c/Isabelle2022/src/HOL/Main.thy	2023-06-01 14:50:29.701688800 +0900
+@@ -11,7 +11,7 @@
+     Quickcheck_Narrowing
      Mirabelle
      Extraction
 -    Nunchaku
@@ -527,198 +527,104 @@ diff -urNx '*~' ./Nitpick.thy /cygdrive/c/Isabelle2022/src/HOL/Nitpick.thy
  keywords
    "nitpick" :: diag and
    "nitpick_params" :: thy_decl
-diff -urNx '*~' ./Predicate_Compile.thy /cygdrive/c/Isabelle2022/src/HOL/Predicate_Compile.thy
---- ./Predicate_Compile.thy	2023-05-30 11:49:55.926685800 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/Predicate_Compile.thy	2023-05-31 14:26:38.879025000 +0900
-@@ -1,11 +1,7 @@
--(*  Title:      HOL/Predicate_Compile.thy
--    Author:     Stefan Berghofer, Lukas Bulwahn, Florian Haftmann, TU Muenchen
--*)
--
- section \<open>A compiler for predicates defined by introduction rules\<close>
- 
- theory Predicate_Compile
--imports Random_Sequence Quickcheck_Exhaustive
-+imports Random_Sequence Random_Prep (*Quickcheck_Exhaustive*)
- keywords
-   "code_pred" :: thy_goal and
-   "values" :: diag
 diff -urNx '*~' ./Quickcheck_Exhaustive.thy /cygdrive/c/Isabelle2022/src/HOL/Quickcheck_Exhaustive.thy
 --- ./Quickcheck_Exhaustive.thy	2023-05-30 11:49:56.585222900 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/Quickcheck_Exhaustive.thy	2023-05-31 14:26:38.894298600 +0900
-@@ -15,14 +15,14 @@
-   where [code_unfold]: "x orelse y = (case x of Some x' \<Rightarrow> Some x' | None \<Rightarrow> y)"
++++ /cygdrive/c/Isabelle2022/src/HOL/Quickcheck_Exhaustive.thy	2023-06-01 15:41:23.368670200 +0900
+@@ -6,7 +6,7 @@
  
- 
--subsection \<open>Exhaustive generator type classes\<close>
-+(*subsection \<open>Exhaustive generator type classes\<close>
- 
- class exhaustive = term_of +
-   fixes exhaustive :: "('a \<Rightarrow> (bool \<times> term list) option) \<Rightarrow> natural \<Rightarrow> (bool \<times> term list) option"
- 
- class full_exhaustive = term_of +
-   fixes full_exhaustive ::
--    "('a \<times> (unit \<Rightarrow> term) \<Rightarrow> (bool \<times> term list) option) \<Rightarrow> natural \<Rightarrow> (bool \<times> term list) option"
-+    "('a \<times> (unit \<Rightarrow> term) \<Rightarrow> (bool \<times> term list) option) \<Rightarrow> natural \<Rightarrow> (bool \<times> term list) option"*)
- 
- instantiation natural :: full_exhaustive
+ theory Quickcheck_Exhaustive
+ imports Quickcheck_Random
+-keywords "quickcheck_generator" :: thy_decl
++(*keywords "quickcheck_generator" :: thy_decl*)
  begin
-@@ -226,7 +226,7 @@
-      else
-       f valterm_emptyset orelse
-       full_exhaustive_set
--        (\<lambda>A. f A orelse Quickcheck_Exhaustive.full_exhaustive
-+        (\<lambda>A. f A orelse Random_Prep.full_exhaustive
-           (\<lambda>x. if fst x \<in> fst A then None else f (valtermify_insert x A)) (i - 1)) (i - 1))"
  
- instance ..
-@@ -649,7 +649,7 @@
-     (Quickcheck) "(((_); NONE) handle Exhaustive'_Generators.Counterexample ts \<Rightarrow> SOME ts)"
+ subsection \<open>Basic operations for exhaustive generators\<close>
+@@ -746,9 +746,9 @@
  
  
--subsection \<open>Continuation passing style functions as plus monad\<close>
-+(*subsection \<open>Continuation passing style functions as plus monad\<close>
+ subsection \<open>Defining generators for abstract types\<close>
+-
++(*
+ ML_file \<open>Tools/Quickcheck/abstract_generators.ML\<close>
+-
++*)
+ hide_fact (open) orelse_def
+ no_notation orelse  (infixr "orelse" 55)
  
- type_synonym 'a cps = "('a \<Rightarrow> term list option) \<Rightarrow> term list option"
- 
-@@ -731,7 +731,7 @@
- 
- definition pos_bound_cps_not :: "unit neg_bound_cps \<Rightarrow> unit pos_bound_cps"
-   where "pos_bound_cps_not n =
--    (\<lambda>c i. case n (\<lambda>u. Value []) i of No_value \<Rightarrow> c () | Value _ \<Rightarrow> None | Unknown_value \<Rightarrow> None)"
-+    (\<lambda>c i. case n (\<lambda>u. Value []) i of No_value \<Rightarrow> c () | Value _ \<Rightarrow> None | Unknown_value \<Rightarrow> None)"*)
- 
- 
- subsection \<open>Defining generators for any first-order data type\<close>
-@@ -766,13 +766,13 @@
-   check_all enum_term_of
-   orelse unknown mk_map_term check_all_n_lists check_all_subsets
- 
--hide_type (open) cps pos_bound_cps neg_bound_cps unknown three_valued
-+(*hide_type (open) cps pos_bound_cps neg_bound_cps unknown three_valued
- 
- hide_const (open) cps_empty cps_single cps_bind cps_plus cps_if cps_not
-   pos_bound_cps_empty pos_bound_cps_single pos_bound_cps_bind
-   pos_bound_cps_plus pos_bound_cps_if pos_bound_cps_not
-   neg_bound_cps_empty neg_bound_cps_single neg_bound_cps_bind
-   neg_bound_cps_plus neg_bound_cps_if neg_bound_cps_not
--  Unknown Known Unknown_value Value No_value
-+  Unknown Known Unknown_value Value No_value*)
- 
- end
 diff -urNx '*~' ./Quickcheck_Random.thy /cygdrive/c/Isabelle2022/src/HOL/Quickcheck_Random.thy
 --- ./Quickcheck_Random.thy	2023-05-30 11:49:56.406913000 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/Quickcheck_Random.thy	2023-05-31 14:26:38.896504500 +0900
-@@ -5,7 +5,7 @@
- section \<open>A simple counterexample generator performing random testing\<close>
- 
- theory Quickcheck_Random
--imports Random Code_Evaluation Enum
-+  imports Random_Prep
- begin
- 
- setup \<open>Code_Target.add_derived_target ("Quickcheck", [(Code_Runtime.target, I)])\<close>
-@@ -19,7 +19,7 @@
- 
- code_reserved Quickcheck Match
- 
--subsection \<open>The \<open>random\<close> class\<close>
-+(*subsection \<open>The \<open>random\<close> class\<close>
- 
- class random = typerep +
-   fixes random :: "natural \<Rightarrow> Random.seed \<Rightarrow> ('a \<times> (unit \<Rightarrow> term)) \<times> Random.seed"
-@@ -182,7 +182,7 @@
- 
- instance ..
- 
--end
-+end*)
- 
- text \<open>Towards type copies and datatypes\<close>
- 
-@@ -213,7 +213,7 @@
++++ /cygdrive/c/Isabelle2022/src/HOL/Quickcheck_Random.thy	2023-06-01 15:38:09.316303000 +0900
+@@ -213,6 +213,7 @@
  
  end
  
--instantiation set :: (random) random
-+instantiation set :: (Random_Prep.random) Random_Prep.random
++(* Proof generation fails with this!
+ instantiation set :: (random) random
  begin
  
- context
-@@ -227,12 +227,13 @@
+@@ -220,35 +221,42 @@
+   includes state_combinator_syntax
+ begin
+ 
+-fun random_aux_set
++fun random_aux_set :: "'a itself \<Rightarrow> natural
++     \<Rightarrow> natural
++        \<Rightarrow> natural \<times> natural
++           \<Rightarrow> ('a set \<times>
++(unit \<Rightarrow> term)) \<times>
++              natural \<times>
++              natural"
+ where
+-  "random_aux_set 0 j = collapse (Random.select_weight [(1, Pair valterm_emptyset)])"
+-| "random_aux_set (Code_Numeral.Suc i) j =
++  "random_aux_set (x :: 'a itself) 0 j = collapse (Random.select_weight [(1, Pair valterm_emptyset)])"
++| "random_aux_set t (Code_Numeral.Suc i) j =
      collapse (Random.select_weight
        [(1, Pair valterm_emptyset),
         (Code_Numeral.Suc i,
 -        random j \<circ>\<rightarrow> (%x. random_aux_set i j \<circ>\<rightarrow> (%s. Pair (valtermify_insert x s))))])"
-+        Random_Prep.random j \<circ>\<rightarrow> (%x. random_aux_set i j \<circ>\<rightarrow> (%s. Pair (valtermify_insert x s))))])"
-+
++        scomp (random j) (%x. scomp (random_aux_set t i j) (%s. Pair (valtermify_insert x s))))])"
  
  lemma [code]:
-   "random_aux_set i j =
+-  "random_aux_set i j =
++  "random_aux_set t i j =
      collapse (Random.select_weight [(1, Pair valterm_emptyset),
 -      (i, random j \<circ>\<rightarrow> (%x. random_aux_set (i - 1) j \<circ>\<rightarrow> (%s. Pair (valtermify_insert x s))))])"
-+      (i, Random_Prep.random j \<circ>\<rightarrow> (%x. random_aux_set (i - 1) j \<circ>\<rightarrow> (%s. Pair (valtermify_insert x s))))])"
++      (i, random j \<circ>\<rightarrow> (%x. random_aux_set t (i - 1) j \<circ>\<rightarrow> (%s. Pair (valtermify_insert x s))))])"
  proof (induct i rule: natural.induct)
    case zero
    show ?case by (subst select_weight_drop_zero [symmetric])
-@@ -259,6 +260,10 @@
+     (simp add: random_aux_set.simps [simplified] less_natural_def)
+ next
+   case (Suc i)
+-  show ?case by (simp only: random_aux_set.simps(2) [of "i"] Suc_natural_minus_one)
++  show ?case by (simp only: random_aux_set.simps(2) [of _ "i"] Suc_natural_minus_one)
+ qed
  
+-definition "random_set i = random_aux_set i i"
++definition "random_set i = random_aux_set TYPE('a) i i"
+ 
+ instance ..
+ 
+ end
+ 
+ end
++*)
+ 
+ lemma random_aux_rec:
+   fixes random_aux :: "natural \<Rightarrow> 'a"
+@@ -260,9 +268,9 @@
  subsection \<open>Deriving random generators for datatypes\<close>
  
-+class random = typerep +
-+  fixes random :: "natural \<Rightarrow> Random.seed \<Rightarrow> ('a \<times> (unit \<Rightarrow> term)) \<times> Random.seed"
-+
-+
  ML_file \<open>Tools/Quickcheck/quickcheck_common.ML\<close>
++(*
  ML_file \<open>Tools/Quickcheck/random_generators.ML\<close>
- 
-@@ -266,15 +271,15 @@
+-
+-
++*)
  subsection \<open>Code setup\<close>
  
  code_printing
--  constant random_fun_aux \<rightharpoonup> (Quickcheck) "Random'_Generators.random'_fun"
-+  constant Random_Prep.random_fun_aux \<rightharpoonup> (Quickcheck) "Random'_Generators.random'_fun"
-   \<comment> \<open>With enough criminal energy this can be abused to derive \<^prop>\<open>False\<close>;
-   for this reason we use a distinguished target \<open>Quickcheck\<close>
-   not spoiling the regular trusted code generation\<close>
- 
- code_reserved Quickcheck Random_Generators
- 
--hide_const (open) catch_match random collapse beyond random_fun_aux random_fun_lift
-+hide_const (open) catch_match random collapse beyond (*random_fun_aux random_fun_lift*)
- 
--hide_fact (open) collapse_def beyond_def random_fun_lift_def
-+hide_fact (open) collapse_def beyond_def (*random_fun_lift_def*)
- 
- end
-diff -urNx '*~' ./Random_Pred.thy /cygdrive/c/Isabelle2022/src/HOL/Random_Pred.thy
---- ./Random_Pred.thy	2023-05-30 11:49:57.822544100 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/Random_Pred.thy	2023-05-31 14:26:38.898682900 +0900
-@@ -4,13 +4,13 @@
- section \<open>The Random-Predicate Monad\<close>
- 
- theory Random_Pred
--imports Quickcheck_Random
-+imports Random_Prep
- begin
- 
- fun iter' :: "'a itself \<Rightarrow> natural \<Rightarrow> natural \<Rightarrow> Random.seed \<Rightarrow> ('a::random) Predicate.pred"
- where
-   "iter' T nrandom sz seed = (if nrandom = 0 then bot_class.bot else
--     let ((x, _), seed') = Quickcheck_Random.random sz seed
-+     let ((x, _), seed') = Random_Prep.random sz seed
-    in Predicate.Seq (%u. Predicate.Insert x (iter' T (nrandom - 1) sz seed')))"
- 
- definition iter :: "natural \<Rightarrow> natural \<Rightarrow> Random.seed \<Rightarrow> ('a::random) Predicate.pred"
-@@ -19,7 +19,7 @@
- 
- lemma [code]:
-   "iter nrandom sz seed = (if nrandom = 0 then bot_class.bot else
--     let ((x, _), seed') = Quickcheck_Random.random sz seed
-+     let ((x, _), seed') = Random_Prep.random sz seed
-    in Predicate.Seq (%u. Predicate.Insert x (iter (nrandom - 1) sz seed')))"
-    unfolding iter_def iter'.simps [of _ nrandom] ..
- 
 diff -urNx '*~' ./Random_Prep.thy /cygdrive/c/Isabelle2022/src/HOL/Random_Prep.thy
 --- ./Random_Prep.thy	1970-01-01 09:00:00.000000000 +0900
 +++ /cygdrive/c/Isabelle2022/src/HOL/Random_Prep.thy	2023-05-31 14:31:21.495846600 +0900
@@ -1190,182 +1096,6 @@ diff -urNx '*~' ./String.thy /cygdrive/c/Isabelle2022/src/HOL/String.thy
      by simp
    moreover have \<open>Literal' b0 b1 b2 b3 b4 b5 b6 s = String.literal_of_asciis
      [of_char (Char b0 b1 b2 b3 b4 b5 b6 False)] + s\<close>
-diff -urNx '*~' ./Tools/Predicate_Compile/predicate_compile_compilations.ML /cygdrive/c/Isabelle2022/src/HOL/Tools/Predicate_Compile/predicate_compile_compilations.ML
---- ./Tools/Predicate_Compile/predicate_compile_compilations.ML	2023-05-30 11:49:58.264752400 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/Tools/Predicate_Compile/predicate_compile_compilations.ML	2023-05-31 14:26:38.908985500 +0900
-@@ -76,21 +76,21 @@
-       (Type ("fun", [Type ("fun", [T, \<^typ>\<open>term list option\<close>]), \<^typ>\<open>term list option\<close>])) = T
-   | dest_monadT T = raise TYPE ("dest_monadT", [T], []);
- 
--fun mk_empty T = Const (\<^const_name>\<open>Quickcheck_Exhaustive.cps_empty\<close>, mk_monadT T)
-+fun mk_empty T = Const (\<^const_name>\<open>Random_Prep.cps_empty\<close>, mk_monadT T)
- 
- fun mk_single t =
-   let val T = fastype_of t
--  in Const(\<^const_name>\<open>Quickcheck_Exhaustive.cps_single\<close>, T --> mk_monadT T) $ t end
-+  in Const(\<^const_name>\<open>Random_Prep.cps_single\<close>, T --> mk_monadT T) $ t end
- 
- fun mk_bind (x, f) =
-   let val T as Type ("fun", [_, U]) = fastype_of f
-   in
--    Const (\<^const_name>\<open>Quickcheck_Exhaustive.cps_bind\<close>, fastype_of x --> T --> U) $ x $ f
-+    Const (\<^const_name>\<open>Random_Prep.cps_bind\<close>, fastype_of x --> T --> U) $ x $ f
-   end
- 
--val mk_plus = HOLogic.mk_binop \<^const_name>\<open>Quickcheck_Exhaustive.cps_plus\<close>
-+val mk_plus = HOLogic.mk_binop \<^const_name>\<open>Random_Prep.cps_plus\<close>
- 
--fun mk_if cond = Const (\<^const_name>\<open>Quickcheck_Exhaustive.cps_if\<close>,
-+fun mk_if cond = Const (\<^const_name>\<open>Random_Prep.cps_if\<close>,
-   HOLogic.boolT --> mk_monadT HOLogic.unitT) $ cond
- 
- fun mk_iterate_upto _ _ = error "not implemented yet"
-@@ -98,7 +98,7 @@
- fun mk_not t =
-   let
-     val T = mk_monadT HOLogic.unitT
--  in Const (\<^const_name>\<open>Quickcheck_Exhaustive.cps_not\<close>, T --> T) $ t end
-+  in Const (\<^const_name>\<open>Random_Prep.cps_not\<close>, T --> T) $ t end
- 
- fun mk_Enum _ = error "not implemented"
- 
-@@ -127,33 +127,33 @@
-   \<^typ>\<open>natural => (bool * term list) option\<close>])) = T
-   | dest_monadT T = raise TYPE ("dest_monadT", [T], [])
- 
--fun mk_empty T = Const (\<^const_name>\<open>Quickcheck_Exhaustive.pos_bound_cps_empty\<close>, mk_monadT T)
-+fun mk_empty T = Const (\<^const_name>\<open>Random_Prep.pos_bound_cps_empty\<close>, mk_monadT T)
- 
- fun mk_single t =
-   let val T = fastype_of t
--  in Const(\<^const_name>\<open>Quickcheck_Exhaustive.pos_bound_cps_single\<close>, T --> mk_monadT T) $ t end
-+  in Const(\<^const_name>\<open>Random_Prep.pos_bound_cps_single\<close>, T --> mk_monadT T) $ t end
- 
- fun mk_bind (x, f) =
-   let val T as Type ("fun", [_, U]) = fastype_of f
-   in
--    Const (\<^const_name>\<open>Quickcheck_Exhaustive.pos_bound_cps_bind\<close>, fastype_of x --> T --> U) $ x $ f
-+    Const (\<^const_name>\<open>Random_Prep.pos_bound_cps_bind\<close>, fastype_of x --> T --> U) $ x $ f
-   end;
- 
--val mk_plus = HOLogic.mk_binop \<^const_name>\<open>Quickcheck_Exhaustive.pos_bound_cps_plus\<close>
-+val mk_plus = HOLogic.mk_binop \<^const_name>\<open>Random_Prep.pos_bound_cps_plus\<close>
- 
- fun mk_if cond =
--  Const (\<^const_name>\<open>Quickcheck_Exhaustive.pos_bound_cps_if\<close>,
-+  Const (\<^const_name>\<open>Random_Prep.pos_bound_cps_if\<close>,
-     HOLogic.boolT --> mk_monadT HOLogic.unitT) $ cond
- 
- fun mk_iterate_upto _ _ = error "not implemented yet"
- 
- fun mk_not t =
-   let
--    val nT = \<^typ>\<open>(unit Quickcheck_Exhaustive.unknown =>
--      Code_Evaluation.term list Quickcheck_Exhaustive.three_valued) => natural =>
--      Code_Evaluation.term list Quickcheck_Exhaustive.three_valued\<close>
-+    val nT = \<^typ>\<open>(unit Random_Prep.unknown =>
-+      Code_Evaluation.term list Random_Prep.three_valued) => natural =>
-+      Code_Evaluation.term list Random_Prep.three_valued\<close>
-     val T = mk_monadT HOLogic.unitT
--  in Const (\<^const_name>\<open>Quickcheck_Exhaustive.pos_bound_cps_not\<close>, nT --> T) $ t end
-+  in Const (\<^const_name>\<open>Random_Prep.pos_bound_cps_not\<close>, nT --> T) $ t end
- 
- fun mk_Enum _ = error "not implemented"
- 
-@@ -176,31 +176,31 @@
- struct
- 
- fun mk_monadT T =
--  (Type (\<^type_name>\<open>Quickcheck_Exhaustive.unknown\<close>, [T])
--    --> \<^typ>\<open>Code_Evaluation.term list Quickcheck_Exhaustive.three_valued\<close>)
--    --> \<^typ>\<open>natural => Code_Evaluation.term list Quickcheck_Exhaustive.three_valued\<close>
-+  (Type (\<^type_name>\<open>Random_Prep.unknown\<close>, [T])
-+    --> \<^typ>\<open>Code_Evaluation.term list Random_Prep.three_valued\<close>)
-+    --> \<^typ>\<open>natural => Code_Evaluation.term list Random_Prep.three_valued\<close>
- 
- fun dest_monadT
--    (Type ("fun", [Type ("fun", [Type (\<^type_name>\<open>Quickcheck_Exhaustive.unknown\<close>, [T]),
--      \<^typ>\<open>term list Quickcheck_Exhaustive.three_valued\<close>]),
--      \<^typ>\<open>natural => term list Quickcheck_Exhaustive.three_valued\<close>])) = T
-+    (Type ("fun", [Type ("fun", [Type (\<^type_name>\<open>Random_Prep.unknown\<close>, [T]),
-+      \<^typ>\<open>term list Random_Prep.three_valued\<close>]),
-+      \<^typ>\<open>natural => term list Random_Prep.three_valued\<close>])) = T
-   | dest_monadT T = raise TYPE ("dest_monadT", [T], []);
- 
--fun mk_empty T = Const (\<^const_name>\<open>Quickcheck_Exhaustive.neg_bound_cps_empty\<close>, mk_monadT T)
-+fun mk_empty T = Const (\<^const_name>\<open>Random_Prep.neg_bound_cps_empty\<close>, mk_monadT T)
- 
- fun mk_single t =
-   let val T = fastype_of t
--  in Const(\<^const_name>\<open>Quickcheck_Exhaustive.neg_bound_cps_single\<close>, T --> mk_monadT T) $ t end
-+  in Const(\<^const_name>\<open>Random_Prep.neg_bound_cps_single\<close>, T --> mk_monadT T) $ t end
- 
- fun mk_bind (x, f) =
-   let val T as Type ("fun", [_, U]) = fastype_of f
-   in
--    Const (\<^const_name>\<open>Quickcheck_Exhaustive.neg_bound_cps_bind\<close>, fastype_of x --> T --> U) $ x $ f
-+    Const (\<^const_name>\<open>Random_Prep.neg_bound_cps_bind\<close>, fastype_of x --> T --> U) $ x $ f
-   end;
- 
--val mk_plus = HOLogic.mk_binop \<^const_name>\<open>Quickcheck_Exhaustive.neg_bound_cps_plus\<close>
-+val mk_plus = HOLogic.mk_binop \<^const_name>\<open>Random_Prep.neg_bound_cps_plus\<close>
- 
--fun mk_if cond = Const (\<^const_name>\<open>Quickcheck_Exhaustive.neg_bound_cps_if\<close>,
-+fun mk_if cond = Const (\<^const_name>\<open>Random_Prep.neg_bound_cps_if\<close>,
-   HOLogic.boolT --> mk_monadT HOLogic.unitT) $ cond
- 
- fun mk_iterate_upto _ _ = error "not implemented"
-@@ -210,7 +210,7 @@
-     val T = mk_monadT HOLogic.unitT
-     val pT = \<^typ>\<open>(unit => (bool * Code_Evaluation.term list) option)\<close>
-       --> \<^typ>\<open>natural => (bool * Code_Evaluation.term list) option\<close>
--  in Const (\<^const_name>\<open>Quickcheck_Exhaustive.neg_bound_cps_not\<close>, pT --> T) $ t end
-+  in Const (\<^const_name>\<open>Random_Prep.neg_bound_cps_not\<close>, pT --> T) $ t end
- 
- fun mk_Enum _ = error "not implemented"
- 
-diff -urNx '*~' ./Tools/Predicate_Compile/predicate_compile_core.ML /cygdrive/c/Isabelle2022/src/HOL/Tools/Predicate_Compile/predicate_compile_core.ML
---- ./Tools/Predicate_Compile/predicate_compile_core.ML	2023-05-30 11:49:58.043626700 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/Tools/Predicate_Compile/predicate_compile_core.ML	2023-05-31 14:26:38.908985500 +0900
-@@ -435,7 +435,7 @@
-   compfuns = Random_Sequence_CompFuns.compfuns,
-   mk_random = (fn T => fn _ =>
-   let
--    val random = Const (\<^const_name>\<open>Quickcheck_Random.random\<close>,
-+    val random = Const (\<^const_name>\<open>Random_Prep.random\<close>,
-       \<^typ>\<open>natural\<close> --> \<^typ>\<open>Random.seed\<close> -->
-         HOLogic.mk_prodT (HOLogic.mk_prodT (T, \<^typ>\<open>unit => term\<close>), \<^typ>\<open>Random.seed\<close>))
-   in
-@@ -472,7 +472,7 @@
-   compfuns = New_Pos_Random_Sequence_CompFuns.depth_limited_compfuns,
-   mk_random = (fn T => fn _ =>
-   let
--    val random = Const (\<^const_name>\<open>Quickcheck_Random.random\<close>,
-+    val random = Const (\<^const_name>\<open>Random_Prep.random\<close>,
-       \<^typ>\<open>natural\<close> --> \<^typ>\<open>Random.seed\<close> -->
-         HOLogic.mk_prodT (HOLogic.mk_prodT (T, \<^typ>\<open>unit => term\<close>), \<^typ>\<open>Random.seed\<close>))
-   in
-@@ -536,7 +536,7 @@
-   compfuns = Pos_Bounded_CPS_Comp_Funs.compfuns,
-   mk_random =
-     (fn T => fn _ =>
--       Const (\<^const_name>\<open>Quickcheck_Exhaustive.exhaustive\<close>,
-+       Const (\<^const_name>\<open>Random_Prep.exhaustive\<close>,
-        (T --> \<^typ>\<open>(bool * term list) option\<close>) -->
-          \<^typ>\<open>natural => (bool * term list) option\<close>)),
-   modify_funT = I,
-diff -urNx '*~' ./Tools/Quickcheck/random_generators.ML /cygdrive/c/Isabelle2022/src/HOL/Tools/Quickcheck/random_generators.ML
---- ./Tools/Quickcheck/random_generators.ML	2023-05-30 11:50:41.406853100 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/Tools/Quickcheck/random_generators.ML	2023-05-31 14:26:38.908985500 +0900
-@@ -204,7 +204,7 @@
-         val T = Type (tyco, Ts);
-         fun mk_random_fun_lift [] t = t
-           | mk_random_fun_lift (fT :: fTs) t =
--              mk_const \<^const_name>\<open>random_fun_lift\<close> [fTs ---> T, fT] $
-+              mk_const \<^const_name>\<open>Random_Prep.random_fun_lift\<close> [fTs ---> T, fT] $
-                 mk_random_fun_lift fTs t;
-         val t = mk_random_fun_lift fTs (nth random_auxs k $ size_pred $ size');
-         val size = Option.map snd (Old_Datatype_Aux.find_shortest_path descr k)
 diff -urNx '*~' ./Transcendental.thy /cygdrive/c/Isabelle2022/src/HOL/Transcendental.thy
 --- ./Transcendental.thy	2023-05-30 11:50:41.644512700 +0900
 +++ /cygdrive/c/Isabelle2022/src/HOL/Transcendental.thy	2023-05-31 14:26:38.908985500 +0900
