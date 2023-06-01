@@ -105,10 +105,11 @@ object Exporter {
         }
       case _ =>
     }
-if( verbose ) progress.echo("reading entry_names")
+    if( verbose ) progress.echo("reading entry_names")
     val exports = Export.read_entry_names(db,session)
-if( verbose ) progress.echo("reading proofs")
-    val prfs = 
+    if( verbose ) progress.echo("reading proofs")
+// TODO: It reads entire session and filter by theory name.
+    val prfs =
       exports.foldLeft(Nil: List[(Long,Export_Theory.Proof)]) {
         case (prfs2 : List[(Long,Export_Theory.Proof)],entry_name) => {
           val op_entry = entry_name.read(db,term_cache)
