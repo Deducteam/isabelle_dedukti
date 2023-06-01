@@ -39,14 +39,16 @@ object Exporter {
     val term_cache = Term.Cache.make()
     val db = store.open_database(session)
     //progress.echo("DB: " + db)
-    val provider = Export.Provider.database(db, store.cache, session, theory_name)
+    //val provider = Export.Provider.database(db, store.cache, session, theory_name)
+    val ses_cont = Export.open_session_context0(store, session)
+    val provider = ses_cont.theory(theory_name)
 
     val theory =
-      if (theory_name == Thy_Header.PURE) {
-        Export_Theory.read_pure_theory(store, cache = term_cache)
-      } else {
-        Export_Theory.read_theory(provider, session, theory_name, cache = term_cache)
-      }
+  //    if (theory_name == Thy_Header.PURE) {
+  //      Export_Theory.read_pure_theory(store, cache = term_cache)
+  //    } else {
+        Export_Theory.read_theory(provider)
+  //    }
 
     progress.echo("Translate theory " + theory_name + " ...")
 
@@ -103,18 +105,26 @@ object Exporter {
         }
       case _ =>
     }
-    val exports = Export.read_theory_exports(db,session)
+    val exports = Export.read_entry_names(db,session)
     val prfs = 
       exports.foldLeft(Nil: List[(Long,Export_Theory.Proof)]) {
-        case (prfs2 : List[(Long,Export_Theory.Proof)],(thy_name,prf_name)) => (
-          if (prf_name.startsWith("proofs/")) {
-            val prf_serial = prf_name.substring(7).toLong
-            Export_Theory.read_proof(provider, Export_Theory.Thm_Id(prf_serial,thy_name), cache = term_cache) match {
-              case Some(prf) => (prf_serial,prf)::prfs2
-              case None => prfs2
+        case (prfs2 : List[(Long,Export_Theory.Proof)],entry_name) => {
+          val op_entry = entry_name.read(db,term_cache)
+          op_entry match {
+            case Some(entry) => {
+              val prf_name = entry.name
+              val thy_name = entry.theory_name
+              if (prf_name.startsWith("proofs/")) {
+                val prf_serial = prf_name.substring(7).toLong
+                Export_Theory.read_proof(ses_cont, Export_Theory.Thm_Id(prf_serial,thy_name)) match {
+                  case Some(prf) => (prf_serial,prf)::prfs2
+                  case None => prfs2
+                }
+              } else { prfs2 }
             }
-          } else { prfs2 }
-        )
+            case _ => { prfs2 }
+          }
+        }
       }
     theory.thms match {
       case thm :: thms => prf_loop(prfs.sortBy(_._1),thm,thms,get_thm_prf(thm))

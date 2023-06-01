@@ -394,14 +394,14 @@ object Translate {
         val named_args = name_args(global_types(id), spine_args, ctxt, name_ref)
         val applied1 = expanded_args.foldLeft(head) { case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
         val applied = named_args.foldLeft(applied1) { case (tm, Syntax.BoundArg(Some(name), _, impl)) => Syntax.Appl(tm, Syntax.Var(name), impl) }
-        val abstracted = named_args.foldRight(applied)(Syntax.Abst)
+        val abstracted = named_args.foldRight(applied)(Syntax.Abst.apply)
         abstracted
 
       case Syntax.Var(id) =>
         val named_args = name_args(ctxt(id), spine_args, ctxt, name_ref)
         val applied1 = expanded_args.foldLeft(head) { case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
         val applied = named_args.foldLeft(applied1) { case (tm, Syntax.BoundArg(Some(name), _, impl)) => Syntax.Appl(tm, Syntax.Var(name), impl) }
-        val abstracted = named_args.foldRight(applied)(Syntax.Abst)
+        val abstracted = named_args.foldRight(applied)(Syntax.Abst.apply)
         abstracted
 
       case _ =>
@@ -540,7 +540,7 @@ object Translate {
         Syntax.Declaration(id_c, Nil, full_ty, notation_decl(not))
       case Some(rhs) => {
         val translated_rhs = typ(rhs)
-        val full_tm : Syntax.Term = args.map(bound_type_argument(_)).foldRight(translated_rhs)(Syntax.Prod)
+        val full_tm : Syntax.Term = args.map(bound_type_argument(_)).foldRight(translated_rhs)(Syntax.Prod.apply)
         val (new_args, contracted, ty) = fetch_head_args(eta_expand(eta_contract(full_tm)), full_ty)
         Syntax.Definition(id_c, new_args, Some(ty), contracted, notation_decl(not))
       }
@@ -587,7 +587,7 @@ object Translate {
     val impl = const_implicit_args(typargs, ty)
     implArgsMap += id_c -> impl
     val bound_args = bound_type_arguments(typargs, impl)
-    val full_ty = bound_args.foldRight(eta(typ(ty)))(Syntax.Prod)
+    val full_ty = bound_args.foldRight(eta(typ(ty)))(Syntax.Prod.apply)
     val contracted_ty = eta_expand(eta_contract(full_ty))
     global_types += id_c -> contracted_ty
     rhs match {
@@ -596,7 +596,7 @@ object Translate {
         Syntax.Declaration(id_c, new_args, final_ty, notation_decl(not))
       case Some(rhs) => {
         val translated_rhs = term(rhs, Bounds())
-        val full_tm = bound_args.foldRight(translated_rhs)(Syntax.Abst)
+        val full_tm = bound_args.foldRight(translated_rhs)(Syntax.Abst.apply)
         val (new_args, contracted, final_ty) = fetch_head_args(eta_expand(eta_contract(full_tm)), contracted_ty)
         Syntax.Definition(id_c, new_args, Some(final_ty), contracted, notation_decl(not))
       }
@@ -611,7 +611,7 @@ object Translate {
       prop.typargs.map(_._1).map(bound_type_argument(_)) :::
       prop.args.map(arg => bound_term_argument(arg._1, arg._2))
 
-    val full_ty = args.foldRight(eps(term(prop.term, Bounds())))(Syntax.Prod)
+    val full_ty = args.foldRight(eps(term(prop.term, Bounds())))(Syntax.Prod.apply)
     val contracted_ty = eta_expand(eta_contract(full_ty))
 
     implArgsMap  += s -> List.fill(prop.typargs.length)(false) // Only those are applied immediately
@@ -624,7 +624,7 @@ object Translate {
       }
       case Some(prf) => {
         val translated_rhs = proof(prf, Bounds())
-        val full_prf : Syntax.Term = args.foldRight(translated_rhs)(Syntax.Abst)
+        val full_prf : Syntax.Term = args.foldRight(translated_rhs)(Syntax.Abst.apply)
         val (new_args, contracted, final_ty) = fetch_head_args(eta_expand(eta_contract(full_prf)), contracted_ty)
         Syntax.Theorem(s, new_args, final_ty, contracted)
       }

@@ -112,6 +112,12 @@
         - MacLaurin --> rewrite proof quite a lot
         - Bit_operations: trying to rewrite some proofs (a problem remains that a simp rule in Parity is of the shape 1 + something while it would be used as something + 1)
 
+    - To create a patch:
+    
+    ```
+    diff -urNx '*~' path_to_old_Isabelle_dir/src/HOL path_to_new_Isabelle_dir/src/HOL > patch.HOL
+    ```
+
 
 ## Provided commands
 
