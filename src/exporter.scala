@@ -54,19 +54,19 @@ object Exporter {
 
     val current_theory = mutable.Queue[Syntax.Command]()
     for (a <- theory.classes) {
-      // if (verbose) progress.echo("  " + a.toString + a.serial)
+      if (verbose) progress.echo("  " + a.toString + a.serial)
       current_theory.append(Translate.class_decl(a.name))
     }
     for (a <- theory.types) {
-      // if (verbose) progress.echo("  " + a.toString + a.serial)
+      if (verbose) progress.echo("  " + a.toString + a.serial)
       current_theory.append(Translate.type_decl(a.name, a.the_content.args, a.the_content.abbrev, a.the_content.syntax))
     }
     for (a <- theory.consts) {
-      // if (verbose) progress.echo("  " + a.toString + " " + a.serial)
+      if (verbose) progress.echo("  " + a.toString + " " + a.serial)
       current_theory.append(Translate.const_decl(a.name, a.the_content.typargs, a.the_content.typ, a.the_content.abbrev, a.the_content.syntax))
     }
     for (a <- theory.axioms) {
-      // if (verbose) progress.echo("  " + axm.toString + " " + axm.serial)
+      if (verbose) progress.echo("  " + a.toString + " " + a.serial)
       current_theory.append(Translate.stmt_decl(Prelude.axiom_ident(a.name), a.the_content.prop, None))
     }
 
@@ -83,7 +83,7 @@ object Exporter {
     }
 
     def translate_thm(thm : Export_Theory.Entity[Export_Theory.Thm]) = {
-      // if (verbose) progress.echo("  " + thm.toString + " " + thm.serial)
+      if (verbose) progress.echo("  " + thm.toString + " " + thm.serial)
       current_theory.append(Translate.stmt_decl(Prelude.thm_ident(thm.name), thm.the_content.prop, Some(thm.the_content.proof)))
     }
 
@@ -91,7 +91,7 @@ object Exporter {
       case (prf_serial,prf)::prfs2 =>
         if (prf_serial > thm_prf) {
           translate_thm(thm)
-          // progress.echo("  Ready for thm " + prf_serial + " > " + thm_prf)
+          progress.echo("  Ready for thm " + prf_serial + " > " + thm_prf)
           thms match {
             case thm2 :: thms2 =>
             prf_loop(prfs,thm2,thms2,get_thm_prf(thm2))
@@ -99,13 +99,15 @@ object Exporter {
             prf_loop(prfs,null,null,Long.MaxValue)
           }
         } else {
-          // if (verbose) progress.echo("  proof " + prf_serial)
+          if (verbose) progress.echo("  proof " + prf_serial)
           current_theory.append(Translate.stmt_decl(Prelude.proof_ident(prf_serial), prf.prop, Some(prf.proof)))
           prf_loop(prfs2,thm,thms,thm_prf)
         }
       case _ =>
     }
+if( verbose ) progress.echo("reading entry_names")
     val exports = Export.read_entry_names(db,session)
+if( verbose ) progress.echo("reading proofs")
     val prfs = 
       exports.foldLeft(Nil: List[(Long,Export_Theory.Proof)]) {
         case (prfs2 : List[(Long,Export_Theory.Proof)],entry_name) => {
@@ -114,7 +116,7 @@ object Exporter {
             case Some(entry) => {
               val prf_name = entry.name
               val thy_name = entry.theory_name
-              if (prf_name.startsWith("proofs/")) {
+              if (thy_name == theory_name && prf_name.startsWith("proofs/")) {
                 val prf_serial = prf_name.substring(7).toLong
                 Export_Theory.read_proof(ses_cont, Export_Theory.Thm_Id(prf_serial,thy_name)) match {
                   case Some(prf) => (prf_serial,prf)::prfs2
@@ -126,6 +128,7 @@ object Exporter {
           }
         }
       }
+if( verbose ) progress.echo("reading thms")
     theory.thms match {
       case thm :: thms => prf_loop(prfs.sortBy(_._1),thm,thms,get_thm_prf(thm))
       case _ => prf_loop(prfs.sortBy(_._1),null,null,Long.MaxValue)
