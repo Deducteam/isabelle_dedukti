@@ -60,16 +60,10 @@
         isabelle scala_build
         ```
 
-  * **Deleting the Isabelle databases**
-
-    - If something goes wrong, you may want to try deleting the databases (which means the proof terms will be rebuilt anew) located somewhere like:
-
-    ```
-    $ISABELLE_HOME_USER/Isabelle2022/heaps/polyml-<something>/log/
-    ```
-
   * **Patching the Isabelle/HOL library**
 
+    A few Isabelle/HOL files need to be modified so that exported proofs are of smaller size and that no oracle are used. See the modifications in [HOL.patch](https://github.com/Deducteam/isabelle_dedukti/blob/master/HOL.patch).
+    
     - You may want to start with changing the permission on the HOL folder:
 
     ```
@@ -88,33 +82,19 @@
     patch -uREp0 -d <path to your Isabelle distribution>/src/HOL/ < HOL.patch
     ```
 
-    - Changes:
-
-        - Main, removed quickcheck and nunchaku
-        - Mirabelle removed quickcheck
-        - split quickcheck_random --> random_prep
-        - split quickcheck_exhaustive --> random_prep
-        - HOL/Tools/Quickcheck random_generator, random_fun_lift --> Random_Prep.random_fun_lift
-        - random_pred, quickcheck_random --> random_prep
-        - predicate_compile, quickcheck_exhaustive --> random_prep
-        - HOL/Tools/Predicate_Compile predicate_compile_compilations, Quickcheck_Exhaustive --> Random_Prep (many times)
-        - HOL/Tools/Predicate_Compile predicate_compile_core, quickcheck_random --> random_prep (twice), quickcheck_exhaustive --> random_prep (once)
-        - record, quickcheck_exhaustive --> random_pred
-        - Enum --> rewrite proofs, removed splits
-        - Factorial ??
-        - List --> rewrite proofs, remove subproofs
-        - Rat, Real --> remove nitpick + quickcheck setups
-        - String --> rewrite function + proof
-        - Transcendental --> rewrite proof to remove arith+
-        - MacLaurin --> rewrite proof quite a lot
-        - Bit_operations: trying to rewrite some proofs (a problem remains that a simp rule in Parity is of the shape 1 + something while it would be used as something + 1)
-
-    - To create a patch:
+    - To create the patch:
     
     ```
     diff -urNx '*~' path_to_old_Isabelle_dir/src/HOL path_to_new_Isabelle_dir/src/HOL > patch.HOL
     ```
 
+  * **Deleting the Isabelle databases**
+
+    If something goes wrong, you may want to try deleting the databases (which means the proof terms will be rebuilt anew) located somewhere like:
+
+    ```
+    $ISABELLE_HOME_USER/Isabelle2022/heaps/polyml-<something>/log/
+    ```
 
 ## Provided commands
 
@@ -131,7 +111,6 @@ Remark: a theory whose name contains a "." is translated to a dk or lp file wher
 
 Remark: [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2021-1/dist/library/HOL/HOL/session_graph.pdf)
 
-
 ## Example usage
 
 ```
@@ -141,13 +120,11 @@ isabelle dedukti_session HOL HOL.Groups
 isabelle dedukti_theory HOL.Groups
 ```
 
-
 ## Checking the lp output with lambdapi
 
 ```
 lambdapi check Dedukti_HOL_Groups.lp
 ```
-
 
 ## Checking the dk output with dkcheck
 
@@ -172,37 +149,35 @@ cd kocheck
 bash ../kocheck.sh
 ```
 
-
 ## What was tested?
 
-  * Building: HOL until Complex_Main, except Quickchecks, Record, Nunchaku and Nitpick (it seems Quickchecks is unsound and should be avoided anyway). Time: about 47 minutes.
-  * Translating/writing: same as above, both for lambdapi and dedukti. Time: about 26 minutes for lp, and the same for dk.
-  * Checking: No error was found until Transfer but memory blew up with lambdapi. Goes all the way with dkcheck or kocheck. Time: about 3 minutes with kocheck -j 7, and about 10 minutes with dkcheck.
-
+The whole HOL session can be exported and checked:
+  * `isabelle dedukti_root HOL`: 2s
+  * `isabelle build -b HOL`: 47 minutes
+  * `isabelle dedukti_session HOL`: 26 minutes
+  * `bash kocheck.sh`: 3 minutes
+  * `bash dkcheck.sh`: 10 minutes
+  * `lambdapi check Complex_Main.lp`: out of memory
+  * `lambdapi check HOL_Nat.lp`: 2 minutes
 
 ## Known issues
 
-  * Bit_operations are slow to build because of the way they are defined compared to some simplification rules in Parity. Not fixed.
-  * Presburger is slow to build because of the examples at the end. Not fixed.
   * In a database associated with a given theory, there might be proofs labelled from another theory. Fix: those proofs are not too many so they are just translated in this theory.
-  * Somehow, the databases for Nat and Sum_type use proofs from Product_Type while they are independent in the dependency graph. Fix: add explictly the connection in the dependency graph.
-  * Quickcheck_random fails to build (it is actually unsound). Fix: remove it from the dependency graph (together with other theories).
-
+  * Somehow, the databases for `Nat` and `Sum_type` use proofs from `Product_Type` while they are independent in the dependency graph. Fix: add explictly the connection in the dependency graph.
 
 ## Project structure
 
-- `ast.scala` defines the AST of the exported material. It is common for dedukti and lambdapi, and is a (very) strict subset of the ASTs of these languages
-- `translate.scala` translates from Isabelle/Pure to the common dedukti/lambdapi AST
-- `writers.scala` writes out either dedukti output or lambdapi output
-- `importer.scala` wraps the previous files into an Isabelle component, defining the CLI and interacting with other components. [Jeremy]: Note it has been changed a lot. It will now create one file by session, because it is expected to be ran on a single-theory session. However, the ancestor of this session does not need to be Pure, and nothing from previous theories will be translated.
-- `generator.scala` wraps the previous files into an Isabelle component, creating a ROOT file, building, calling the translator and postprocessing the output file
-- `tools.scala` defines the `isabelle dedukti_import` and `isabelle dedukti_generate` command-line tools, which is registered via `services` in `etc/build.props`
+- `ast.scala` provides an AST common to Dedukti and Lambdapi (it is strict subset of these languages)
+- `translate.scala` translates Isabelle/Pure to the common Dedukti and Lambdapi AST
+- `writers.scala` writes out an AST to either Dedukti or Lambdapi code
+- `exporter.scala` provides the isabelle command `dedukti_theory`
+- `generator.scala` provides the Isabelle command `dedukti_session`
+- `rootfile.scala` provides the Isabelle command `dedukti_root`
 
+## Browsing and modifying Isabelle sources
 
-## Isabelle development and browsing of sources
-
-* Note: Without proper IDE support Isabelle sources are very hard to
-  read and write. (Emacs or vi are not a proper IDE.)
+Without proper IDE support Isabelle sources may be very hard to read
+and write.
 
 * Isabelle/ML: use Isabelle/jEdit and open ML files (with their proper
   `.thy` file opened as well), but for Isabelle/Pure a special
