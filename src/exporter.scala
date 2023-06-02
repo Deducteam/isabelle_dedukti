@@ -207,9 +207,9 @@ Export the specified THEORY to a Dedukti or Lambdapi file with the same name exc
 
         val more_args = getopts(args)
 
-        val (session,theory) =
+        val theory =
           more_args match {
-            case List(session,theory) => (session,theory)
+            case List(theory) => theory
             case _ => getopts.usage()
           }
 
@@ -219,6 +219,7 @@ Export the specified THEORY to a Dedukti or Lambdapi file with the same name exc
         if (verbose) progress.echo("Started at " + Build_Log.print_date(start_date) + "\n")
 
         progress.interrupt_handler {
+          val session = if (theory == "Pure") "Pure" else "Dedukti_" + theory
           try exporter(options, session, theory, progress, dirs, use_notations, eta_expand, output_lp, verbose)
           catch {case x: Exception =>
             progress.echo(x.getStackTrace.mkString("\n"))
