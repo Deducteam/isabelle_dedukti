@@ -82,7 +82,7 @@ object Exporter {
       case (prf_serial,prf)::prfs2 =>
         if (prf_serial > thm_prf) {
           translate_thm(thm)
-          progress.echo("  Ready for thm " + prf_serial + " > " + thm_prf)
+          //progress.echo("  Ready for thm " + prf_serial + " > " + thm_prf)
           thms match {
             case thm2 :: thms2 =>
             prf_loop(prfs,thm2,thms2,get_thm_prf(thm2))
