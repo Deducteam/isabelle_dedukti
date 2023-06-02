@@ -18,7 +18,7 @@ object Generator {
   def generator(
     options: Options,
     session: String,
-    theory: String,
+    target_theory: String,
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
     fresh_build: Boolean = false,
@@ -35,14 +35,19 @@ object Generator {
 
     // Generate a dk or lp file for each theory
     breakable{
-      Exporter.exporter(options, session, theory,
-        progress = progress,
-        dirs = dirs,
-        fresh_build = fresh_build,
-        use_notations = use_notations,
-        eta_expand = eta_expand,
-        output_lp = output_lp,
-        verbose = verbose)
+      for (theory <- theories) {
+        val theory_name = theory.toString
+        val session_name = if (theory_name == Thy_Header.PURE) "Pure" else "Dedukti_" + theory_name
+        Exporter.exporter(options, session_name, theory_name,
+          progress = progress,
+          dirs = dirs,
+          fresh_build = fresh_build,
+          use_notations = use_notations,
+          eta_expand = eta_expand,
+          output_lp = output_lp,
+          verbose = verbose)
+        if (theory_name == target_theory) break()
+      }
     }
   }
 
@@ -59,7 +64,7 @@ object Generator {
         var options = Options.init()
         var verbose = false
 
-        val getopts = Getopts("Usage: isabelle " + cmd_name + """ [OPTIONS] SESSION THEORY
+        val getopts = Getopts("Usage: isabelle " + cmd_name + """ [OPTIONS] SESSION [THEORY]
 
   Options are:
     -d DIR       include session directory
@@ -70,7 +75,7 @@ object Generator {
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
     -v           verbose mode
 
-Generate a dk or lp file (depending on -O) for THEORY of SESSION.""",
+Generate a dk or lp file (depending on -O) for every theory of SESSION (up to THEORY).""",
         "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
         "e" -> (_ => eta_expand = true),
         "f" -> (_ => fresh_build = true),
@@ -81,9 +86,10 @@ Generate a dk or lp file (depending on -O) for THEORY of SESSION.""",
 
         val more_args = getopts(args)
 
-        val (session, theory) =
+        val (session, target_theory) =
           more_args match {
-            case List(session, theory) => (session, theory)
+            case List(session) => (session, "")
+            case List(session, target_theory) => (session, target_theory)
             case _ => getopts.usage()
           }
 
@@ -94,7 +100,7 @@ Generate a dk or lp file (depending on -O) for THEORY of SESSION.""",
 
         progress.interrupt_handler {
           try {
-            generator(options, session, theory, progress, dirs, fresh_build, use_notations, eta_expand, output_lp, verbose)
+            generator(options, session, target_theory, progress, dirs, fresh_build, use_notations, eta_expand, output_lp, verbose)
           }
           catch {case x: Exception =>
             progress.echo(x.getStackTrace.mkString("\n"))
