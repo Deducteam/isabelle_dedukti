@@ -19,7 +19,7 @@
 
   * **Isabelle**
 
-      - Download [Isabelle20212](https://isabelle.in.tum.de/website-Isabelle2022/dist/Isabelle2022_linux.tar.gz)
+      - Download [Isabelle2022](https://isabelle.in.tum.de/website-Isabelle2022/dist/Isabelle2022_linux.tar.gz)
 
       - Unpack and run `Isabelle2022/bin/isabelle jedit` at least
         once, to ensure that everything works (e.g. see Documentation
@@ -85,12 +85,12 @@
     - To create the patch:
     
     ```
-    diff -urNx '*~' path_to_old_Isabelle_dir/src/HOL path_to_new_Isabelle_dir/src/HOL > patch.HOL
+    diff -urNx '*~' path_to_old_Isabelle_dir/src/HOL path_to_new_Isabelle_dir/src/HOL > HOL.patch
     ```
 
   * **Deleting the Isabelle databases**
 
-    If something goes wrong, you may want to try deleting the databases (which means the proof terms will be rebuilt anew) located somewhere like:
+    If something goes wrong, you may delete the databases (which means the proof terms will be rebuilt anew) located somewhere like:
 
     ```
     $ISABELLE_HOME_USER/Isabelle2022/heaps/polyml-<something>/log/
@@ -98,39 +98,40 @@
 
 ## Provided commands
 
-- `isabelle dedukti_root $session [$theory]`: generates a ROOT file defining a proof-exporting session Dedukti_$theory for each $theory of $session (up to $theory), as well as the scripts kocheck.sh and dkcheck.sh to check dk files.
+- `isabelle dedukti_root $session`: generate a ROOT file with a proof-exporting session named Dedukti_$theory for each $theory of $session, and the scripts kocheck.sh and dkcheck.sh to check dk files.
 
-- `isabelle dedukti_session $session [$theory]`: generates a dk or lp file for each theory of $session (up to $theory)
+- `isabelle dedukti_session $session [$theory]`: generate a dk or lp file for each theory of $session (up to $theory)
 
-- `isabelle dedukti_theory $session $theory`: Export the specified $theory to a dk or lp file with 
-the same name except that every dot is replaced by an underscore.
+- `isabelle dedukti_theory $theory`: export the specified $theory to a dk or lp file with the same name except that every dot is replaced by an underscore.
 
 Run `isabelle $command` with no argument for more details.
 
 Remark: a theory whose name contains a "." is translated to a dk or lp file where every "." is replaced by "_" because dkcheck does not accept dots in module names.
 
-Remark: [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2021-1/dist/library/HOL/HOL/session_graph.pdf)
+Remark: [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2022/dist/library/HOL/HOL/session_graph.pdf)
 
-## Example usage
+## Examples
 
-The following command
-```bash
-isabelle build -d $path_to_isabelle_dedukti/HOL -b HOL_wp
-```
-will compile *session* `HOL_wp`, a variant of the standard library session `HOL` containing all proofs. The session is defined in `$path_to_isabelle_dedukti/HOL/ROOT`, which is specified to Isabelle by the `-d` option.
-
-To translate the proofs of a theory `HOL.Groups`, please do
-```bash
-isabelle dedukti_theory -d $path_to_isabelle_dedukti/HOL HOL_wp HOL.Groups
-```
-
-Since `isabelle build` with proofs easily fail, we provide the following workflow to define one session for every theory.
-
+- Exporting the Isabelle/HOL standard library up to `Groups`:
 ```
 isabelle dedukti_root HOL
 isabelle build -b Dedukti_HOL.Groups
 isabelle dedukti_session HOL HOL.Groups
-isabelle dedukti_theory Dedukti_HOL HOL.Groups
+isabelle dedukti_session -l HOL HOL.Groups
+```
+- Exporting the Isabelle/HOL standard library up to `Complex_Main`:
+```
+isabelle dedukti_root HOL
+isabelle build -b Dedukti_Complex_Main
+isabelle dedukti_session HOL
+isabelle dedukti_session -l HOL
+```
+- Exporting a single theory:
+```
+isabelle dedukti_root HOL
+isabelle build -b Dedukti_HOL.Groups
+isabelle dedukti_theory HOL.Groups
+isabelle dedukti_theory -l HOL.Groups
 ```
 
 ## Checking the lp output with lambdapi
@@ -144,7 +145,6 @@ lambdapi check Dedukti_HOL_Groups.lp
 ```
 bash ./dkcheck.sh
 ```
-
 
 ## Checking the dk output with kocheck
 
@@ -160,12 +160,14 @@ bash ../kocheck.sh
 
 The whole HOL session can be exported and checked:
   * `isabelle dedukti_root HOL`: 2s
-  * `isabelle build -b HOL`: 47 minutes
-  * `isabelle dedukti_session HOL`: 26 minutes
-  * `bash kocheck.sh`: 3 minutes
-  * `bash dkcheck.sh`: 10 minutes
+  * `isabelle build -b Dedukti_Complex_Main`: 51m40s, 249 Mo
+  * `isabelle dedukti_session HOL`: 20m38s
+  * `isabelle dedukti_session -l HOL`: idem
+  * `bash kocheck.sh`: 3m
+  * `bash dkcheck.sh`: 10m
   * `lambdapi check Complex_Main.lp`: out of memory
-  * `lambdapi check HOL_Nat.lp`: 2 minutes
+  * `lambdapi check HOL_Nat.lp`: 2m04s
+  * `lambdapi check HOL_Int.lp`: 11m44s
 
 ## Known issues
 
@@ -174,7 +176,7 @@ The whole HOL session can be exported and checked:
 
 ## Project structure
 
-- `ast.scala` provides an AST common to (a strict subset of) Dedukti and Lambdapi
+- `ast.scala` provides an AST common to Dedukti and Lambdapi (it is strict subset of these languages)
 - `translate.scala` translates Isabelle/Pure to the common Dedukti and Lambdapi AST
 - `writers.scala` writes out an AST to either Dedukti or Lambdapi code
 - `exporter.scala` provides the isabelle command `dedukti_theory`

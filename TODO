@@ -1,5 +1,3 @@
-- command dedukti_theory: remove need for session name?
-
 - what is the option "export_standard_proofs"" vs "export_proofs" ?
 
 - eliminate odd mutable datastructures: irrelevant for performance, and the cost of clear semantics;
