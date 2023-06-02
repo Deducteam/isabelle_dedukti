@@ -96,10 +96,18 @@ object Exporter {
         }
       case _ =>
     }
-    if( verbose ) progress.echo("reading entry_names")
-    val exports = Export.read_entry_names(db,session)
     if( verbose ) progress.echo("reading proofs")
-// TODO: It reads entire session and filter by theory name.
+    def read_entry_names(db: SQL.Database, session_name: String, theory_name: String): List[Export.Entry_Name] = {
+      val select =
+        Export.Data.table.select(List(Export.Data.theory_name, Export.Data.name), Export.Data.where_equal(session_name,theory_name)) +
+        " ORDER BY " + Export.Data.theory_name + ", " + Export.Data.name
+      db.using_statement(select)(stmt =>
+        stmt.execute_query().iterator(res =>
+          Export.Entry_Name(session = session_name,
+            theory = res.string(Export.Data.theory_name),
+            name = res.string(Export.Data.name))).toList)
+    }
+    val exports = read_entry_names(db,session,theory_name)
     val prfs =
       exports.foldLeft(Nil: List[(Long,Export_Theory.Proof)]) {
         case (prfs2 : List[(Long,Export_Theory.Proof)],entry_name) => {
@@ -199,9 +207,9 @@ Export the specified THEORY to a Dedukti or Lambdapi file with the same name exc
 
         val more_args = getopts(args)
 
-        val theory =
+        val (session,theory) =
           more_args match {
-            case List(theory) => theory
+            case List(session,theory) => (session,theory)
             case _ => getopts.usage()
           }
 
@@ -211,8 +219,7 @@ Export the specified THEORY to a Dedukti or Lambdapi file with the same name exc
         if (verbose) progress.echo("Started at " + Build_Log.print_date(start_date) + "\n")
 
         progress.interrupt_handler {
-          val session_name = if (theory == "Pure") "Pure" else "Dedukti_" + theory
-          try exporter(options, session_name, theory, progress, dirs, use_notations, eta_expand, output_lp, verbose)
+          try exporter(options, session, theory, progress, dirs, use_notations, eta_expand, output_lp, verbose)
           catch {case x: Exception =>
             progress.echo(x.getStackTrace.mkString("\n"))
             println(x)}

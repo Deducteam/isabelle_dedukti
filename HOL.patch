@@ -529,7 +529,7 @@ diff -urNx '*~' ./Nitpick.thy /cygdrive/c/Isabelle2022/src/HOL/Nitpick.thy
    "nitpick_params" :: thy_decl
 diff -urNx '*~' ./Quickcheck_Exhaustive.thy /cygdrive/c/Isabelle2022/src/HOL/Quickcheck_Exhaustive.thy
 --- ./Quickcheck_Exhaustive.thy	2023-05-30 11:49:56.585222900 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/Quickcheck_Exhaustive.thy	2023-06-01 15:41:23.368670200 +0900
++++ /cygdrive/c/Isabelle2022/src/HOL/Quickcheck_Exhaustive.thy	2023-06-02 18:43:46.381253000 +0900
 @@ -6,7 +6,7 @@
  
  theory Quickcheck_Exhaustive
@@ -539,7 +539,15 @@ diff -urNx '*~' ./Quickcheck_Exhaustive.thy /cygdrive/c/Isabelle2022/src/HOL/Qui
  begin
  
  subsection \<open>Basic operations for exhaustive generators\<close>
-@@ -746,9 +746,9 @@
+@@ -740,15 +740,17 @@
+ 
+ notation (output) unknown  ("?")
+ 
++(*
+ ML_file \<open>Tools/Quickcheck/exhaustive_generators.ML\<close>
++*)
+ 
+ declare [[quickcheck_batch_tester = exhaustive]]
  
  
  subsection \<open>Defining generators for abstract types\<close>
