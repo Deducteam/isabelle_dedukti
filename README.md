@@ -98,7 +98,7 @@
 
 ## Provided commands
 
-- `isabelle dedukti_root $session`: Generate a ROOT file with a proof-exporting session named Dedukti_$theory for each $theory of $session, and the scripts kocheck.sh and dkcheck.sh to check dk files.
+- `isabelle dedukti_root $session [$theory]`: generates a ROOT file defining a proof-exporting session Dedukti_$theory for each $theory of $session (up to $theory), as well as the scripts kocheck.sh and dkcheck.sh to check dk files.
 
 - `isabelle dedukti_session $session [$theory]`: generates a dk or lp file for each theory of $session (up to $theory)
 
@@ -142,15 +142,9 @@ lambdapi check Dedukti_HOL_Groups.lp
 ## Checking the dk output with dkcheck
 
 ```
-dk dep *.dk > deps.mk
-make -f dkcheck.mk
-```
-
-or (if dk dep is too slow):
-
-```
 bash ./dkcheck.sh
 ```
+
 
 ## Checking the dk output with kocheck
 
@@ -180,7 +174,7 @@ The whole HOL session can be exported and checked:
 
 ## Project structure
 
-- `ast.scala` provides an AST common to Dedukti and Lambdapi (it is strict subset of these languages)
+- `ast.scala` provides an AST common to (a strict subset of) Dedukti and Lambdapi
 - `translate.scala` translates Isabelle/Pure to the common Dedukti and Lambdapi AST
 - `writers.scala` writes out an AST to either Dedukti or Lambdapi code
 - `exporter.scala` provides the isabelle command `dedukti_theory`
