@@ -171,6 +171,7 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
       "refine",
       "reflexivity",
       "require",
+      "remove",
       "rewrite",
       "right",
       "rule",
