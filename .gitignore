@@ -7,9 +7,8 @@ lib/classes/dedukti.jar
 .idea/**
 
 HOL*.dk
-*.dko
+
 HOL*.lp
-*.lpo
 Pure.dk
 Pure.lp
 Tools*.dk
@@ -19,7 +18,9 @@ Complex_Main.lp
 Main.dk
 Main.lp
 
-deps.mk
+*.dko
+*.lpo
 
+ROOT
 dkcheck.sh
 kocheck.sh
