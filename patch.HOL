@@ -1,0 +1,1130 @@
+diff -urNx '*~' /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/Enum.thy /Applications/Isabelle2022.app/src/HOL/Enum.thy
+--- /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/Enum.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Enum.thy	2023-06-02 09:48:45.000000000 +0900
+@@ -929,15 +929,47 @@
+ definition "x mod y = (case y of a\<^sub>1 \<Rightarrow> x | _ \<Rightarrow> a\<^sub>1)"
+ definition "abs = (\<lambda>x. case x of a\<^sub>3 \<Rightarrow> a\<^sub>2 | _ \<Rightarrow> x)"
+ definition "sgn = (\<lambda>x :: finite_3. x)"
++
++lemmas [simp] = times_finite_3_def plus_finite_3_def uminus_finite_3_def minus_finite_3_def
++  inverse_finite_3_def divide_finite_3_def sgn_finite_3_def abs_finite_3_def modulo_finite_3_def
+ instance
+-  by standard
+-    (subproofs
+-      \<open>simp_all add: plus_finite_3_def uminus_finite_3_def minus_finite_3_def
+-        times_finite_3_def
+-        inverse_finite_3_def divide_finite_3_def modulo_finite_3_def
+-        abs_finite_3_def sgn_finite_3_def
+-        less_finite_3_def
+-        split: finite_3.splits\<close>)
++    apply standard
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a by (cases a; simp)
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a by (cases a; simp)
++  subgoal for a by (cases a; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  subgoal by simp
++  subgoal for a by (cases a; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal by simp
++  subgoal for a by (cases a; simp)
++  subgoal for a by (cases a; simp)
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a by (cases a; simp)
++  subgoal for a by (cases a; simp)
++  subgoal for a by (cases a; simp)
++  subgoal by simp
++  subgoal by simp
++  subgoal by simp
++  subgoal by simp
++  subgoal by simp
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a by (cases a; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  done
++
++lemmas [simp del] = times_finite_3_def plus_finite_3_def uminus_finite_3_def minus_finite_3_def
++  inverse_finite_3_def divide_finite_3_def sgn_finite_3_def abs_finite_3_def modulo_finite_3_def
++
+ end
+ 
+ lemma two_finite_3 [simp]:
+@@ -953,17 +985,30 @@
+ definition [simp]: "unit_factor = (id :: finite_3 \<Rightarrow> _)"
+ definition [simp]: "euclidean_size x = (case x of a\<^sub>1 \<Rightarrow> 0 | _ \<Rightarrow> 1)"
+ definition [simp]: "division_segment (x :: finite_3) = 1"
++
++lemmas [simp] = divide_finite_3_def times_finite_3_def
++      dvd_finite_3_unfold inverse_finite_3_def plus_finite_3_def
+ instance
+-proof
+-  fix x :: finite_3
+-  assume "x \<noteq> 0"
+-  then show "is_unit (unit_factor x)"
+-    by (cases x) (simp_all add: dvd_finite_3_unfold)
+-qed
+-  (subproofs
+-    \<open>auto simp add: divide_finite_3_def times_finite_3_def
++   apply intro_classes
++  subgoal by simp
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a by (cases a; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  subgoal by simp
++  subgoal for a by (cases a; simp)
++  subgoal for a by (cases a; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a by (cases a; simp)
++  subgoal by simp
++  done
++
++lemmas [simp del] = divide_finite_3_def times_finite_3_def
+       dvd_finite_3_unfold inverse_finite_3_def plus_finite_3_def
+-      split: finite_3.splits\<close>)
++
+ end
+ 
+ hide_const (open) a\<^sub>1 a\<^sub>2 a\<^sub>3
+@@ -1034,11 +1079,33 @@
+   | (a\<^sub>3, _) \<Rightarrow> a\<^sub>3 | (_, a\<^sub>3) \<Rightarrow> a\<^sub>3
+   | _ \<Rightarrow> a\<^sub>1)"
+ 
++lemmas [simp] = less_finite_4_def less_eq_finite_4_def Inf_finite_4_def Sup_finite_4_def 
++        inf_finite_4_def sup_finite_4_def
++
+ instance
+-  by standard
+-    (subproofs
+-      \<open>auto simp add: less_finite_4_def less_eq_finite_4_def Inf_finite_4_def Sup_finite_4_def 
+-        inf_finite_4_def sup_finite_4_def split: finite_4.splits\<close>)
++  apply intro_classes
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a by (cases a; simp)
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  subgoal by simp
++  subgoal for a by (cases a; simp)
++  subgoal by simp
++  subgoal for a by (cases a; simp)
++  subgoal by simp
++  subgoal by simp
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  done
++
++lemmas [simp del] = less_finite_4_def less_eq_finite_4_def Inf_finite_4_def Sup_finite_4_def 
++        inf_finite_4_def sup_finite_4_def
++
+ end
+ 
+ instance finite_4 :: complete_lattice ..
+@@ -1048,11 +1115,14 @@
+ instantiation finite_4 :: complete_boolean_algebra begin
+ definition "- x = (case x of a\<^sub>1 \<Rightarrow> a\<^sub>4 | a\<^sub>2 \<Rightarrow> a\<^sub>3 | a\<^sub>3 \<Rightarrow> a\<^sub>2 | a\<^sub>4 \<Rightarrow> a\<^sub>1)"
+ definition "x - y = x \<sqinter> - (y :: finite_4)"
++lemmas [simp] =  inf_finite_4_def sup_finite_4_def uminus_finite_4_def minus_finite_4_def
+ instance
+-  by standard
+-    (subproofs
+-      \<open>simp_all add: inf_finite_4_def sup_finite_4_def uminus_finite_4_def minus_finite_4_def 
+-        split: finite_4.splits\<close>)
++  apply intro_classes
++  subgoal for a by (cases a; simp)
++  subgoal for a by (cases a; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  done
++lemmas [simp del] =  inf_finite_4_def sup_finite_4_def uminus_finite_4_def minus_finite_4_def
+ end
+ 
+ hide_const (open) a\<^sub>1 a\<^sub>2 a\<^sub>3 a\<^sub>4
+@@ -1138,11 +1208,30 @@
+    | (a\<^sub>4, _) \<Rightarrow> a\<^sub>4 | (_, a\<^sub>4) \<Rightarrow> a\<^sub>4
+    | _ \<Rightarrow> a\<^sub>1)"
+ 
++lemmas [simp] = less_eq_finite_5_def less_finite_5_def inf_finite_5_def sup_finite_5_def 
++        Inf_finite_5_def Sup_finite_5_def
+ instance
+-  by standard
+-    (subproofs
+-      \<open>auto simp add: less_eq_finite_5_def less_finite_5_def inf_finite_5_def sup_finite_5_def 
+-        Inf_finite_5_def Sup_finite_5_def split: finite_5.splits if_split_asm\<close>)
++  apply intro_classes
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a by (cases a; simp)
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  subgoal by simp
++  subgoal for a by (cases a; simp)
++  subgoal by simp
++  subgoal for a by (cases a; simp)
++  subgoal by simp
++  subgoal by simp
++  done
++lemmas [simp del] = less_eq_finite_5_def less_finite_5_def inf_finite_5_def sup_finite_5_def 
++        Inf_finite_5_def Sup_finite_5_def
++
+ end
+ 
+ 
+diff -urNx '*~' /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/Euclidean_Division.thy /Applications/Isabelle2022.app/src/HOL/Euclidean_Division.thy
+--- /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/Euclidean_Division.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Euclidean_Division.thy	2023-06-02 09:48:45.000000000 +0900
+@@ -1684,7 +1684,8 @@
+ lemma divide_int_unfold:
+   \<open>(sgn k * int m) div (sgn l * int n) = (sgn k * sgn l * int (m div n)
+     - of_bool ((k = 0 \<longleftrightarrow> m = 0) \<and> l \<noteq> 0 \<and> n \<noteq> 0 \<and> sgn k \<noteq> sgn l \<and> \<not> n dvd m))\<close>
+-  by (simp add: divide_int_def sgn_mult nat_mult_distrib abs_mult sgn_eq_0_iff ac_simps)
++  apply (cases "k = 0"; cases "m = 0"; cases "l = 0"; cases "n = 0")
++  by (simp_all add: divide_int_def sgn_mult nat_mult_distrib abs_mult sgn_eq_0_iff)
+ 
+ definition modulo_int :: \<open>int \<Rightarrow> int \<Rightarrow> int\<close>
+   where \<open>k mod l = sgn k * int (nat \<bar>k\<bar> mod nat \<bar>l\<bar>) + l * of_bool (sgn k \<noteq> sgn l \<and> \<not> l dvd k)\<close>
+@@ -1692,6 +1693,7 @@
+ lemma modulo_int_unfold:
+   \<open>(sgn k * int m) mod (sgn l * int n) =
+     sgn k * int (m mod (of_bool (l \<noteq> 0) * n)) + (sgn l * int n) * of_bool ((k = 0 \<longleftrightarrow> m = 0) \<and> sgn k \<noteq> sgn l \<and> \<not> n dvd m)\<close>
++  apply (cases "k = 0"; cases "m = 0"; cases "l = 0"; cases "n = 0")
+   by (auto simp add: modulo_int_def sgn_mult abs_mult)
+ 
+ instance proof
+@@ -2795,8 +2797,8 @@
+   finally have *: \<open>\<bar>k\<bar> div \<bar>l\<bar> \<noteq> 0 \<longleftrightarrow> \<bar>l\<bar> \<le> \<bar>k\<bar>\<close> .
+   show ?thesis
+     using \<open>0 \<le> \<bar>k\<bar> div \<bar>l\<bar>\<close> False
+-  by (auto simp add: div_eq_div_abs [of k l] div_eq_sgn_abs [of k l]
+-    sgn_mult sgn_1_pos sgn_1_neg sgn_eq_0_iff nonneg1_imp_zdiv_pos_iff * dest: sgn_not_eq_imp)
++  by (auto simp add: div_eq_div_abs [of k l] (* redundant and looping! div_eq_sgn_abs [of k l] *)
++    sgn_mult sgn_eq_0_iff nonneg1_imp_zdiv_pos_iff * dest!: sgn_not_eq_imp)
+ qed
+ 
+ 
+diff -urNx '*~' /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/Factorial.thy /Applications/Isabelle2022.app/src/HOL/Factorial.thy
+--- /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/Factorial.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Factorial.thy	2023-06-02 09:48:45.000000000 +0900
+@@ -28,7 +28,7 @@
+   have "prod Suc {0..<n} = \<Prod>{1..n}"
+     by (simp add: atLeast0LessThan prod.atLeast1_atMost_eq)
+   then have "prod Suc {0..<n} = prod ((-) (n + 1)) {1..n}"
+-    using prod.atLeastAtMost_rev [of "\<lambda>i. i" 1 n] by presburger
++    using prod.atLeastAtMost_rev [of "\<lambda>i. i" 1 n] by auto
+   then show ?thesis
+     unfolding fact_prod_Suc by (simp add: atLeast0LessThan prod.atLeast1_atMost_eq)
+ qed
+diff -urNx '*~' /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/Groups_List.thy /Applications/Isabelle2022.app/src/HOL/Groups_List.thy
+--- /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/Groups_List.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Groups_List.thy	2023-06-02 09:48:45.000000000 +0900
+@@ -3,7 +3,7 @@
+ section \<open>Sum and product over lists\<close>
+ 
+ theory Groups_List
+-imports List
++imports List Divides
+ begin
+ 
+ locale monoid_list = monoid
+diff -urNx '*~' /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/List.thy /Applications/Isabelle2022.app/src/HOL/List.thy
+--- /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/List.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/List.thy	2023-06-02 09:48:45.000000000 +0900
+@@ -5,7 +5,7 @@
+ section \<open>The datatype of finite lists\<close>
+ 
+ theory List
+-imports Sledgehammer Lifting_Set
++imports Lifting_Set Set_Interval Numeral_Simprocs
+ begin
+ 
+ datatype (set: 'a) list =
+@@ -962,13 +962,13 @@
+ by (induct xs) auto
+ 
+ lemma hd_append2 [simp]: "xs \<noteq> [] \<Longrightarrow> hd (xs @ ys) = hd xs"
+-by (simp add: hd_append split: list.split)
++by (simp add: hd_append)
+ 
+ lemma tl_append: "tl (xs @ ys) = (case xs of [] \<Rightarrow> tl ys | z#zs \<Rightarrow> zs @ ys)"
+-by (simp split: list.split)
++by (cases xs; simp)
+ 
+ lemma tl_append2 [simp]: "xs \<noteq> [] \<Longrightarrow> tl (xs @ ys) = tl xs @ ys"
+-by (simp add: tl_append split: list.split)
++by (cases xs;simp add: tl_append)
+ 
+ lemma tl_append_if: "tl (xs @ ys) = (if xs = [] then tl ys else tl xs @ ys)"
+ by (simp)
+@@ -1591,7 +1591,7 @@
+   proof (cases)
+     assume "p x"
+     hence eq: "?S' = insert 0 (Suc ` ?S)"
+-      by(auto simp: image_def split:nat.split dest:gr0_implies_Suc)
++      by (auto simp: image_def dest:gr0_implies_Suc)
+     have "length (filter p (x # xs)) = Suc(card ?S)"
+       using Cons \<open>p x\<close> by simp
+     also have "\<dots> = Suc(card(Suc ` ?S))" using fin
+@@ -2440,7 +2440,7 @@
+   by (induct xs) (auto split: if_split_asm)
+ 
+ lemma set_takeWhileD: "x \<in> set (takeWhile P xs) \<Longrightarrow> x \<in> set xs \<and> P x"
+-  by (induct xs) (auto split: if_split_asm)
++  by (induct xs) auto 
+ 
+ lemma takeWhile_eq_all_conv[simp]:
+   "(takeWhile P xs = xs) = (\<forall>x \<in> set xs. P x)"
+@@ -2596,7 +2596,7 @@
+ 
+ lemma zip_Cons1:
+   "zip (x#xs) ys = (case ys of [] \<Rightarrow> [] | y#ys \<Rightarrow> (x,y)#zip xs ys)"
+-  by(auto split:list.split)
++  by (cases xs; cases ys; simp)
+ 
+ lemma length_zip [simp]:
+   "length (zip xs ys) = min (length xs) (length ys)"
+@@ -4462,9 +4462,10 @@
+   distinct (removeAll [] xs) \<and>
+   (\<forall>ys. ys \<in> set xs \<longrightarrow> distinct ys) \<and>
+   (\<forall>ys zs. ys \<in> set xs \<and> zs \<in> set xs \<and> ys \<noteq> zs \<longrightarrow> set ys \<inter> set zs = {})"
+-apply (induct xs)
+- apply(simp_all, safe, auto)
+-by (metis Int_iff UN_I empty_iff equals0I set_empty)
++proof(induct xs)
++  case (Cons a xs)
++  show ?case by (auto simp: Cons Ball_def disjnt_def[symmetric] disjnt_sym)
++qed simp
+ 
+ 
+ subsubsection \<open>\<^const>\<open>replicate\<close>\<close>
+@@ -5050,7 +5051,10 @@
+   "z # zs \<in> shuffles xs ys \<longleftrightarrow>
+     (xs \<noteq> [] \<and> hd xs = z \<and> zs \<in> shuffles (tl xs) ys \<or>
+      ys \<noteq> [] \<and> hd ys = z \<and> zs \<in> shuffles xs (tl ys))"
+-  by (induct xs ys rule: shuffles.induct) auto
++proof(induct xs ys rule: shuffles.induct)
++  case (3 x xs y ys)
++  show ?case by (auto simp: 3)
++qed auto
+ 
+ lemma splice_in_shuffles [simp, intro]: "splice xs ys \<in> shuffles xs ys"
+   by (induction xs ys rule: splice.induct) (simp_all add: Cons_in_shuffles_iff shuffles_commutes)
+@@ -5197,13 +5201,12 @@
+   (is "max _ ?foldB = Suc (max _ ?foldA)")
+ proof (cases "(filter (\<lambda>ys. ys \<noteq> []) xss) = []")
+   case True
+-  hence "foldr (\<lambda>xs. max (length xs)) xss 0 = 0"
++  then show ?thesis 
+   proof (induct xss)
+-    case (Cons x xs)
+-    then have "x = []" by (cases x) auto
+-    with Cons show ?case by auto
++    case (Cons a xsss)
++    then show ?case 
++      by (cases a; simp add: filter_def)
+   qed simp
+-  thus ?thesis using True by simp
+ next
+   case False
+ 
+@@ -6363,7 +6366,7 @@
+ 
+ lemma sorted_list_of_set_lessThan_Suc [simp]:
+   "sorted_list_of_set {..<Suc k} = sorted_list_of_set {..<k} @ [k]"
+-  using le0 lessThan_atLeast0 sorted_list_of_set_range upt_Suc_append by presburger
++  using lessThan_atLeast0 by auto
+ 
+ lemma sorted_list_of_set_atMost_Suc [simp]:
+   "sorted_list_of_set {..Suc k} = sorted_list_of_set {..k} @ [Suc k]"
+@@ -6835,7 +6838,7 @@
+     by blast
+   hence "((u@v)!i, (w@z)!i) \<in> r"
+     unfolding nth_append using less_le_trans[OF \<open>i < length w\<close> assms(2)] \<open>(u!i,w!i) \<in> r\<close>
+-    by presburger
++    by auto
+   moreover have "i < min (length (u@v)) (length (w@z))"
+     using assms(2) \<open>i < length w\<close> by simp
+   moreover have "take i (u@v) = take i (w@z)"
+diff -urNx '*~' /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/MacLaurin.thy /Applications/Isabelle2022.app/src/HOL/MacLaurin.thy
+--- /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/MacLaurin.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/MacLaurin.thy	2023-06-02 09:48:45.000000000 +0900
+@@ -22,7 +22,7 @@
+ 
+ lemma eq_diff_eq': "x = y - z \<longleftrightarrow> y = x + z"
+   for x y z :: real
+-  by arith
++  by (auto elim: iffE)
+ 
+ lemma fact_diff_Suc: "n < Suc m \<Longrightarrow> fact (Suc m - n) = (Suc m - n) * fact (m - n)"
+   by (subst fact_reduce) auto
+@@ -343,6 +343,9 @@
+ lemma sin_expansion_lemma: "sin (x + real (Suc m) * pi / 2) = cos (x + real m * pi / 2)"
+   by (auto simp: cos_add sin_add add_divide_distrib distrib_right)
+ 
++lemma sin_coeff_lemma: "sin_coeff m * x ^ m  = sin (1 / 2 * real m * pi) / fact m * x ^ m"
++  by (cases "even m") (auto simp add: sin_zero_iff sin_coeff_def elim: oddE simp del: of_nat_Suc) 
++
+ lemma Maclaurin_sin_expansion2:
+   "\<exists>t. \<bar>t\<bar> \<le> \<bar>x\<bar> \<and>
+     sin x = (\<Sum>m<n. sin_coeff m * x ^ m) + (sin (t + 1/2 * real n * pi) / fact n) * x ^ n"
+@@ -350,17 +353,16 @@
+   case False
+   let ?diff = "\<lambda>n x. sin (x + 1/2 * real n * pi)"
+   have "\<exists>t. 0 < \<bar>t\<bar> \<and> \<bar>t\<bar> < \<bar>x\<bar> \<and> sin x =
+-      (\<Sum>m<n. (?diff m 0 / fact m) * x ^ m) + (?diff n t / fact n) * x ^ n"
++    (\<Sum>m<n. (?diff m 0 / fact m) * x ^ m) + (?diff n t / fact n) * x ^ n"
+   proof (rule Maclaurin_all_lt)
+     show "\<forall>m x. ((\<lambda>t. sin (t + 1/2 * real m * pi)) has_real_derivative
+-           sin (x + 1/2 * real (Suc m) * pi)) (at x)"
++       sin (x + 1/2 * real (Suc m) * pi)) (at x)"
+       by (rule allI derivative_eq_intros | use sin_expansion_lemma in force)+
+   qed (use False in auto)
+   then show ?thesis
+     apply (rule ex_forward, simp)
+     apply (rule sum.cong[OF refl])
+-    apply (auto simp: sin_coeff_def sin_zero_iff elim: oddE simp del: of_nat_Suc)
+-    done
++    by (simp add: sin_coeff_lemma)
+ qed auto
+ 
+ lemma Maclaurin_sin_expansion:
+@@ -385,8 +387,7 @@
+   then show ?thesis
+     apply (rule ex_forward, simp)
+     apply (rule sum.cong[OF refl])
+-    apply (auto simp: sin_coeff_def sin_zero_iff elim: oddE simp del: of_nat_Suc)
+-    done
++    by (simp add: sin_coeff_lemma)
+ qed
+ 
+ lemma Maclaurin_sin_expansion4:
+@@ -406,8 +407,7 @@
+   then show ?thesis
+     apply (rule ex_forward, simp)
+     apply (rule sum.cong[OF refl])
+-    apply (auto simp: sin_coeff_def sin_zero_iff elim: oddE simp del: of_nat_Suc)
+-    done
++    by (simp add: sin_coeff_lemma)
+ qed
+ 
+ 
+@@ -419,6 +419,16 @@
+ lemma cos_expansion_lemma: "cos (x + real (Suc m) * pi / 2) = - sin (x + real m * pi / 2)"
+   by (auto simp: cos_add sin_add distrib_right add_divide_distrib)
+ 
++lemma cos_coeff_lemma: "cos_coeff m * x ^ m  = cos (1 / 2 * real m * pi) / fact m * x ^ m"
++proof(cases "odd m")
++  case t: True
++    then show ?thesis by (simp add: cos_coeff_def cos_zero_iff)
++ next
++  case False
++    then show ?thesis using False 
++      by (auto simp add: cos_coeff_def elim: oddE simp del: of_nat_Suc) 
++qed
++
+ lemma Maclaurin_cos_expansion:
+   "\<exists>t::real. \<bar>t\<bar> \<le> \<bar>x\<bar> \<and>
+     cos x = (\<Sum>m<n. cos_coeff m * x ^ m) + (cos(t + 1/2 * real n * pi) / fact n) * x ^ n"
+@@ -436,8 +446,7 @@
+   then show ?thesis
+     apply (rule ex_forward, simp)
+     apply (rule sum.cong[OF refl])
+-    apply (auto simp: cos_coeff_def cos_zero_iff elim: evenE simp del: of_nat_Suc)
+-    done
++    by (simp add: cos_coeff_lemma)
+ qed auto
+ 
+ lemma Maclaurin_cos_expansion2:
+@@ -456,8 +465,7 @@
+   then show ?thesis
+     apply (rule ex_forward, simp)
+     apply (rule sum.cong[OF refl])
+-    apply (auto simp: cos_coeff_def cos_zero_iff elim: evenE)
+-    done
++    by (simp add: cos_coeff_lemma)
+ qed
+ 
+ lemma Maclaurin_minus_cos_expansion:
+@@ -476,8 +484,7 @@
+   then show ?thesis
+     apply (rule ex_forward, simp)
+     apply (rule sum.cong[OF refl])
+-    apply (auto simp: cos_coeff_def cos_zero_iff elim: evenE)
+-    done
++    by (simp add: cos_coeff_lemma)
+ qed
+ 
+ 
+@@ -537,7 +544,7 @@
+   shows "\<exists>t::real. c < t \<and> t < b \<and>
+     f b = (\<Sum>m<n. (diff m c / fact m) * (b - c)^m) + (diff n t / fact n) * (b - c)^n"
+ proof -
+-  from INTERV have "0 < b - c" by arith
++  from INTERV have "0 < b - c" by simp
+   moreover from INIT have "n > 0" "(\<lambda>m x. diff m (x + c)) 0 = (\<lambda>x. f (x + c))"
+     by auto
+   moreover
+@@ -573,7 +580,7 @@
+   shows "\<exists>t. a < t \<and> t < c \<and>
+     f a = (\<Sum>m<n. (diff m c / fact m) * (a - c)^m) + (diff n t / fact n) * (a - c)^n"
+ proof -
+-  from INTERV have "a-c < 0" by arith
++  from INTERV have "a-c < 0" by simp
+   moreover from INIT have "n > 0" "(\<lambda>m x. diff m (x + c)) 0 = (\<lambda>x. f (x + c))"
+     by auto
+   moreover
+@@ -627,9 +634,9 @@
+   moreover have "\<forall>m t. m < n \<and> a \<le> t \<and> t \<le> x \<longrightarrow> DERIV (diff m) t :> diff (Suc m) t"
+     using DERIV and INTERV by fastforce
+   moreover from INTERV have "a \<le> c"
+-    by arith
++    by simp
+   moreover from False and INTERV have "c < x"
+-    by arith
++    by simp
+   ultimately have "\<exists>t>c. t < x \<and> f x =
+     (\<Sum>m<n. diff m c / (fact m) * (x - c) ^ m) + diff n t / (fact n) * (x - c) ^ n"
+     by (rule Taylor_up)
+diff -urNx '*~' /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/Main.thy /Applications/Isabelle2022.app/src/HOL/Main.thy
+--- /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/Main.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Main.thy	2023-06-02 09:48:45.000000000 +0900
+@@ -11,7 +11,7 @@
+     Quickcheck_Narrowing
+     Mirabelle
+     Extraction
+-    Nunchaku
++    (*Nunchaku*)
+     BNF_Greatest_Fixpoint
+     Filter
+     Conditionally_Complete_Lattices
+diff -urNx '*~' /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/Nitpick.thy /Applications/Isabelle2022.app/src/HOL/Nitpick.thy
+--- /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/Nitpick.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Nitpick.thy	2023-06-02 09:48:45.000000000 +0900
+@@ -8,7 +8,7 @@
+ section \<open>Nitpick: Yet Another Counterexample Generator for Isabelle/HOL\<close>
+ 
+ theory Nitpick
+-imports Record GCD
++imports Record GCD Sledgehammer
+ keywords
+   "nitpick" :: diag and
+   "nitpick_params" :: thy_decl
+diff -urNx '*~' /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/Quickcheck_Exhaustive.thy /Applications/Isabelle2022.app/src/HOL/Quickcheck_Exhaustive.thy
+--- /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/Quickcheck_Exhaustive.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Quickcheck_Exhaustive.thy	2023-06-02 14:58:39.000000000 +0900
+@@ -6,7 +6,7 @@
+ 
+ theory Quickcheck_Exhaustive
+ imports Quickcheck_Random
+-keywords "quickcheck_generator" :: thy_decl
++(*keywords "quickcheck_generator" :: thy_decl*)
+ begin
+ 
+ subsection \<open>Basic operations for exhaustive generators\<close>
+@@ -739,16 +739,16 @@
+ axiomatization unknown :: 'a
+ 
+ notation (output) unknown  ("?")
+-
++(*
+ ML_file \<open>Tools/Quickcheck/exhaustive_generators.ML\<close>
+-
++*)
+ declare [[quickcheck_batch_tester = exhaustive]]
+ 
+ 
+ subsection \<open>Defining generators for abstract types\<close>
+-
++(*
+ ML_file \<open>Tools/Quickcheck/abstract_generators.ML\<close>
+-
++*)
+ hide_fact (open) orelse_def
+ no_notation orelse  (infixr "orelse" 55)
+ 
+diff -urNx '*~' /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/Quickcheck_Random.thy /Applications/Isabelle2022.app/src/HOL/Quickcheck_Random.thy
+--- /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/Quickcheck_Random.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Quickcheck_Random.thy	2023-06-02 09:48:45.000000000 +0900
+@@ -213,6 +213,7 @@
+ 
+ end
+ 
++(* Proof generation fails with this!
+ instantiation set :: (random) random
+ begin
+ 
+@@ -220,35 +221,42 @@
+   includes state_combinator_syntax
+ begin
+ 
+-fun random_aux_set
++fun random_aux_set :: "'a itself \<Rightarrow> natural
++     \<Rightarrow> natural
++        \<Rightarrow> natural \<times> natural
++           \<Rightarrow> ('a set \<times>
++(unit \<Rightarrow> term)) \<times>
++              natural \<times>
++              natural"
+ where
+-  "random_aux_set 0 j = collapse (Random.select_weight [(1, Pair valterm_emptyset)])"
+-| "random_aux_set (Code_Numeral.Suc i) j =
++  "random_aux_set (x :: 'a itself) 0 j = collapse (Random.select_weight [(1, Pair valterm_emptyset)])"
++| "random_aux_set t (Code_Numeral.Suc i) j =
+     collapse (Random.select_weight
+       [(1, Pair valterm_emptyset),
+        (Code_Numeral.Suc i,
+-        random j \<circ>\<rightarrow> (%x. random_aux_set i j \<circ>\<rightarrow> (%s. Pair (valtermify_insert x s))))])"
++        scomp (random j) (%x. scomp (random_aux_set t i j) (%s. Pair (valtermify_insert x s))))])"
+ 
+ lemma [code]:
+-  "random_aux_set i j =
++  "random_aux_set t i j =
+     collapse (Random.select_weight [(1, Pair valterm_emptyset),
+-      (i, random j \<circ>\<rightarrow> (%x. random_aux_set (i - 1) j \<circ>\<rightarrow> (%s. Pair (valtermify_insert x s))))])"
++      (i, random j \<circ>\<rightarrow> (%x. random_aux_set t (i - 1) j \<circ>\<rightarrow> (%s. Pair (valtermify_insert x s))))])"
+ proof (induct i rule: natural.induct)
+   case zero
+   show ?case by (subst select_weight_drop_zero [symmetric])
+     (simp add: random_aux_set.simps [simplified] less_natural_def)
+ next
+   case (Suc i)
+-  show ?case by (simp only: random_aux_set.simps(2) [of "i"] Suc_natural_minus_one)
++  show ?case by (simp only: random_aux_set.simps(2) [of _ "i"] Suc_natural_minus_one)
+ qed
+ 
+-definition "random_set i = random_aux_set i i"
++definition "random_set i = random_aux_set TYPE('a) i i"
+ 
+ instance ..
+ 
+ end
+ 
+ end
++*)
+ 
+ lemma random_aux_rec:
+   fixes random_aux :: "natural \<Rightarrow> 'a"
+@@ -260,9 +268,9 @@
+ subsection \<open>Deriving random generators for datatypes\<close>
+ 
+ ML_file \<open>Tools/Quickcheck/quickcheck_common.ML\<close>
++(*
+ ML_file \<open>Tools/Quickcheck/random_generators.ML\<close>
+-
+-
++*)
+ subsection \<open>Code setup\<close>
+ 
+ code_printing
+diff -urNx '*~' /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/Random_Prep.thy /Applications/Isabelle2022.app/src/HOL/Random_Prep.thy
+--- /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/Random_Prep.thy	1970-01-01 09:00:00.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Random_Prep.thy	2023-06-02 09:48:45.000000000 +0900
+@@ -0,0 +1,386 @@
++(*  Title:      HOL/Quickcheck_Random.thy
++    Author:     Florian Haftmann & Lukas Bulwahn, TU Muenchen
++*)
++
++section \<open>A simple counterexample generator performing random testing\<close>
++
++theory Random_Prep
++imports Random Code_Evaluation Enum
++begin
++
++(*setup \<open>Code_Target.add_derived_target ("Quickcheck", [(Code_Runtime.target, I)])\<close>*)
++
++(*subsection \<open>Catching Match exceptions\<close>
++
++axiomatization catch_match :: "'a => 'a => 'a"
++
++code_printing
++  constant catch_match \<rightharpoonup> (Quickcheck) "((_) handle Match => _)"
++
++code_reserved Quickcheck Match*)
++
++subsection \<open>The \<open>random\<close> class\<close>
++
++class random = typerep +
++  fixes random :: "natural \<Rightarrow> Random.seed \<Rightarrow> ('a \<times> (unit \<Rightarrow> term)) \<times> Random.seed"
++
++
++subsection \<open>Fundamental and numeric types\<close>
++
++instantiation bool :: random
++begin
++
++context
++  includes state_combinator_syntax
++begin
++
++definition
++  "random i = Random.range 2 \<circ>\<rightarrow>
++    (\<lambda>k. Pair (if k = 0 then Code_Evaluation.valtermify False else Code_Evaluation.valtermify True))"
++
++instance ..
++
++end
++
++end
++
++instantiation itself :: (typerep) random
++begin
++
++definition
++  random_itself :: "natural \<Rightarrow> Random.seed \<Rightarrow> ('a itself \<times> (unit \<Rightarrow> term)) \<times> Random.seed"
++where "random_itself _ = Pair (Code_Evaluation.valtermify TYPE('a))"
++
++instance ..
++
++end
++
++instantiation char :: random
++begin
++
++context
++  includes state_combinator_syntax
++begin
++
++definition
++  "random _ = Random.select (Enum.enum :: char list) \<circ>\<rightarrow> (\<lambda>c. Pair (c, \<lambda>u. Code_Evaluation.term_of c))"
++
++instance ..
++
++end
++
++end
++
++instantiation String.literal :: random
++begin
++
++definition
++  "random _ = Pair (STR '''', \<lambda>u. Code_Evaluation.term_of (STR ''''))"
++
++instance ..
++
++end
++
++instantiation nat :: random
++begin
++
++context
++  includes state_combinator_syntax
++begin
++
++definition random_nat :: "natural \<Rightarrow> Random.seed
++  \<Rightarrow> (nat \<times> (unit \<Rightarrow> Code_Evaluation.term)) \<times> Random.seed"
++where
++  "random_nat i = Random.range (i + 1) \<circ>\<rightarrow> (\<lambda>k. Pair (
++     let n = nat_of_natural k
++     in (n, \<lambda>_. Code_Evaluation.term_of n)))"
++
++instance ..
++
++end
++
++end
++
++instantiation int :: random
++begin
++
++context
++  includes state_combinator_syntax
++begin
++
++definition
++  "random i = Random.range (2 * i + 1) \<circ>\<rightarrow> (\<lambda>k. Pair (
++     let j = (if k \<ge> i then int (nat_of_natural (k - i)) else - (int (nat_of_natural (i - k))))
++     in (j, \<lambda>_. Code_Evaluation.term_of j)))"
++
++instance ..
++
++end
++
++end
++
++instantiation natural :: random
++begin
++
++context
++  includes state_combinator_syntax
++begin
++
++definition random_natural :: "natural \<Rightarrow> Random.seed
++  \<Rightarrow> (natural \<times> (unit \<Rightarrow> Code_Evaluation.term)) \<times> Random.seed"
++where
++  "random_natural i = Random.range (i + 1) \<circ>\<rightarrow> (\<lambda>n. Pair (n, \<lambda>_. Code_Evaluation.term_of n))"
++
++instance ..
++
++end
++
++end
++
++instantiation integer :: random
++begin
++
++context
++  includes state_combinator_syntax
++begin
++
++definition random_integer :: "natural \<Rightarrow> Random.seed
++  \<Rightarrow> (integer \<times> (unit \<Rightarrow> Code_Evaluation.term)) \<times> Random.seed"
++where
++  "random_integer i = Random.range (2 * i + 1) \<circ>\<rightarrow> (\<lambda>k. Pair (
++     let j = (if k \<ge> i then integer_of_natural (k - i) else - (integer_of_natural (i - k)))
++      in (j, \<lambda>_. Code_Evaluation.term_of j)))"
++
++instance ..
++
++end
++
++end
++
++
++subsection \<open>Complex generators\<close>
++
++text \<open>Towards \<^typ>\<open>'a \<Rightarrow> 'b\<close>\<close>
++
++axiomatization random_fun_aux :: "typerep \<Rightarrow> typerep \<Rightarrow> ('a \<Rightarrow> 'a \<Rightarrow> bool) \<Rightarrow> ('a \<Rightarrow> term)
++  \<Rightarrow> (Random.seed \<Rightarrow> ('b \<times> (unit \<Rightarrow> term)) \<times> Random.seed)
++  \<Rightarrow> (Random.seed \<Rightarrow> Random.seed \<times> Random.seed)
++  \<Rightarrow> Random.seed \<Rightarrow> (('a \<Rightarrow> 'b) \<times> (unit \<Rightarrow> term)) \<times> Random.seed"
++
++definition random_fun_lift :: "(Random.seed \<Rightarrow> ('b \<times> (unit \<Rightarrow> term)) \<times> Random.seed)
++  \<Rightarrow> Random.seed \<Rightarrow> (('a::term_of \<Rightarrow> 'b::typerep) \<times> (unit \<Rightarrow> term)) \<times> Random.seed"
++where
++  "random_fun_lift f =
++    random_fun_aux TYPEREP('a) TYPEREP('b) (=) Code_Evaluation.term_of f Random.split_seed"
++
++instantiation "fun" :: ("{equal, term_of}", random) random
++begin
++
++definition
++  random_fun :: "natural \<Rightarrow> Random.seed \<Rightarrow> (('a \<Rightarrow> 'b) \<times> (unit \<Rightarrow> term)) \<times> Random.seed"
++  where "random i = random_fun_lift (random i)"
++
++instance ..
++
++end
++
++(*text \<open>Towards type copies and datatypes\<close>
++
++context
++  includes state_combinator_syntax
++begin
++
++definition collapse :: "('a \<Rightarrow> ('a \<Rightarrow> 'b \<times> 'a) \<times> 'a) \<Rightarrow> 'a \<Rightarrow> 'b \<times> 'a"
++  where "collapse f = (f \<circ>\<rightarrow> id)"
++
++end
++
++definition beyond :: "natural \<Rightarrow> natural \<Rightarrow> natural"
++  where "beyond k l = (if l > k then l else 0)"
++
++lemma beyond_zero: "beyond k 0 = 0"
++  by (simp add: beyond_def)
++
++context
++  includes term_syntax
++begin
++
++definition [code_unfold]:
++  "valterm_emptyset = Code_Evaluation.valtermify ({} :: ('a :: typerep) set)"
++
++definition [code_unfold]:
++  "valtermify_insert x s = Code_Evaluation.valtermify insert {\<cdot>} (x :: ('a :: typerep * _)) {\<cdot>} s"
++
++end
++
++instantiation set :: (random) random
++begin
++
++context
++  includes state_combinator_syntax
++begin
++
++
++fun random_aux_set
++where
++  "random_aux_set 0 j = collapse (Random.select_weight [(1, Pair valterm_emptyset)])"
++| "random_aux_set (Code_Numeral.Suc i) j =
++    collapse (Random.select_weight
++      [(1, Pair valterm_emptyset),
++       (Code_Numeral.Suc i,
++        random j \<circ>\<rightarrow> (%x. random_aux_set i j \<circ>\<rightarrow> (%s. Pair (valtermify_insert x s))))])"
++
++
++lemma [code]:
++  "random_aux_set i j =
++    collapse (Random.select_weight [(1, Pair valterm_emptyset),
++      (i, random j \<circ>\<rightarrow> (%x. random_aux_set (i - 1) j \<circ>\<rightarrow> (%s. Pair (valtermify_insert x s))))])"
++proof (induct i rule: natural.induct)
++  case zero
++  show ?case by (subst select_weight_drop_zero [symmetric])
++    (simp add: random_aux_set.simps [simplified] less_natural_def)
++next
++  case (Suc i)
++  show ?case by (simp only: random_aux_set.simps(2) [of "i"] Suc_natural_minus_one)
++qed
++
++definition "random_set i = random_aux_set i i"
++
++instance ..
++
++end
++
++end
++
++lemma random_aux_rec:
++  fixes random_aux :: "natural \<Rightarrow> 'a"
++  assumes "random_aux 0 = rhs 0"
++    and "\<And>k. random_aux (Code_Numeral.Suc k) = rhs (Code_Numeral.Suc k)"
++  shows "random_aux k = rhs k"
++  using assms by (rule natural.induct)*)
++
++(*subsection \<open>Deriving random generators for datatypes\<close>
++
++ML_file \<open>Tools/Quickcheck/quickcheck_common.ML\<close>
++ML_file \<open>Tools/Quickcheck/random_generators.ML\<close>
++
++
++subsection \<open>Code setup\<close>
++
++code_printing
++  constant random_fun_aux \<rightharpoonup> (Quickcheck) "Random'_Generators.random'_fun"
++  \<comment> \<open>With enough criminal energy this can be abused to derive \<^prop>\<open>False\<close>;
++  for this reason we use a distinguished target \<open>Quickcheck\<close>
++  not spoiling the regular trusted code generation\<close>
++
++code_reserved Quickcheck Random_Generators*)
++
++hide_const (open) (*catch_match*) random (*collapse beyond*) random_fun_aux random_fun_lift
++
++hide_fact (open) (*collapse_def beyond_def*) random_fun_lift_def
++
++
++
++subsection \<open>Continuation passing style functions as plus monad\<close>
++
++type_synonym 'a cps = "('a \<Rightarrow> term list option) \<Rightarrow> term list option"
++
++definition cps_empty :: "'a cps"
++  where "cps_empty = (\<lambda>cont. None)"
++
++definition cps_single :: "'a \<Rightarrow> 'a cps"
++  where "cps_single v = (\<lambda>cont. cont v)"
++
++definition cps_bind :: "'a cps \<Rightarrow> ('a \<Rightarrow> 'b cps) \<Rightarrow> 'b cps"
++  where "cps_bind m f = (\<lambda>cont. m (\<lambda>a. (f a) cont))"
++
++definition cps_plus :: "'a cps \<Rightarrow> 'a cps \<Rightarrow> 'a cps"
++  where "cps_plus a b = (\<lambda>c. case a c of None \<Rightarrow> b c | Some x \<Rightarrow> Some x)"
++
++definition cps_if :: "bool \<Rightarrow> unit cps"
++  where "cps_if b = (if b then cps_single () else cps_empty)"
++
++definition cps_not :: "unit cps \<Rightarrow> unit cps"
++  where "cps_not n = (\<lambda>c. case n (\<lambda>u. Some []) of None \<Rightarrow> c () | Some _ \<Rightarrow> None)"
++
++type_synonym 'a pos_bound_cps =
++  "('a \<Rightarrow> (bool * term list) option) \<Rightarrow> natural \<Rightarrow> (bool * term list) option"
++
++definition pos_bound_cps_empty :: "'a pos_bound_cps"
++  where "pos_bound_cps_empty = (\<lambda>cont i. None)"
++
++definition pos_bound_cps_single :: "'a \<Rightarrow> 'a pos_bound_cps"
++  where "pos_bound_cps_single v = (\<lambda>cont i. cont v)"
++
++definition pos_bound_cps_bind :: "'a pos_bound_cps \<Rightarrow> ('a \<Rightarrow> 'b pos_bound_cps) \<Rightarrow> 'b pos_bound_cps"
++  where "pos_bound_cps_bind m f = (\<lambda>cont i. if i = 0 then None else (m (\<lambda>a. (f a) cont i) (i - 1)))"
++
++definition pos_bound_cps_plus :: "'a pos_bound_cps \<Rightarrow> 'a pos_bound_cps \<Rightarrow> 'a pos_bound_cps"
++  where "pos_bound_cps_plus a b = (\<lambda>c i. case a c i of None \<Rightarrow> b c i | Some x \<Rightarrow> Some x)"
++
++definition pos_bound_cps_if :: "bool \<Rightarrow> unit pos_bound_cps"
++  where "pos_bound_cps_if b = (if b then pos_bound_cps_single () else pos_bound_cps_empty)"
++
++datatype (plugins only: code extraction) (dead 'a) unknown =
++  Unknown | Known 'a
++
++datatype (plugins only: code extraction) (dead 'a) three_valued =
++  Unknown_value | Value 'a | No_value
++
++type_synonym 'a neg_bound_cps =
++  "('a unknown \<Rightarrow> term list three_valued) \<Rightarrow> natural \<Rightarrow> term list three_valued"
++
++definition neg_bound_cps_empty :: "'a neg_bound_cps"
++  where "neg_bound_cps_empty = (\<lambda>cont i. No_value)"
++
++definition neg_bound_cps_single :: "'a \<Rightarrow> 'a neg_bound_cps"
++  where "neg_bound_cps_single v = (\<lambda>cont i. cont (Known v))"
++
++definition neg_bound_cps_bind :: "'a neg_bound_cps \<Rightarrow> ('a \<Rightarrow> 'b neg_bound_cps) \<Rightarrow> 'b neg_bound_cps"
++  where "neg_bound_cps_bind m f =
++    (\<lambda>cont i.
++      if i = 0 then cont Unknown
++      else m (\<lambda>a. case a of Unknown \<Rightarrow> cont Unknown | Known a' \<Rightarrow> f a' cont i) (i - 1))"
++
++definition neg_bound_cps_plus :: "'a neg_bound_cps \<Rightarrow> 'a neg_bound_cps \<Rightarrow> 'a neg_bound_cps"
++  where "neg_bound_cps_plus a b =
++    (\<lambda>c i.
++      case a c i of
++        No_value \<Rightarrow> b c i
++      | Value x \<Rightarrow> Value x
++      | Unknown_value \<Rightarrow>
++          (case b c i of
++            No_value \<Rightarrow> Unknown_value
++          | Value x \<Rightarrow> Value x
++          | Unknown_value \<Rightarrow> Unknown_value))"
++
++definition neg_bound_cps_if :: "bool \<Rightarrow> unit neg_bound_cps"
++  where "neg_bound_cps_if b = (if b then neg_bound_cps_single () else neg_bound_cps_empty)"
++
++definition neg_bound_cps_not :: "unit pos_bound_cps \<Rightarrow> unit neg_bound_cps"
++  where "neg_bound_cps_not n =
++    (\<lambda>c i. case n (\<lambda>u. Some (True, [])) i of None \<Rightarrow> c (Known ()) | Some _ \<Rightarrow> No_value)"
++
++definition pos_bound_cps_not :: "unit neg_bound_cps \<Rightarrow> unit pos_bound_cps"
++  where "pos_bound_cps_not n =
++    (\<lambda>c i. case n (\<lambda>u. Value []) i of No_value \<Rightarrow> c () | Value _ \<Rightarrow> None | Unknown_value \<Rightarrow> None)"
++
++hide_type (open) cps pos_bound_cps neg_bound_cps unknown three_valued
++
++hide_const (open) cps_empty cps_single cps_bind cps_plus cps_if cps_not
++  pos_bound_cps_empty pos_bound_cps_single pos_bound_cps_bind
++  pos_bound_cps_plus pos_bound_cps_if pos_bound_cps_not
++  neg_bound_cps_empty neg_bound_cps_single neg_bound_cps_bind
++  neg_bound_cps_plus neg_bound_cps_if neg_bound_cps_not
++  Unknown Known Unknown_value Value No_value
++
++class exhaustive = term_of +
++  fixes exhaustive :: "('a \<Rightarrow> (bool \<times> term list) option) \<Rightarrow> natural \<Rightarrow> (bool \<times> term list) option"
++
++class full_exhaustive = term_of +
++  fixes full_exhaustive ::
++    "('a \<times> (unit \<Rightarrow> term) \<Rightarrow> (bool \<times> term list) option) \<Rightarrow> natural \<Rightarrow> (bool \<times> term list) option"
++
++
++
++end
+diff -urNx '*~' /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/Rat.thy /Applications/Isabelle2022.app/src/HOL/Rat.thy
+--- /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/Rat.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Rat.thy	2023-06-02 09:48:45.000000000 +0900
+@@ -1010,7 +1010,7 @@
+   by (cases p) (simp add: quotient_of_Fract of_rat_rat)
+ 
+ 
+-text \<open>Quickcheck\<close>
++(*text \<open>Quickcheck\<close>
+ 
+ context
+   includes term_syntax
+@@ -1129,7 +1129,7 @@
+   inverse_rat_inst.inverse_rat
+   one_rat_inst.one_rat ord_rat_inst.less_rat
+   ord_rat_inst.less_eq_rat plus_rat_inst.plus_rat times_rat_inst.times_rat
+-  uminus_rat_inst.uminus_rat zero_rat_inst.zero_rat
++  uminus_rat_inst.uminus_rat zero_rat_inst.zero_rat*)
+ 
+ 
+ subsection \<open>Float syntax\<close>
+diff -urNx '*~' /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/Real.thy /Applications/Isabelle2022.app/src/HOL/Real.thy
+--- /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/Real.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Real.thy	2023-06-02 09:48:45.000000000 +0900
+@@ -1655,7 +1655,7 @@
+       of_int_floor_le of_rat_of_int_eq real_less_eq_code)
+ 
+ 
+-text \<open>Quickcheck\<close>
++(*text \<open>Quickcheck\<close>
+ 
+ context
+   includes term_syntax
+@@ -1731,7 +1731,7 @@
+ lemmas [nitpick_unfold] = inverse_real_inst.inverse_real one_real_inst.one_real
+   ord_real_inst.less_real ord_real_inst.less_eq_real plus_real_inst.plus_real
+   times_real_inst.times_real uminus_real_inst.uminus_real
+-  zero_real_inst.zero_real
++  zero_real_inst.zero_real*)
+ 
+ 
+ subsection \<open>Setup for SMT\<close>
+diff -urNx '*~' /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/String.thy /Applications/Isabelle2022.app/src/HOL/String.thy
+--- /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/String.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/String.thy	2023-06-02 09:48:45.000000000 +0900
+@@ -40,11 +40,21 @@
+ 
+ lemma (in comm_semiring_1) of_nat_of_char:
+   \<open>of_nat (of_char c) = of_char c\<close>
+-  by (cases c) simp
++  apply (cases c)
++  by (simp add: distrib_left mult.assoc[symmetric] split del: split_of_bool)
++(* this is more explicit:
++ by (simp only: of_char_Char String.of_char_Char
++ horner_sum_simps Groups_List.horner_sum_simps of_nat_add of_nat_mult of_nat_of_bool of_nat_numeral of_nat_0)
++*)
+ 
+ lemma (in comm_ring_1) of_int_of_char:
+   \<open>of_int (of_char c) = of_char c\<close>
+-  by (cases c) simp
++  apply (cases c)
++  by (simp add: distrib_left mult.assoc[symmetric] split del: split_of_bool)
++(*
++  by (simp only: of_char_Char String.of_char_Char
++ horner_sum_simps Groups_List.horner_sum_simps of_int_add of_int_mult of_int_of_bool of_int_numeral of_int_0)
++*)
+ 
+ lemma nat_of_char [simp]:
+   \<open>nat (of_char c) = of_char c\<close>
+@@ -698,9 +708,9 @@
+ 
+ lemma [code]:
+   \<open>Literal' b0 b1 b2 b3 b4 b5 b6 s = String.literal_of_asciis
+-    [foldr (\<lambda>b k. of_bool b + k * 2) [b0, b1, b2, b3, b4, b5, b6] 0] + s\<close>
++    [foldr (\<lambda>b k. of_bool b + 2 * k) [b0, b1, b2, b3, b4, b5, b6] 0] + s\<close>
+ proof -
+-  have \<open>foldr (\<lambda>b k. of_bool b + k * 2) [b0, b1, b2, b3, b4, b5, b6] 0 = of_char (Char b0 b1 b2 b3 b4 b5 b6 False)\<close>
++  have \<open>foldr (\<lambda>b k. of_bool b + 2 * k) [b0, b1, b2, b3, b4, b5, b6] 0 = of_char (Char b0 b1 b2 b3 b4 b5 b6 False)\<close>
+     by simp
+   moreover have \<open>Literal' b0 b1 b2 b3 b4 b5 b6 s = String.literal_of_asciis
+     [of_char (Char b0 b1 b2 b3 b4 b5 b6 False)] + s\<close>
+diff -urNx '*~' /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/Transcendental.thy /Applications/Isabelle2022.app/src/HOL/Transcendental.thy
+--- /Users/jeremydubut/Downloads/Isabelle2022.app/src/HOL/Transcendental.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Transcendental.thy	2023-06-02 09:48:45.000000000 +0900
+@@ -3422,12 +3422,14 @@
+     have "(-1) ^ ((n - Suc 0) div 2) * (-1) ^ ((p - Suc n) div 2) = - ((-1 :: real) ^ (p div 2))"
+       if np: "odd n" "even p"
+     proof -
+-      have "p > 0"
+-        using \<open>n \<le> p\<close> neq0_conv that(1) by blast
++      have n1: "Suc 0 \<le>  n" using odd_pos[OF that(1)] by simp
++      have opn: "odd (p - n)" using np \<open>n \<le> p\<close> by simp
++      have snp: "Suc n \<le> p" using odd_pos[OF opn] by simp
++      then have p2: "2 \<le> p" using \<open>n \<le> p\<close> that(2) by (auto elim: oddE)
+       then have \<section>: "(- 1::real) ^ (p div 2 - Suc 0) = - ((- 1) ^ (p div 2))"
+-        using \<open>even p\<close> by (auto simp add: dvd_def power_eq_if)
+-      from \<open>n \<le> p\<close> np have *: "n - Suc 0 + (p - Suc n) = p - Suc (Suc 0)" "Suc (Suc 0) \<le> p"
+-        by arith+
++        by (simp add: power_eq_if)
++      from n1 p2 snp have *: "n - Suc 0 + (p - Suc n) = p - Suc (Suc 0)" 
++        by simp
+       have "(p - Suc (Suc 0)) div 2 = p div 2 - Suc 0"
+         by simp
+       with \<open>n \<le> p\<close> np  \<section> * show ?thesis
