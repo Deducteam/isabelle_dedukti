@@ -102,7 +102,7 @@
 
 - `isabelle dedukti_session $session [$theory]`: generates a dk or lp file for each theory of $session (up to $theory)
 
-- `isabelle dedukti_theory $theory`: Export the specified $theory to a dk or lp file with 
+- `isabelle dedukti_theory $session $theory`: Export the specified $theory to a dk or lp file with 
 the same name except that every dot is replaced by an underscore.
 
 Run `isabelle $command` with no argument for more details.
@@ -113,11 +113,24 @@ Remark: [dependency graph of the HOL session](https://isabelle.in.tum.de/website
 
 ## Example usage
 
+The following command
+```bash
+isabelle build -d $path_to_isabelle_dedukti/HOL -b HOL_wp
+```
+will compile *session* `HOL_wp`, a variant of the standard library session `HOL` containing all proofs. The session is defined in `$path_to_isabelle_dedukti/HOL/ROOT`, which is specified to Isabelle by the `-d` option.
+
+To translate the proofs of a theory `HOL.Groups`, please do
+```bash
+isabelle dedukti_theory -d $path_to_isabelle_dedukti/HOL HOL_wp HOL.Groups
+```
+
+Since `isabelle build` with proofs easily fail, we provide the following workflow to define one session for every theory.
+
 ```
 isabelle dedukti_root HOL
 isabelle build -b Dedukti_HOL.Groups
 isabelle dedukti_session HOL HOL.Groups
-isabelle dedukti_theory HOL.Groups
+isabelle dedukti_theory Dedukti_HOL HOL.Groups
 ```
 
 ## Checking the lp output with lambdapi
