@@ -117,7 +117,7 @@ object Exporter {
             case Some(entry) => {
               val prf_name = entry.name
               val thy_name = entry.theory_name
-              if (thy_name == theory_name && prf_name.startsWith("proofs/")) {
+              if (prf_name.startsWith("proofs/")) {
                 val prf_serial = prf_name.substring(7).toLong
                 Export_Theory.read_proof(ses_cont, Export_Theory.Thm_Id(prf_serial,thy_name)) match {
                   case Some(prf) => (prf_serial,prf)::prfs2
