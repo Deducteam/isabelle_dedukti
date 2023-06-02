@@ -2,7 +2,7 @@
 
 ## Dependencies
 
-* [Isabelle2021-1](https://isabelle.sketis.net/website-Isabelle2021-1)
+* [Isabelle2022](https://isabelle.in.tum.de/website-Isabelle2022/dist/Isabelle2022_linux.tar.gz)
 
 * one dk file checker among:
 
@@ -19,9 +19,9 @@
 
   * **Isabelle**
 
-      - Download [Isabelle2021-1](https://isabelle.sketis.net/website-Isabelle2021-1)
+      - Download [Isabelle20212](https://isabelle.in.tum.de/website-Isabelle2022/dist/Isabelle2022_linux.tar.gz)
 
-      - Unpack and run `Isabelle2021-1/bin/isabelle jedit` at least
+      - Unpack and run `Isabelle2022/bin/isabelle jedit` at least
         once, to ensure that everything works (e.g. see Documentation
         panel with Examples).
 
@@ -34,10 +34,7 @@
             directory in `$PATH`
 
           + or: install references to the Isabelle executables in
-            another directory mentioned in `$PATH`, e.g. as follows:
-            ```bash
-            Isabelle2021-1/bin/isabelle install "$HOME/bin"
-            ```
+            another directory mentioned in `$PATH`
 
   * **isabelle_dedukti**
 
@@ -68,7 +65,7 @@
     - If something goes wrong, you may want to try deleting the databases (which means the proof terms will be rebuilt anew) located somewhere like:
 
     ```
-    $ISABELLE_HOME_USER/Isabelle2021-1/heaps/polyml-<something>/log/
+    $ISABELLE_HOME_USER/Isabelle2022/heaps/polyml-<something>/log/
     ```
 
   * **Patching the Isabelle/HOL library**
@@ -121,11 +118,12 @@
 
 ## Provided commands
 
-- `isabelle dedukti_root $session`: generates a ROOT file defining a proof-exporting session Dedukti_$theory for each $theory of $session, as well as the scripts kocheck.sh and dkcheck.sh to check dk files.
+- `isabelle dedukti_root $session`: Generate a ROOT file with a proof-exporting session named Dedukti_$theory for each $theory of $session, and the scripts kocheck.sh and dkcheck.sh to check dk files.
 
-- `isabelle dedukti_session $session`: generates a dk or lp file for each theory of $session.
+- `isabelle dedukti_session $session [$theory]`: generates a dk or lp file for each theory of $session (up to $theory)
 
-- `isabelle dedukti_theory $session $theory`: generates a dk or lp file for $theory in $session
+- `isabelle dedukti_theory $theory`: Export the specified $theory to a dk or lp file with 
+the same name except that every dot is replaced by an underscore.
 
 Run `isabelle $command` with no argument for more details.
 
@@ -137,16 +135,17 @@ Remark: [dependency graph of the HOL session](https://isabelle.in.tum.de/website
 ## Example usage
 
 ```
-isabelle dedukti_root HOL HOL.Groups
+isabelle dedukti_root HOL
 isabelle build -b Dedukti_HOL.Groups
-isabelle dedukti_session -v HOL HOL.Groups
+isabelle dedukti_session HOL HOL.Groups
+isabelle dedukti_theory HOL.Groups
 ```
 
 
 ## Checking the lp output with lambdapi
 
 ```
-lambdapi check $theory.lp
+lambdapi check Dedukti_HOL_Groups.lp
 ```
 
 

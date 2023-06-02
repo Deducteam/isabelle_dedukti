@@ -7,7 +7,9 @@ lib/classes/dedukti.jar
 .idea/**
 
 HOL*.dk
+*.dko
 HOL*.lp
+*.lpo
 Pure.dk
 Pure.lp
 Tools*.dk

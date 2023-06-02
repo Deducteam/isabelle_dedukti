@@ -630,7 +630,7 @@ object Translate {
       }
     }
     catch { case e : Throwable => e.printStackTrace
-      error("oops") }
+      error("oops in " + quote(s)) }
 //    catch { case ERROR(msg) => error(msg + "\nin " + quote(s)) }
   }
 }

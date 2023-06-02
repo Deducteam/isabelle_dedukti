@@ -15,7 +15,6 @@ object Exporter {
     theory_name: String,
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
-    fresh_build: Boolean = false,
     use_notations: Boolean = false,
     eta_expand: Boolean = false,
     output_lp: Boolean = false,
@@ -26,14 +25,6 @@ object Exporter {
     Prelude.set_current_module(theory_name)
 
     progress.echo("Read theory " + theory_name + " ...")
-
-    val build_options = {
-      val options1 = options + "export_theory" + "record_proofs=2"
-      if (options.bool("export_standard_proofs")) options1
-      else options1 + "export_proofs"
-    }
-    Build.build_logic(build_options, session, progress = progress, dirs = dirs,
-      fresh = fresh_build, strict = true)
 
     val store = Sessions.store(options)
     val term_cache = Term.Cache.make()
@@ -182,7 +173,6 @@ if( verbose ) progress.echo("reading thms")
       { args =>
         var output_lp = false
         var dirs: List[Path] = Nil
-        var fresh_build = false
         var use_notations = false
         var eta_expand = false
         var options = Options.init()
@@ -198,11 +188,10 @@ if( verbose ) progress.echo("reading thms")
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
     -v           verbose mode
 
-Export the specified THEORY in SESSION to a Dedukti or Lambdapi file with the same name except that every dot is replaced by an underscore.""",
+Export the specified THEORY to a Dedukti or Lambdapi file with the same name except that every dot is replaced by an underscore.""",
 
         "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
         "e" -> (_ => eta_expand = true),
-        "f" -> (_ => fresh_build = true),
         "l" -> (arg => output_lp = true),
         "n" -> (_ => use_notations = true),
         "o:" -> (arg => { options += arg }),
@@ -210,9 +199,9 @@ Export the specified THEORY in SESSION to a Dedukti or Lambdapi file with the sa
 
         val more_args = getopts(args)
 
-        val (session,theory) =
+        val theory =
           more_args match {
-            case List(session,theory) => (session,theory)
+            case List(theory) => theory
             case _ => getopts.usage()
           }
 
@@ -222,7 +211,8 @@ Export the specified THEORY in SESSION to a Dedukti or Lambdapi file with the sa
         if (verbose) progress.echo("Started at " + Build_Log.print_date(start_date) + "\n")
 
         progress.interrupt_handler {
-          try exporter(options, session, theory, progress, dirs, fresh_build, use_notations, eta_expand, output_lp, verbose)
+          val session_name = if (theory == "Pure") "Pure" else "Dedukti_" + theory
+          try exporter(options, session_name, theory, progress, dirs, use_notations, eta_expand, output_lp, verbose)
           catch {case x: Exception =>
             progress.echo(x.getStackTrace.mkString("\n"))
             println(x)}
