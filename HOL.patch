@@ -1,6 +1,6 @@
-diff -urNx '*~' ./Enum.thy /cygdrive/c/Isabelle2022/src/HOL/Enum.thy
---- ./Enum.thy	2023-05-30 11:50:42.024180400 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/Enum.thy	2023-06-01 11:16:35.187000700 +0900
+diff -urNx '*~' /home/blanqui/src/Isabelle2022-origin/src/HOL/Enum.thy /home/blanqui/src/Isabelle2022/src/HOL/Enum.thy
+--- /home/blanqui/src/Isabelle2022-origin/src/HOL/Enum.thy	2022-10-25 03:37:32.000000000 +0900
++++ /home/blanqui/src/Isabelle2022/src/HOL/Enum.thy	2023-06-02 16:51:56.420006039 +0900
 @@ -929,15 +929,47 @@
  definition "x mod y = (case y of a\<^sub>1 \<Rightarrow> x | _ \<Rightarrow> a\<^sub>1)"
  definition "abs = (\<lambda>x. case x of a\<^sub>3 \<Rightarrow> a\<^sub>2 | _ \<Rightarrow> x)"
@@ -189,9 +189,9 @@ diff -urNx '*~' ./Enum.thy /cygdrive/c/Isabelle2022/src/HOL/Enum.thy
  end
  
  
-diff -urNx '*~' ./Euclidean_Division.thy /cygdrive/c/Isabelle2022/src/HOL/Euclidean_Division.thy
---- ./Euclidean_Division.thy	2023-05-30 11:50:42.373685700 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/Euclidean_Division.thy	2023-06-01 15:56:45.443491700 +0900
+diff -urNx '*~' /home/blanqui/src/Isabelle2022-origin/src/HOL/Euclidean_Division.thy /home/blanqui/src/Isabelle2022/src/HOL/Euclidean_Division.thy
+--- /home/blanqui/src/Isabelle2022-origin/src/HOL/Euclidean_Division.thy	2022-10-25 03:37:32.000000000 +0900
++++ /home/blanqui/src/Isabelle2022/src/HOL/Euclidean_Division.thy	2023-06-02 16:51:56.420006039 +0900
 @@ -1684,7 +1684,8 @@
  lemma divide_int_unfold:
    \<open>(sgn k * int m) div (sgn l * int n) = (sgn k * sgn l * int (m div n)
@@ -221,9 +221,9 @@ diff -urNx '*~' ./Euclidean_Division.thy /cygdrive/c/Isabelle2022/src/HOL/Euclid
  qed
  
  
-diff -urNx '*~' ./Factorial.thy /cygdrive/c/Isabelle2022/src/HOL/Factorial.thy
---- ./Factorial.thy	2023-05-30 11:49:53.645647300 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/Factorial.thy	2023-05-31 14:26:38.861397700 +0900
+diff -urNx '*~' /home/blanqui/src/Isabelle2022-origin/src/HOL/Factorial.thy /home/blanqui/src/Isabelle2022/src/HOL/Factorial.thy
+--- /home/blanqui/src/Isabelle2022-origin/src/HOL/Factorial.thy	2022-10-25 03:37:32.000000000 +0900
++++ /home/blanqui/src/Isabelle2022/src/HOL/Factorial.thy	2023-06-02 16:51:56.420006039 +0900
 @@ -28,7 +28,7 @@
    have "prod Suc {0..<n} = \<Prod>{1..n}"
      by (simp add: atLeast0LessThan prod.atLeast1_atMost_eq)
@@ -233,9 +233,9 @@ diff -urNx '*~' ./Factorial.thy /cygdrive/c/Isabelle2022/src/HOL/Factorial.thy
    then show ?thesis
      unfolding fact_prod_Suc by (simp add: atLeast0LessThan prod.atLeast1_atMost_eq)
  qed
-diff -urNx '*~' ./Groups_List.thy /cygdrive/c/Isabelle2022/src/HOL/Groups_List.thy
---- ./Groups_List.thy	2023-05-30 11:49:53.253421400 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/Groups_List.thy	2023-05-31 15:58:09.698128300 +0900
+diff -urNx '*~' /home/blanqui/src/Isabelle2022-origin/src/HOL/Groups_List.thy /home/blanqui/src/Isabelle2022/src/HOL/Groups_List.thy
+--- /home/blanqui/src/Isabelle2022-origin/src/HOL/Groups_List.thy	2022-10-25 03:37:32.000000000 +0900
++++ /home/blanqui/src/Isabelle2022/src/HOL/Groups_List.thy	2023-06-02 16:51:56.420006039 +0900
 @@ -3,7 +3,7 @@
  section \<open>Sum and product over lists\<close>
  
@@ -245,9 +245,9 @@ diff -urNx '*~' ./Groups_List.thy /cygdrive/c/Isabelle2022/src/HOL/Groups_List.t
  begin
  
  locale monoid_list = monoid
-diff -urNx '*~' ./List.thy /cygdrive/c/Isabelle2022/src/HOL/List.thy
---- ./List.thy	2023-05-30 11:50:42.721423600 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/List.thy	2023-06-01 13:37:53.298674500 +0900
+diff -urNx '*~' /home/blanqui/src/Isabelle2022-origin/src/HOL/List.thy /home/blanqui/src/Isabelle2022/src/HOL/List.thy
+--- /home/blanqui/src/Isabelle2022-origin/src/HOL/List.thy	2022-10-25 03:37:32.000000000 +0900
++++ /home/blanqui/src/Isabelle2022/src/HOL/List.thy	2023-06-02 16:51:56.424006129 +0900
 @@ -5,7 +5,7 @@
  section \<open>The datatype of finite lists\<close>
  
@@ -363,9 +363,9 @@ diff -urNx '*~' ./List.thy /cygdrive/c/Isabelle2022/src/HOL/List.thy
    moreover have "i < min (length (u@v)) (length (w@z))"
      using assms(2) \<open>i < length w\<close> by simp
    moreover have "take i (u@v) = take i (w@z)"
-diff -urNx '*~' ./MacLaurin.thy /cygdrive/c/Isabelle2022/src/HOL/MacLaurin.thy
---- ./MacLaurin.thy	2023-05-30 11:50:42.798563100 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/MacLaurin.thy	2023-06-01 14:01:03.357721800 +0900
+diff -urNx '*~' /home/blanqui/src/Isabelle2022-origin/src/HOL/MacLaurin.thy /home/blanqui/src/Isabelle2022/src/HOL/MacLaurin.thy
+--- /home/blanqui/src/Isabelle2022-origin/src/HOL/MacLaurin.thy	2022-10-25 03:37:32.000000000 +0900
++++ /home/blanqui/src/Isabelle2022/src/HOL/MacLaurin.thy	2023-06-02 16:51:56.428006218 +0900
 @@ -22,7 +22,7 @@
  
  lemma eq_diff_eq': "x = y - z \<longleftrightarrow> y = x + z"
@@ -503,9 +503,9 @@ diff -urNx '*~' ./MacLaurin.thy /cygdrive/c/Isabelle2022/src/HOL/MacLaurin.thy
    ultimately have "\<exists>t>c. t < x \<and> f x =
      (\<Sum>m<n. diff m c / (fact m) * (x - c) ^ m) + diff n t / (fact n) * (x - c) ^ n"
      by (rule Taylor_up)
-diff -urNx '*~' ./Main.thy /cygdrive/c/Isabelle2022/src/HOL/Main.thy
---- ./Main.thy	2023-05-30 11:49:55.729754800 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/Main.thy	2023-06-01 14:50:29.701688800 +0900
+diff -urNx '*~' /home/blanqui/src/Isabelle2022-origin/src/HOL/Main.thy /home/blanqui/src/Isabelle2022/src/HOL/Main.thy
+--- /home/blanqui/src/Isabelle2022-origin/src/HOL/Main.thy	2022-10-25 03:37:32.000000000 +0900
++++ /home/blanqui/src/Isabelle2022/src/HOL/Main.thy	2023-06-02 16:51:56.428006218 +0900
 @@ -11,7 +11,7 @@
      Quickcheck_Narrowing
      Mirabelle
@@ -515,9 +515,9 @@ diff -urNx '*~' ./Main.thy /cygdrive/c/Isabelle2022/src/HOL/Main.thy
      BNF_Greatest_Fixpoint
      Filter
      Conditionally_Complete_Lattices
-diff -urNx '*~' ./Nitpick.thy /cygdrive/c/Isabelle2022/src/HOL/Nitpick.thy
---- ./Nitpick.thy	2023-05-30 11:49:54.739036200 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/Nitpick.thy	2023-05-31 14:26:38.879025000 +0900
+diff -urNx '*~' /home/blanqui/src/Isabelle2022-origin/src/HOL/Nitpick.thy /home/blanqui/src/Isabelle2022/src/HOL/Nitpick.thy
+--- /home/blanqui/src/Isabelle2022-origin/src/HOL/Nitpick.thy	2022-10-25 03:37:32.000000000 +0900
++++ /home/blanqui/src/Isabelle2022/src/HOL/Nitpick.thy	2023-06-02 16:51:56.428006218 +0900
 @@ -8,7 +8,7 @@
  section \<open>Nitpick: Yet Another Counterexample Generator for Isabelle/HOL\<close>
  
@@ -527,9 +527,9 @@ diff -urNx '*~' ./Nitpick.thy /cygdrive/c/Isabelle2022/src/HOL/Nitpick.thy
  keywords
    "nitpick" :: diag and
    "nitpick_params" :: thy_decl
-diff -urNx '*~' ./Quickcheck_Exhaustive.thy /cygdrive/c/Isabelle2022/src/HOL/Quickcheck_Exhaustive.thy
---- ./Quickcheck_Exhaustive.thy	2023-05-30 11:49:56.585222900 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/Quickcheck_Exhaustive.thy	2023-06-01 15:41:23.368670200 +0900
+diff -urNx '*~' /home/blanqui/src/Isabelle2022-origin/src/HOL/Quickcheck_Exhaustive.thy /home/blanqui/src/Isabelle2022/src/HOL/Quickcheck_Exhaustive.thy
+--- /home/blanqui/src/Isabelle2022-origin/src/HOL/Quickcheck_Exhaustive.thy	2022-10-25 03:37:32.000000000 +0900
++++ /home/blanqui/src/Isabelle2022/src/HOL/Quickcheck_Exhaustive.thy	2023-06-02 16:53:54.914538365 +0900
 @@ -6,7 +6,7 @@
  
  theory Quickcheck_Exhaustive
@@ -539,7 +539,16 @@ diff -urNx '*~' ./Quickcheck_Exhaustive.thy /cygdrive/c/Isabelle2022/src/HOL/Qui
  begin
  
  subsection \<open>Basic operations for exhaustive generators\<close>
-@@ -746,9 +746,9 @@
+@@ -739,16 +739,16 @@
+ axiomatization unknown :: 'a
+ 
+ notation (output) unknown  ("?")
+-
++(*
+ ML_file \<open>Tools/Quickcheck/exhaustive_generators.ML\<close>
+-
++*)
+ declare [[quickcheck_batch_tester = exhaustive]]
  
  
  subsection \<open>Defining generators for abstract types\<close>
@@ -551,9 +560,9 @@ diff -urNx '*~' ./Quickcheck_Exhaustive.thy /cygdrive/c/Isabelle2022/src/HOL/Qui
  hide_fact (open) orelse_def
  no_notation orelse  (infixr "orelse" 55)
  
-diff -urNx '*~' ./Quickcheck_Random.thy /cygdrive/c/Isabelle2022/src/HOL/Quickcheck_Random.thy
---- ./Quickcheck_Random.thy	2023-05-30 11:49:56.406913000 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/Quickcheck_Random.thy	2023-06-01 15:38:09.316303000 +0900
+diff -urNx '*~' /home/blanqui/src/Isabelle2022-origin/src/HOL/Quickcheck_Random.thy /home/blanqui/src/Isabelle2022/src/HOL/Quickcheck_Random.thy
+--- /home/blanqui/src/Isabelle2022-origin/src/HOL/Quickcheck_Random.thy	2022-10-25 03:37:32.000000000 +0900
++++ /home/blanqui/src/Isabelle2022/src/HOL/Quickcheck_Random.thy	2023-06-02 16:51:56.428006218 +0900
 @@ -213,6 +213,7 @@
  
  end
@@ -625,9 +634,9 @@ diff -urNx '*~' ./Quickcheck_Random.thy /cygdrive/c/Isabelle2022/src/HOL/Quickch
  subsection \<open>Code setup\<close>
  
  code_printing
-diff -urNx '*~' ./Random_Prep.thy /cygdrive/c/Isabelle2022/src/HOL/Random_Prep.thy
---- ./Random_Prep.thy	1970-01-01 09:00:00.000000000 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/Random_Prep.thy	2023-05-31 14:31:21.495846600 +0900
+diff -urNx '*~' /home/blanqui/src/Isabelle2022-origin/src/HOL/Random_Prep.thy /home/blanqui/src/Isabelle2022/src/HOL/Random_Prep.thy
+--- /home/blanqui/src/Isabelle2022-origin/src/HOL/Random_Prep.thy	1970-01-01 09:00:00.000000000 +0900
++++ /home/blanqui/src/Isabelle2022/src/HOL/Random_Prep.thy	2023-06-02 16:51:56.428006218 +0900
 @@ -0,0 +1,386 @@
 +(*  Title:      HOL/Quickcheck_Random.thy
 +    Author:     Florian Haftmann & Lukas Bulwahn, TU Muenchen
@@ -1015,9 +1024,9 @@ diff -urNx '*~' ./Random_Prep.thy /cygdrive/c/Isabelle2022/src/HOL/Random_Prep.t
 +
 +
 +end
-diff -urNx '*~' ./Rat.thy /cygdrive/c/Isabelle2022/src/HOL/Rat.thy
---- ./Rat.thy	2023-05-30 11:50:42.466861600 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/Rat.thy	2023-05-31 14:26:38.902063300 +0900
+diff -urNx '*~' /home/blanqui/src/Isabelle2022-origin/src/HOL/Rat.thy /home/blanqui/src/Isabelle2022/src/HOL/Rat.thy
+--- /home/blanqui/src/Isabelle2022-origin/src/HOL/Rat.thy	2022-10-25 03:37:32.000000000 +0900
++++ /home/blanqui/src/Isabelle2022/src/HOL/Rat.thy	2023-06-02 16:51:56.432006308 +0900
 @@ -1010,7 +1010,7 @@
    by (cases p) (simp add: quotient_of_Fract of_rat_rat)
  
@@ -1036,9 +1045,9 @@ diff -urNx '*~' ./Rat.thy /cygdrive/c/Isabelle2022/src/HOL/Rat.thy
  
  
  subsection \<open>Float syntax\<close>
-diff -urNx '*~' ./Real.thy /cygdrive/c/Isabelle2022/src/HOL/Real.thy
---- ./Real.thy	2023-05-30 11:50:42.529129200 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/Real.thy	2023-05-31 14:26:38.904474700 +0900
+diff -urNx '*~' /home/blanqui/src/Isabelle2022-origin/src/HOL/Real.thy /home/blanqui/src/Isabelle2022/src/HOL/Real.thy
+--- /home/blanqui/src/Isabelle2022-origin/src/HOL/Real.thy	2022-10-25 03:37:32.000000000 +0900
++++ /home/blanqui/src/Isabelle2022/src/HOL/Real.thy	2023-06-02 16:51:56.432006308 +0900
 @@ -1655,7 +1655,7 @@
        of_int_floor_le of_rat_of_int_eq real_less_eq_code)
  
@@ -1057,9 +1066,9 @@ diff -urNx '*~' ./Real.thy /cygdrive/c/Isabelle2022/src/HOL/Real.thy
  
  
  subsection \<open>Setup for SMT\<close>
-diff -urNx '*~' ./String.thy /cygdrive/c/Isabelle2022/src/HOL/String.thy
---- ./String.thy	2023-05-30 11:50:00.046418000 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/String.thy	2023-05-31 17:18:55.605821500 +0900
+diff -urNx '*~' /home/blanqui/src/Isabelle2022-origin/src/HOL/String.thy /home/blanqui/src/Isabelle2022/src/HOL/String.thy
+--- /home/blanqui/src/Isabelle2022-origin/src/HOL/String.thy	2022-10-25 03:37:32.000000000 +0900
++++ /home/blanqui/src/Isabelle2022/src/HOL/String.thy	2023-06-02 16:51:56.432006308 +0900
 @@ -40,11 +40,21 @@
  
  lemma (in comm_semiring_1) of_nat_of_char:
@@ -1096,9 +1105,9 @@ diff -urNx '*~' ./String.thy /cygdrive/c/Isabelle2022/src/HOL/String.thy
      by simp
    moreover have \<open>Literal' b0 b1 b2 b3 b4 b5 b6 s = String.literal_of_asciis
      [of_char (Char b0 b1 b2 b3 b4 b5 b6 False)] + s\<close>
-diff -urNx '*~' ./Transcendental.thy /cygdrive/c/Isabelle2022/src/HOL/Transcendental.thy
---- ./Transcendental.thy	2023-05-30 11:50:41.644512700 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/Transcendental.thy	2023-05-31 14:26:38.908985500 +0900
+diff -urNx '*~' /home/blanqui/src/Isabelle2022-origin/src/HOL/Transcendental.thy /home/blanqui/src/Isabelle2022/src/HOL/Transcendental.thy
+--- /home/blanqui/src/Isabelle2022-origin/src/HOL/Transcendental.thy	2022-10-25 03:37:32.000000000 +0900
++++ /home/blanqui/src/Isabelle2022/src/HOL/Transcendental.thy	2023-06-02 16:51:56.436006397 +0900
 @@ -3422,12 +3422,14 @@
      have "(-1) ^ ((n - Suc 0) div 2) * (-1) ^ ((p - Suc n) div 2) = - ((-1 :: real) ^ (p div 2))"
        if np: "odd n" "even p"
