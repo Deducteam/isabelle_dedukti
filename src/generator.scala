@@ -27,14 +27,31 @@ object Generator {
     verbose: Boolean = false,
     ): Unit = {
 
+    val full_stru = Sessions.load_structure(options, dirs = dirs)
+    val selected_sessions =
+      full_stru.selection(Sessions.Selection(sessions = List[String](session)))
+    val info = selected_sessions(session)
+    val anc = info.parent match{
+      case Some(x) => x
+      case _ => error("the session does not have any parent")
+    }
+
     // theory graph
-    val theory_graph = Rootfile.graph(options, session, progress, dirs, verbose)    // if (verbose) { progress.echo("graph: " + theory_graph) }
+    val theory_graph = Rootfile.graph(options, session, anc, progress, dirs, verbose)    // if (verbose) { progress.echo("graph: " + theory_graph) }
     val theories : List[Document.Node.Name] = theory_graph.topological_order
     // if (verbose) { progress.echo("topological order: " + theories) }
 
     // Generate a dk or lp file for each theory
+    // We are assuming that Pure is already generated
+    // Exporter.exporter(options, "Pure", "Pure",
+    //       progress = progress,
+    //       dirs = dirs,
+    //       use_notations = use_notations,
+    //       eta_expand = eta_expand,
+    //       output_lp = output_lp,
+    //       verbose = verbose)
     breakable{
-      for (theory <- theories) {
+      for (theory <- theories.tail) {
         val theory_name = theory.toString
         val session_name = if (theory_name == Thy_Header.PURE) "Pure" else "Dedukti_" + theory_name
         Exporter.exporter(options, session_name, theory_name,

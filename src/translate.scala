@@ -27,7 +27,7 @@ object Prelude {
   var namesSet: Set[String] = Set()
 
   // Dedukti or Lambdapi module names cannot contain dots
-  def mod_name(m: String): String = m.replace(".", "_")
+  def mod_name(m: String): String = m.replace(".", "_").replace("-","_")
 
   // module of a translated name
   var moduleOf: Map[String, String] = Map()
@@ -70,7 +70,7 @@ object Prelude {
         val cut = id.split("[.]", 2)
         val (prefix, radical) = if (cut.length == 1) ("", cut(0)) else (cut(0), cut(1))
         // because Dedukti does not accept names with dots
-        var translated_id = radical.replace(".", "_")
+        var translated_id = mod_name(radical)
         if (namesSet(translated_id)) translated_id += "_" + kind
         if (namesSet(translated_id)) translated_id = prefix + "_" + translated_id
         if (namesSet(translated_id)) error("duplicated name: " + translated_id)

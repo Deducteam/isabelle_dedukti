@@ -19,15 +19,17 @@ object Rootfile {
   def graph(
     options: Options,
     session: String,
+    anc: String,
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
     verbose: Boolean = false,
     ) = {
+
     var theory_graph =
       if (session == "Pure") {
         (Document.Node.Name.make_graph(List(((Document.Node.Name("Pure", theory = Thy_Header.PURE), ()),List[Document.Node.Name]()))))
       } else {
-        val base_info = Sessions.base_info(options, "Pure", progress, dirs)
+        val base_info = Sessions.base_info(options, anc, progress, dirs)
         val session_info =
           base_info.sessions_structure.get(session) match {
             case Some(info) => info
@@ -62,30 +64,60 @@ object Rootfile {
     verbose: Boolean = false,
     ): Unit = {
 
+    val full_stru = Sessions.load_structure(options, dirs = dirs)
+    val selected_sessions =
+      full_stru.selection(Sessions.Selection(sessions = List[String](session)))
+    val info = selected_sessions(session)
+    val anc = info.parent match{
+      case Some(x) => x
+      case _ => error("the session does not have any parent")
+    }
+
     // theory graph
-    val theory_graph = graph(options, session, progress, dirs, verbose)
+    // var theory_graph = Document.Node.Name.make_graph(List(((Document.Node.Name("Pure", theory = Thy_Header.PURE), ()),List[Document.Node.Name]())))
+    // var ancestor = ""
+    val theory_graph = graph(options, session, anc, progress, dirs, verbose)
+    val theory_graph_pure = graph(options, session, "Pure", progress, dirs, verbose)
+    
+    // match{
+    //   case (x,y) => {
+    //     theory_graph = x
+    //     ancestor = y
+    //   }
+    //   case _ => error("this should be a pair")
+    // }
+
     // if (verbose) progress.echo("graph: " +theory_graph)
     val theories : List[Document.Node.Name] = theory_graph.topological_order
+    val theories_pure : List[Document.Node.Name] = theory_graph_pure.topological_order
+
     // if (verbose) progress.echo("Session graph top ordered: " + theories)
 
     // Generate ROOT file with one session for each theory
-    val filename = "ROOT"
+    "mkdir -p ROOTS/"+session !
+    val filename = "ROOTS/"+session+"/ROOT"
     if (verbose) progress.echo("Generates " + filename + " ...")
     val file = new File(filename)
     val bw = new BufferedWriter(new FileWriter(file))
-    var previous_session = "Pure"
+    var previous_session = "Dedukti_"+anc
+    if (anc == "Pure")
+      previous_session = "Pure"
+    var it_check = theories.length - 1
     for (theory <- theories.tail) {
+      it_check = it_check - 1
       val theory_name = theory.toString
-      val session_name = "Dedukti_" + theory_name
-      bw.write("session " + session_name + " in \"Ex/" + theory_name + "\" = " + previous_session + " +\n")
+      var session_name = "Dedukti_" + theory_name
+      if (it_check == 0)
+        session_name = "Dedukti_"+session
+      bw.write("session \"" + session_name + "\" in \"Ex/" + theory_name + "\" = \"" + previous_session + "\" +\n")
       bw.write("   options [export_theory, export_proofs, record_proofs = 2]\n")
       bw.write("   sessions\n")
-      bw.write("      " + session + "\n")
+      bw.write("      \"" + session + "\"\n")
       bw.write("   theories\n")
-      bw.write("      " + theory_name + "\n\n")
+      bw.write("      \"" + theory_name + "\"\n\n")
 
       //if (!Files.exists(Paths.get("Ex/"+theory_name))) { }
-      "mkdir -p Ex/"+theory_name !
+      "mkdir -p ROOTS/"+session+"/Ex/"+theory_name !
 
       previous_session = session_name
       }
@@ -97,7 +129,7 @@ object Rootfile {
     val file2 = new File(filename2)
     val bw2 = new BufferedWriter(new FileWriter(file2))
     bw2.write("#!/bin/sh\nkocheck --eta -j ${JOBS:-7} STTfa.dk")
-    for (theory <- theories) {
+    for (theory <- theories_pure) {
       bw2.write(" " + Prelude.mod_name(theory.toString) + ".dk")
     }
     bw2.write("\n")
@@ -109,7 +141,7 @@ object Rootfile {
     val file3 = new File(filename3)
     val bw3 = new BufferedWriter(new FileWriter(file3))
     bw3.write("#!/bin/sh\nfor f in STTfa.dk")
-    for (theory <- theories) {
+    for (theory <- theories_pure) {
       bw3.write(" " + Prelude.mod_name(theory.toString) + ".dk")
     }
     bw3.write("\ndo\n  dk check -e --eta $f\ndone\n")
