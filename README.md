@@ -138,7 +138,7 @@ isabelle dedukti_theory -l HOL.Groups
 ## Checking the lp output with lambdapi
 
 ```
-lambdapi check Dedukti_HOL_Groups.lp
+lambdapi check HOL_Groups.lp
 ```
 
 ## Checking the dk output with dkcheck
@@ -146,6 +146,7 @@ lambdapi check Dedukti_HOL_Groups.lp
 ```
 bash ./dkcheck.sh
 ```
+Modify `dkcheck.sh` by adding a `#` in the list of files if you do not want to check all files.
 
 ## Checking the dk output with kocheck
 
@@ -156,6 +157,7 @@ The verification of dk files by kocheck requires to slightly modify those files 
 cd kocheck
 bash ../kocheck.sh
 ```
+Modify `kocheck.sh` by adding a `#` in the list of files if you do not want to check all files.
 
 ## What was tested?
 
