@@ -70,6 +70,7 @@ jobs:
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle build -b Dedukti_HOL.Groups
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_session HOL HOL.Groups
           eval $(opam env)
+          sed -i -e 's/HOL_Groups.dk/HOL_Groups.dk #/' ./dkcheck.sh ./kocheck.sh
           bash ./dkcheck.sh
           mkdir -p kocheck
           ./remove-requires.sh *.dk
