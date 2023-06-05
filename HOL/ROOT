@@ -1,4 +1,3 @@
-
 session HOL_wp (main) = Pure +
   description "
     Classical Higher-order Logic.
