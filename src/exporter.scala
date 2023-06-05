@@ -32,7 +32,6 @@ object Exporter {
     val ses_cont = Export.open_session_context(store, base_info)
     val provider = ses_cont.theory(theory_name)
     val current_theories = ses_cont.theory_names()
-
     val theory = Export_Theory.read_theory(provider)
 
     progress.echo("Translate theory " + theory_name + " ...")

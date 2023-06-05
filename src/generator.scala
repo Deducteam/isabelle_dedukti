@@ -28,8 +28,8 @@ object Generator {
     ): Unit = {
 
     // theory graph
-    val theory_graph = Rootfile.graph(options, session, progress, dirs, verbose)    //if (verbose) { progress.echo("graph: " + theory_graph) }
-    progress.echo("graph: " + theory_graph)
+    val theory_graph = Rootfile.graph(options, session, progress, dirs, verbose)
+    if (verbose) { progress.echo("graph: " + theory_graph) }
     val theories : List[Document.Node.Name] = theory_graph.topological_order
     // if (verbose) { progress.echo("topological order: " + theories) }
 
