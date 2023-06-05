@@ -137,13 +137,15 @@ To visualize theory dependencies in HOL, you can look at the [dependency graph o
 
 ## Commands to translate Isabelle proofs to Dedukti or Lambdapi proofs
 
-- `isabelle dedukti_root $session`: generate a ROOT file with a proof-exporting session named Dedukti_$theory for each $theory of $session, and the scripts kocheck.sh and dkcheck.sh to check dk files.
+Run `isabelle $command` with no argument for more details.
 
 - `isabelle dedukti_session $session [$theory]`: generate a dk or lp file for each theory of $session (up to $theory)
 
 - `isabelle dedukti_theory $session $theory`: export the specified $theory of $session to a dk or lp file with the same name except that every minus or dot is replaced by an underscore.
 
-Run `isabelle $command` with no argument for more details.
+- `isabelle dedukti_check $session`: generate the scripts `dkcheck.sh` and `kocheck.sh` to check the generated dk files with dkcheck and kocheck respectively.
+
+- `isabelle dedukti_root $session`: generate a ROOT file with a proof-exporting session named Dedukti_$theory for each $theory in $session. This may be useful for debugging or if your computer does not have enough memory to run a single session with all theories. Modify those scripts by adding a `#` in the list of files if you do not want to check all files.
 
 
 ## Checking the lp output with lambdapi
@@ -157,7 +159,6 @@ lambdapi check HOL_Groups.lp
 ```
 bash ./dkcheck.sh
 ```
-Modify `dkcheck.sh` by adding a `#` in the list of files if you do not want to check all files.
 
 ## Checking the dk output with kocheck
 
@@ -168,7 +169,7 @@ The verification of dk files by kocheck requires to slightly modify those files 
 cd kocheck
 bash ../kocheck.sh
 ```
-Modify `kocheck.sh` by adding a `#` in the list of files if you do not want to check all files.
+
 
 ## What was tested?
 
