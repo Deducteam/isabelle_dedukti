@@ -62,7 +62,7 @@ jobs:
           cp STTfa.dk STTfa.lp lambdapi.pkg examples/HOL.Groups
           cd examples/HOL.Groups
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle build -b -d. HOL.Groups_wp
-          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle build -b Pure
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_session Pure
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_session -d. -l HOL.Groups_wp
           eval $(opam env)
           lambdapi check HOL_Groups.lp
