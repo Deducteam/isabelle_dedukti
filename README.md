@@ -97,7 +97,7 @@
     $ISABELLE_HOME_USER/Isabelle2022/heaps/polyml-<something>/log/
     ```
 
-## How to change your ROOT file to record Isabelle proofs?
+## How to make Isabelle record proofs?
 
 For building to record Isabelle proofs so that they can be translated to Dedukti or Lambdapi afterwards, users need to add the following options in their ROOT file:
 
@@ -105,7 +105,7 @@ For building to record Isabelle proofs so that they can be translated to Dedukti
 export_theory,export_proofs,record_proofs=2
 ```
 
-For instance, here is a ROOT file to build Main and Complex_Main with proof recording:
+For instance, here is a ROOT file to build all the HOL theories up to `Main` and `Complex_Main` with proof recording:
 ```
 session HOL_wp (main) = Pure +
   description "
@@ -120,14 +120,24 @@ session HOL_wp (main) = Pure +
     Tools.Code_Generator
 ```
 
-For debugging, or if your computer does not have much memory, we provide the following command:
+Then, to actually generate Isabelle proofs, one has to do:
 
-- `isabelle dedukti_root $session`: generate a ROOT file with a proof-exporting session named Dedukti_$theory for each $theory of $session, and the scripts kocheck.sh and dkcheck.sh to check dk files.
+```
+isabelle build -d $directory_of_ROOT_file $session_name
+```
 
-For information, here is the [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2022/dist/library/HOL/HOL/session_graph.pdf)
+For instance, to generate the Isabelle proofs up to HOL.Groups, do:
+```
+cd examples/HOL.Groups
+isabelle build -d. HOL.Groups_wp
+```
+
+To visualize theory dependencies in HOL, you can look at the [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2022/dist/library/HOL/HOL/session_graph.pdf)
 
 
 ## Commands to translate Isabelle proofs to Dedukti or Lambdapi proofs
+
+- `isabelle dedukti_root $session`: generate a ROOT file with a proof-exporting session named Dedukti_$theory for each $theory of $session, and the scripts kocheck.sh and dkcheck.sh to check dk files.
 
 - `isabelle dedukti_session $session [$theory]`: generate a dk or lp file for each theory of $session (up to $theory)
 
@@ -162,11 +172,10 @@ Modify `kocheck.sh` by adding a `#` in the list of files if you do not want to c
 
 ## What was tested?
 
-The whole HOL session can be exported and checked:
-  * `isabelle dedukti_root HOL`: 2s
-  * `isabelle build -b Dedukti_Complex_Main`: 51m40s, 249 Mo
-  * `isabelle dedukti_session HOL`: 20m38s
-  * `isabelle dedukti_session -l HOL`: idem
+The whole `HOL_wp` session in `examples/HOL/` can be exported and checked:
+  * `isabelle build -b -d; HOL_wp`: 51m42s, 249 Mo
+  * `isabelle dedukti_session -d. HOL_wp`: 20m38s
+  * `isabelle dedukti_session -d. -l HOL_wp`: idem
   * `bash kocheck.sh`: 3m
   * `bash dkcheck.sh`: 10m
   * `lambdapi check Complex_Main.lp`: out of memory

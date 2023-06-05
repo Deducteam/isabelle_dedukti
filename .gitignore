@@ -21,6 +21,5 @@ Main.lp
 *.dko
 *.lpo
 
-ROOT
 dkcheck.sh
 kocheck.sh
