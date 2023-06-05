@@ -97,43 +97,44 @@
     $ISABELLE_HOME_USER/Isabelle2022/heaps/polyml-<something>/log/
     ```
 
-## Provided commands
+## How to change your ROOT file to record Isabelle proofs?
+
+For building to record Isabelle proofs so that they can be translated to Dedukti or Lambdapi afterwards, users need to add the following options in their ROOT file:
+
+```
+export_theory,export_proofs,record_proofs=2
+```
+
+For instance, here is a ROOT file to build Main and Complex_Main with proof recording:
+```
+session HOL_wp (main) = Pure +
+  description "
+    Classical Higher-order Logic.
+  "
+  options [strict_facts,export_theory,export_proofs,record_proofs=2]
+  sessions Tools HOL
+  theories
+    Main
+    Complex_Main
+  document_theories
+    Tools.Code_Generator
+```
+
+For debugging, or if your computer does not have much memory, we provide the following command:
 
 - `isabelle dedukti_root $session`: generate a ROOT file with a proof-exporting session named Dedukti_$theory for each $theory of $session, and the scripts kocheck.sh and dkcheck.sh to check dk files.
 
+For information, here is the [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2022/dist/library/HOL/HOL/session_graph.pdf)
+
+
+## Commands to translate Isabelle proofs to Dedukti or Lambdapi proofs
+
 - `isabelle dedukti_session $session [$theory]`: generate a dk or lp file for each theory of $session (up to $theory)
 
-- `isabelle dedukti_theory $theory`: export the specified $theory to a dk or lp file with the same name except that every dot is replaced by an underscore.
+- `isabelle dedukti_theory $session $theory`: export the specified $theory of $session to a dk or lp file with the same name except that every minus or dot is replaced by an underscore.
 
 Run `isabelle $command` with no argument for more details.
 
-Remark: a theory whose name contains a "." is translated to a dk or lp file where every "." is replaced by "_" because dkcheck does not accept dots in module names.
-
-Remark: [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2022/dist/library/HOL/HOL/session_graph.pdf)
-
-## Examples
-
-- Exporting the Isabelle/HOL standard library up to `Groups`:
-```
-isabelle dedukti_root HOL
-isabelle build -b Dedukti_HOL.Groups
-isabelle dedukti_session HOL HOL.Groups
-isabelle dedukti_session -l HOL HOL.Groups
-```
-- Exporting the Isabelle/HOL standard library up to `Complex_Main`:
-```
-isabelle dedukti_root HOL
-isabelle build -b Dedukti_Complex_Main
-isabelle dedukti_session HOL
-isabelle dedukti_session -l HOL
-```
-- Exporting a single theory:
-```
-isabelle dedukti_root HOL
-isabelle build -b Dedukti_HOL.Groups
-isabelle dedukti_theory HOL.Groups
-isabelle dedukti_theory -l HOL.Groups
-```
 
 ## Checking the lp output with lambdapi
 
