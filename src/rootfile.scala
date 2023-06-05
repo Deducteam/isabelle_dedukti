@@ -38,8 +38,7 @@ object Rootfile {
       }
     // remove HOL.Record, HOL.Nitpick and HOL.Nunchaku
     for ((k,e) <- theory_graph.iterator) {
-      if (
-          Set[String]("HOL.Record","HOL.Nitpick","HOL.Nunchaku")(k.theory)) {
+      if (Set[String]("HOL.Record","HOL.Nitpick","HOL.Nunchaku")(k.theory)) {
         theory_graph = theory_graph.del_node(k)
       }
     }

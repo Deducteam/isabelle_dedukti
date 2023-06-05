@@ -175,7 +175,7 @@ bash ../kocheck.sh
 
 The whole `HOL_wp` session in `examples/HOL/` can be exported and checked:
   * `isabelle build -b -d; HOL_wp`: 51m42s, 249 Mo
-  * `isabelle dedukti_session -d. HOL_wp`: 36m43s
+  * `isabelle dedukti_session -d. HOL_wp`: 26m14s
   * `isabelle dedukti_session -d. -l HOL_wp`: idem
   * `bash kocheck.sh`: 3m
   * `bash dkcheck.sh`: 10m

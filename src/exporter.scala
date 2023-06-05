@@ -30,16 +30,9 @@ object Exporter {
     val term_cache = Term.Cache.make()
     val db = store.open_database(session)
     //progress.echo("DB: " + db)
-    //val provider = Export.Provider.database(db, store.cache, session, theory_name)
     val ses_cont = Export.open_session_context0(store, session)
     val provider = ses_cont.theory(theory_name)
-
-    val theory =
-  //    if (theory_name == Thy_Header.PURE) {
-  //      Export_Theory.read_pure_theory(store, cache = term_cache)
-  //    } else {
-        Export_Theory.read_theory(provider)
-  //    }
+    val theory = Export_Theory.read_theory(provider)
 
     progress.echo("Translate theory " + theory_name + " ...")
 
@@ -82,7 +75,7 @@ object Exporter {
       case (prf_serial,prf)::prfs2 =>
         if (prf_serial > thm_prf) {
           translate_thm(thm)
-          //progress.echo("  Ready for thm " + prf_serial + " > " + thm_prf)
+          // progress.echo("  Ready for thm " + prf_serial + " > " + thm_prf)
           thms match {
             case thm2 :: thms2 =>
             prf_loop(prfs,thm2,thms2,get_thm_prf(thm2))
@@ -96,8 +89,8 @@ object Exporter {
         }
       case _ =>
     }
-    if( verbose ) progress.echo("reading proofs")
-    def read_entry_names(db: SQL.Database, session_name: String, theory_name: String): List[Export.Entry_Name] = {
+    if (verbose) progress.echo("reading proofs")
+    /*def read_entry_names(db: SQL.Database, session_name: String, theory_name: String): List[Export.Entry_Name] = {
       val select =
         Export.Data.table.select(List(Export.Data.theory_name, Export.Data.name), Export.Data.where_equal(session_name,theory_name))
       db.using_statement(select)(stmt =>
@@ -106,7 +99,8 @@ object Exporter {
             theory = res.string(Export.Data.theory_name),
             name = res.string(Export.Data.name))).toList)
     }
-    val exports = read_entry_names(db,session,theory_name)
+    val exports = read_entry_names(db,session,theory_name)*/
+    val exports = Export.read_entry_names(db,session)
     val prfs =
       exports.foldLeft(Nil: List[(Long,Export_Theory.Proof)]) {
         case (prfs2 : List[(Long,Export_Theory.Proof)],entry_name) => {
@@ -127,7 +121,7 @@ object Exporter {
           }
         }
       }
-if( verbose ) progress.echo("reading thms")
+    if (verbose) progress.echo("reading thms")
     theory.thms match {
       case thm :: thms => prf_loop(prfs.sortBy(_._1),thm,thms,get_thm_prf(thm))
       case _ => prf_loop(prfs.sortBy(_._1),null,null,Long.MaxValue)
@@ -195,7 +189,7 @@ if( verbose ) progress.echo("reading thms")
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
     -v           verbose mode
 
-Export the specified THEORY to a Dedukti or Lambdapi file with the same name except that every dot is replaced by an underscore.""",
+Export the specified THEORY of SESSION to a Dedukti or Lambdapi file with the same name except that every dot is replaced by an underscore.""",
 
         "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
         "e" -> (_ => eta_expand = true),
