@@ -99,7 +99,15 @@ object Prelude {
   def axiom_ident(a: String): String = get_name(a, Markup.AXIOM)
   def   thm_ident(a: String): String = get_name(a, Export_Theory.Kind.THM  )
   def   var_ident(a: String): String = get_name(a, "var")
-  def proof_ident(serial: Long, module: String = current_module): String = get_name(f"proof_$serial", "", module)
+
+  def add_proof_ident(serial: Long, module: String = current_module): Unit = {
+    namesMap get (full_name(f"proof_$serial", "")) match {
+      case None => add_name(f"proof_$serial", "", module)
+      case Some(s) =>
+    }
+  }
+
+  def ref_proof_ident(serial: Long): String = get_name(f"proof_$serial", "")
 
   /* prologue proper */
 
@@ -222,7 +230,7 @@ object Translate {
         val impl = try implArgsMap(id) catch { case _ : Throwable => Nil }
         Syntax.appls(Syntax.Symb(id), axm.types.map(typ), impl)
       case thm: Term.PThm =>
-        val head = if (thm.name.nonEmpty) thm_ident(thm.name) else proof_ident(thm.serial)
+        val head = if (thm.name.nonEmpty) thm_ident(thm.name) else ref_proof_ident(thm.serial)
         val impl = try implArgsMap(head) catch { case _ : Throwable => Nil }
         Syntax.appls(Syntax.Symb(head), thm.types.map(typ), impl)
       case _ => error("Bad proof term encountered:\n" + prf)

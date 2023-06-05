@@ -59,7 +59,7 @@ object Exporter {
       if (entry_name.name.startsWith("proofs/")) {
         val prf_serial = entry_name.name.substring(7).toLong
         if (verbose) progress.echo("  proof " + prf_serial + " from " + entry_name.theory)
-        Prelude.proof_ident(prf_serial,entry_name.theory)
+        Prelude.add_proof_ident(prf_serial,entry_name.theory)
       }
     }
 
@@ -97,7 +97,7 @@ object Exporter {
           }
         } else {
           if (verbose) progress.echo("  proof " + prf_serial)
-          current_theory.append(Translate.stmt_decl(Prelude.proof_ident(prf_serial), prf.prop, Some(prf.proof)))
+          current_theory.append(Translate.stmt_decl(Prelude.ref_proof_ident(prf_serial), prf.prop, Some(prf.proof)))
           prf_loop(prfs2,thm,thms,thm_prf)
         }
       case _ =>
