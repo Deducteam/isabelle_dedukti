@@ -3,6 +3,6 @@ session HOL.Groups_wp = Pure +
     Classical Higher-order Logic.
   "
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
-  sessions Tools HOL
+  sessions HOL
   theories
     HOL.Groups
