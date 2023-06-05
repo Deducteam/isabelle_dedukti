@@ -53,6 +53,15 @@ object Exporter {
       if (verbose) progress.echo("  " + a.toString + " " + a.serial)
       current_theory.append(Translate.stmt_decl(Prelude.axiom_ident(a.name), a.the_content.prop, None))
     }
+    // to mark the theory the proof belongs
+    val entry_names = ses_cont.entry_names()
+    for (entry_name <- entry_names) {
+      if (entry_name.name.startsWith("proofs/")) {
+        val prf_serial = entry_name.name.substring(7).toLong
+        if (verbose) progress.echo("  proof " + prf_serial + " from " + entry_name.theory)
+        Prelude.proof_ident(prf_serial,entry_name.theory)
+      }
+    }
 
     if (!current_theories.contains(theory_name)) {
       return

@@ -59,7 +59,7 @@ object Prelude {
   def set_current_module(m: String) = { current_module = m }
 
   // add a new mapping from an Isabelle full_name to its translation
-  def add_name(id: String, kind: String) : String = {
+  def add_name(id: String, kind: String, module0: String = current_module) : String = {
     //print("add_name " + full_name(id, kind) + " -> ")
     val (translated_id, module) = id match {
       case Pure_Thy.FUN => ("arr", "STTfa")
@@ -74,7 +74,7 @@ object Prelude {
         if (namesSet(translated_id)) translated_id += "_" + kind
         if (namesSet(translated_id)) translated_id = prefix + "_" + translated_id
         if (namesSet(translated_id)) error("duplicated name: " + translated_id)
-        (translated_id, current_module)
+        (translated_id, module0)
     }
     //println(module + "/" + translated_id)
     namesMap += full_name(id, kind) -> translated_id
@@ -84,9 +84,9 @@ object Prelude {
   }
 
   // translate an Isabelle full_name
-  def get_name(id: String, kind: String): String = {
+  def get_name(id: String, kind: String, module: String = current_module): String = {
     namesMap get (full_name(id, kind)) match {
-      case None => add_name(id, kind)
+      case None => add_name(id, kind, module)
       case Some(s) => { add_dep(module_of(s)); s }
     }
   }
@@ -99,7 +99,7 @@ object Prelude {
   def axiom_ident(a: String): String = get_name(a, Markup.AXIOM)
   def   thm_ident(a: String): String = get_name(a, Export_Theory.Kind.THM  )
   def   var_ident(a: String): String = get_name(a, "var")
-  def proof_ident(serial: Long): String = get_name(f"proof_$serial", "")
+  def proof_ident(serial: Long, module: String = current_module): String = get_name(f"proof_$serial", "", module)
 
   /* prologue proper */
 
