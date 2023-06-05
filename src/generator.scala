@@ -37,20 +37,13 @@ object Generator {
     breakable{
       for (theory <- theories) {
         val theory_name = theory.toString
-        try {
-          Exporter.exporter(options, session, theory_name,
-            progress = progress,
-            dirs = dirs,
-            use_notations = use_notations,
-            eta_expand = eta_expand,
-            output_lp = output_lp,
-            verbose = verbose)
-        } catch {// TODO: How to test in a proper way?
-        case e =>
-          //if (verbose) {
-            progress.echo("failed to generate, maybe belong to parent session?")
-          //}
-        }
+        Exporter.exporter(options, session, theory_name,
+          progress = progress,
+          dirs = dirs,
+          use_notations = use_notations,
+          eta_expand = eta_expand,
+          output_lp = output_lp,
+          verbose = verbose)
         if (theory_name == target_theory) break()
       }
     }

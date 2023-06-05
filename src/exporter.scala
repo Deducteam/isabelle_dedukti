@@ -28,10 +28,11 @@ object Exporter {
 
     val store = Sessions.store(options)
     val term_cache = Term.Cache.make()
-    val db = store.open_database(session)
-    //progress.echo("DB: " + db)
-    val ses_cont = Export.open_session_context0(store, session)
+    val base_info = Sessions.base_info(options, session, progress, dirs)
+    val ses_cont = Export.open_session_context(store, base_info)
     val provider = ses_cont.theory(theory_name)
+    val current_theories = ses_cont.theory_names()
+
     val theory = Export_Theory.read_theory(provider)
 
     progress.echo("Translate theory " + theory_name + " ...")
@@ -52,6 +53,10 @@ object Exporter {
     for (a <- theory.axioms) {
       if (verbose) progress.echo("  " + a.toString + " " + a.serial)
       current_theory.append(Translate.stmt_decl(Prelude.axiom_ident(a.name), a.the_content.prop, None))
+    }
+
+    if (!current_theories.contains(theory_name)) {
+      return
     }
 
     def get_thm_prf(thm : Export_Theory.Entity[Export_Theory.Thm]) = {
@@ -90,7 +95,7 @@ object Exporter {
       case _ =>
     }
     if (verbose) progress.echo("reading proofs")
-    /*def read_entry_names(db: SQL.Database, session_name: String, theory_name: String): List[Export.Entry_Name] = {
+    def read_entry_names(db: SQL.Database, session_name: String, theory_name: String): List[Export.Entry_Name] = {
       val select =
         Export.Data.table.select(List(Export.Data.theory_name, Export.Data.name), Export.Data.where_equal(session_name,theory_name))
       db.using_statement(select)(stmt =>
@@ -99,8 +104,8 @@ object Exporter {
             theory = res.string(Export.Data.theory_name),
             name = res.string(Export.Data.name))).toList)
     }
-    val exports = read_entry_names(db,session,theory_name)*/
-    val exports = Export.read_entry_names(db,session)
+    val db = store.open_database(session)
+    val exports = read_entry_names(db,session,theory_name)
     val prfs =
       exports.foldLeft(Nil: List[(Long,Export_Theory.Proof)]) {
         case (prfs2 : List[(Long,Export_Theory.Proof)],entry_name) => {
