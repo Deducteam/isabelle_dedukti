@@ -560,9 +560,70 @@ diff -urNx '*~' ./Quickcheck_Exhaustive.thy /home/blanqui/src/Isabelle2022/src/H
  hide_fact (open) orelse_def
  no_notation orelse  (infixr "orelse" 55)
  
-diff -urNx '*~' ./Quickcheck_Random.thy /home/blanqui/src/Isabelle2022/src/HOL/Quickcheck_Random.thy
---- ./Quickcheck_Random.thy	2022-10-25 03:37:32.000000000 +0900
-+++ /home/blanqui/src/Isabelle2022/src/HOL/Quickcheck_Random.thy	2023-06-02 16:51:56.428006218 +0900
+diff -urNx '*~' ./Quickcheck_Narrowing.thy /cygdrive/c/Isabelle2022/src/HOL/Quickcheck_Narrowing.thy
+--- ./Quickcheck_Narrowing.thy	2023-05-30 11:49:56.782383300 +0900
++++ /cygdrive/c/Isabelle2022/src/HOL/Quickcheck_Narrowing.thy	2023-06-02 23:15:38.354426700 +0900
+@@ -196,7 +196,9 @@
+ 
+ external_file \<open>~~/src/HOL/Tools/Quickcheck/Narrowing_Engine.hs\<close>
+ external_file \<open>~~/src/HOL/Tools/Quickcheck/PNF_Narrowing_Engine.hs\<close>
++(*
+ ML_file \<open>Tools/Quickcheck/narrowing_generators.ML\<close>
++*)
+ 
+ definition narrowing_dummy_partial_term_of :: "('a :: partial_term_of) itself => narrowing_term => term"
+ where
+@@ -206,6 +208,7 @@
+ where
+   "narrowing_dummy_narrowing = narrowing"
+ 
++(*
+ lemma [code]:
+   "ensure_testable f =
+     (let
+@@ -224,6 +227,7 @@
+ instance ..
+ 
+ end
++*)
+   
+ subsection \<open>Narrowing for integers\<close>
+ 
+@@ -264,6 +268,7 @@
+ 
+ end
+ 
++(*
+ declare [[code drop: "partial_term_of :: int itself \<Rightarrow> _"]]
+ 
+ lemma [code]:
+@@ -274,6 +279,7 @@
+      then Code_Evaluation.term_of (- (int_of_integer i) div 2)
+      else Code_Evaluation.term_of ((int_of_integer i + 1) div 2))"
+   by (rule partial_term_of_anything)+
++*)
+ 
+ instantiation integer :: narrowing
+ begin
+@@ -286,6 +292,7 @@
+ 
+ end
+ 
++(*
+ declare [[code drop: "partial_term_of :: integer itself \<Rightarrow> _"]]  
+ 
+ lemma [code]:
+@@ -296,6 +303,7 @@
+      then Code_Evaluation.term_of (- i div 2)
+      else Code_Evaluation.term_of ((i + 1) div 2))"
+   by (rule partial_term_of_anything)+
++*)
+ 
+ code_printing constant "Code_Evaluation.term_of :: integer \<Rightarrow> term" \<rightharpoonup> (Haskell_Quickcheck) 
+   "(let { t = Typerep.Typerep \"Code'_Numeral.integer\" [];
+diff -urNx '*~' ./Quickcheck_Random.thy /cygdrive/c/Isabelle2022/src/HOL/Quickcheck_Random.thy
+--- ./Quickcheck_Random.thy	2023-05-30 11:49:56.406913000 +0900
++++ /cygdrive/c/Isabelle2022/src/HOL/Quickcheck_Random.thy	2023-06-01 15:38:09.316303000 +0900
 @@ -213,6 +213,7 @@
  
  end
