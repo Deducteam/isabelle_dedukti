@@ -76,7 +76,7 @@ object Prelude {
         if (namesSet(translated_id)) error("duplicated name: " + translated_id)
         (translated_id, module0)
     }
-    println(module + "/" + translated_id)
+    //println(module + "/" + translated_id)
     namesMap += full_name(id, kind) -> translated_id
     namesSet += translated_id
     moduleOf += translated_id -> module

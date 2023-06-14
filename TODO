@@ -1,3 +1,12 @@
+- Pure is not accessible from a given session. So dedukti_session will read Pure session. TODO: do the same for dedukti_theory.
+
+- dedukti_session repeatedly reads the session for every theory. TODO: share the info.
+
+- Export.Session_Context.theory_names contains some theories from the parent session. TODO: test if a theory belongs to the session. 
+
+
+Old:
+
 - what is the option "export_standard_proofs"" vs "export_proofs" ?
 
 - eliminate odd mutable datastructures: irrelevant for performance, and the cost of clear semantics;

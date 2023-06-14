@@ -50,7 +50,7 @@ object Dkcheck {
     for (theory <- theories) {
       bw3.write(" " + Prelude.mod_name(theory.toString) + ".dk")
     }
-    bw3.write("\ndo\n  dk check -e --eta $f\ndone\n")
+    bw3.write("\ndo\n  dk check -e --eta $f || exit 1\ndone\n")
     bw3.close()
   }
 

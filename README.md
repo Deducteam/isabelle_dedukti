@@ -150,17 +150,22 @@ Run `isabelle $command` with no argument for more details.
 
 ## Checking the lp output with lambdapi
 
+Copy the files `lambdapi.pkg` and `STTfa.lp` in the directory where lp files are generated.
+
 ```
 lambdapi check HOL_Groups.lp
 ```
 
 ## Checking the dk output with dkcheck
 
+Copy the file `STTfa.dk` in the directory where dk files are generated.
 ```
 bash ./dkcheck.sh
 ```
 
 ## Checking the dk output with kocheck
+
+Copy the file `STTfa.dk` in the directory where dk files are generated.
 
 The verification of dk files by kocheck requires to slightly modify those files because kocheck does not accept require commands and self-qualified identifiers.
 
@@ -170,15 +175,47 @@ cd kocheck
 bash ../kocheck.sh
 ```
 
+## Examples
 
-## What was tested?
+The `examples` directory contains 3 examples:
+
+- `HOL.Groups`: HOL session up to Groups (small example used for CI)
+```
+cd examples/HOL.Groups
+# generate Isabelle proofs
+isabelle build -b -d. HOL.Groups_wp
+# translate Isabelle proofs to Dedukti
+isabelle dedukti_session -d. HOL.Groups_wp
+# generate dkcheck.sh
+isabelle dedukti_check -d. HOL.Groups_wp
+# copy dk file defining the encoding
+cp ../../STTfa.dk .
+# patch dk files to use kocheck
+../../remove-requires.sh *.dk
+# check dk files with kocheck
+cd kocheck
+bash ../kocheck.sh
+cd ..
+# check dk files with dkcheck
+bash dkcheck.sh
+# translate Isabelle proofs to Lambdapi
+isabelle dedukti_session -d. -l HOL.Groups_wp
+# copy lp files defining the encoding
+cp ../../lambdapi.pkg ../../STTfa.lp .
+# check lp files with lambdapi
+lambdapi check HOL_Groups.lp
+```
+
+- `HOL`: default HOL session (big example, see performances below)
+
+## Performances
 
 The whole `HOL_wp` session in `examples/HOL/` can be exported and checked:
   * `isabelle build -b -d; HOL_wp`: 51m42s, 249 Mo
   * `isabelle dedukti_session -d. HOL_wp`: 26m14s
   * `isabelle dedukti_session -d. -l HOL_wp`: idem
-  * `bash kocheck.sh`: 3m
-  * `bash dkcheck.sh`: 10m
+  * `bash kocheck.sh`: 4m14s
+  * `bash dkcheck.sh`: 13m17s
   * `lambdapi check Complex_Main.lp`: out of memory
   * `lambdapi check HOL_Nat.lp`: 2m04s
   * `lambdapi check HOL_Int.lp`: 11m44s
@@ -196,6 +233,7 @@ The whole `HOL_wp` session in `examples/HOL/` can be exported and checked:
 - `exporter.scala` provides the isabelle command `dedukti_theory`
 - `generator.scala` provides the Isabelle command `dedukti_session`
 - `rootfile.scala` provides the Isabelle command `dedukti_root`
+- `dkcheck.scala` provides the Isabelle command `dedukti_check`
 
 ## Browsing and modifying Isabelle sources
 

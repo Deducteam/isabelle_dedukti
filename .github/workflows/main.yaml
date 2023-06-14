@@ -45,8 +45,6 @@ jobs:
         uses: avsm/setup-ocaml@v2
         with:
           ocaml-compiler: ${{ matrix.ocaml-version }}
-#      - name: Create opam switch for ocaml ${{ matrix.ocaml-version }}
-#        run: opam switch create ${{ matrix.ocaml-version }}
       - name: Install dkcheck
         run: opam install dedukti.${{ matrix.dedukti-version }}
       - name: Install lambdapi
@@ -70,7 +68,7 @@ jobs:
         run: |
           cd examples/HOL.Groups
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle build -b -d. HOL.Groups_wp
-          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_session Pure
+#          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_session Pure
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_session -d. HOL.Groups_wp
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_check -d. HOL.Groups_wp
           eval $(opam env)

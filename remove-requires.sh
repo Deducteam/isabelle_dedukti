@@ -1,6 +1,5 @@
 #!/bin/sh
 
-set -x
 mkdir -p kocheck
 for f in $*
 do
