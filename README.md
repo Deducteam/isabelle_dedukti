@@ -179,7 +179,7 @@ bash ../kocheck.sh
 
 The `examples` directory contains 3 examples:
 
-- `HOL.Groups`: HOL session up to Groups (small example used for CI)
+- `examples/HOL.Groups/ROOT` defines the session `HOL.groups_wp` (wp = with proofs) made of the theories of the default HOL session up to Groups (small example used for CI)
 ```
 cd examples/HOL.Groups
 # generate Isabelle proofs
@@ -206,7 +206,7 @@ cp ../../lambdapi.pkg ../../STTfa.lp .
 lambdapi check HOL_Groups.lp
 ```
 
-- `HOL`: default HOL session (big example, see performances below)
+- `examples/HOL/ROOT` defines the session `HOL_wp` which is similar to `HOL` but with proofs (big example, see performances below)
 
 ## Performances
 
