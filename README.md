@@ -222,6 +222,7 @@ The whole `HOL_wp` session in `examples/HOL/` can be exported and checked:
 
 ## Known issues
 
+  * Currently, isabelle_dedukti does not always compute correctly in which theory a given symbol is defined when translating theories on top of HOL. We plan to fix this soon.
   * In a database associated with a given theory, there might be proofs labelled from another theory. Fix: those proofs are not too many so they are just translated in this theory.
   * Somehow, the databases for `Nat` and `Sum_type` use proofs from `Product_Type` while they are independent in the dependency graph. Fix: add explictly the connection in the dependency graph.
 

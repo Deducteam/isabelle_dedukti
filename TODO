@@ -4,6 +4,10 @@
 
 - Export.Session_Context.theory_names contains some theories from the parent session. TODO: test if a theory belongs to the session. 
 
+- dedukti_root: put session names between double quotes
+
+- dedukti_session: check that theory exists ?
+
 
 Old:
 
