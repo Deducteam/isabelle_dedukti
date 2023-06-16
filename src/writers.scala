@@ -36,9 +36,11 @@ trait Ident_Writer {
     if (ident.containsSlice("|}")) Exn.error("Bad ident: " + Library.quote(ident))
     else f"{|$ident|}"
 
-  def escape_if_needed(a: String): String =
-    if (reserved(a) || !is_regular_identifier(a)) escape(a)
-    else a
+  def escape_if_needed(a: String): String = {
+    val a1 = if (a.startsWith("'")) ("_" + a.substring(1,a.length())) else a
+    val a2 = a1.replace("(","_").replace(")","_")
+    if (reserved(a2) || !is_regular_identifier(a2)) escape(a2) else a2
+  }
 }
 
 
