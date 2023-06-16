@@ -37,8 +37,8 @@ trait Ident_Writer {
     else f"{|$ident|}"
 
   def escape_if_needed(a: String): String = {
-    val a1 = if (a.startsWith("'")) ("_" + a.substring(1,a.length())) else a
-    val a2 = a1.replace("(","_").replace(")","_")
+    val a1 = if (a.startsWith("'")||a.startsWith(":")) ("_" + a.substring(1,a.length())) else a
+    val a2 = a1.replace('(','_').replace(')','_').replace('\\','_').replace('<','_').replace('>','_').replace('^','_')
     if (reserved(a2) || !is_regular_identifier(a2)) escape(a2) else a2
   }
 }
