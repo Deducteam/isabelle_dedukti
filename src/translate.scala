@@ -27,7 +27,7 @@ object Prelude {
   var namesSet: Set[String] = Set()
 
   // Dedukti or Lambdapi module names cannot contain dots
-  def mod_name(m: String): String = m.replace(".", "_")
+  def mod_name(m: String): String = m.replace(".", "_").replace("-", "_")
 
   // module of a translated name
   var moduleOf: Map[String, String] = Map()
@@ -71,12 +71,14 @@ object Prelude {
         val (prefix, radical) = if (cut.length == 1) ("", cut(0)) else (cut(0), cut(1))
         // because Dedukti does not accept names with dots
         var translated_id = radical.replace(".", "_")
+        if (kind == "var") translated_id += "_"
         if (namesSet(translated_id)) translated_id += "_" + kind
         if (namesSet(translated_id)) translated_id = prefix + "_" + translated_id
         if (namesSet(translated_id)) error("duplicated name: " + translated_id)
         (translated_id, module0)
     }
     //println(module + "/" + translated_id)
+    if (translated_id == "proof_159372") println("found it with id "+id+" and kind "+kind+" in "+module)
     namesMap += full_name(id, kind) -> translated_id
     namesSet += translated_id
     moduleOf += translated_id -> module
@@ -176,7 +178,7 @@ object Translate {
   def typ(ty: Term.Typ): Syntax.Typ =
     ty match {
       case Term.TFree(a, _) =>
-        Syntax.Var(a)
+        Syntax.Var(var_ident(a))
       case Term.Type(c, args) =>
         val id_c = type_ident(c)
         val impl = try implArgsMap(id_c) catch { case _ : Throwable => Nil }

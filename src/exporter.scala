@@ -13,6 +13,7 @@ object Exporter {
     options: Options,
     session: String,
     theory_name: String,
+    translate: Boolean,
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
     use_notations: Boolean = false,
@@ -34,38 +35,62 @@ object Exporter {
     val current_theories = ses_cont.theory_names()
     val theory = Export_Theory.read_theory(provider)
 
-    progress.echo("Translate theory " + theory_name + " ...")
+    // progress.echo("Translate theory " + theory_name + " ...")
 
-    val current_theory = mutable.Queue[Syntax.Command]()
-    for (a <- theory.classes) {
-      if (verbose) progress.echo("  " + a.toString + a.serial)
-      current_theory.append(Translate.class_decl(a.name))
-    }
-    for (a <- theory.types) {
-      if (verbose) progress.echo("  " + a.toString + a.serial)
-      current_theory.append(Translate.type_decl(a.name, a.the_content.args, a.the_content.abbrev, a.the_content.syntax))
-    }
-    for (a <- theory.consts) {
-      if (verbose) progress.echo("  " + a.toString + " " + a.serial)
-      current_theory.append(Translate.const_decl(a.name, a.the_content.typargs, a.the_content.typ, a.the_content.abbrev, a.the_content.syntax))
-    }
-    for (a <- theory.axioms) {
-      if (verbose) progress.echo("  " + a.toString + " " + a.serial)
-      current_theory.append(Translate.stmt_decl(Prelude.axiom_ident(a.name), a.the_content.prop, None))
-    }
+ 
     // to mark the theory the proof belongs
     val entry_names = ses_cont.entry_names()
     for (entry_name <- entry_names) {
-      if (entry_name.name.startsWith("proofs/")) {
+      if (entry_name.name.startsWith("proofs/") && entry_name.theory == theory_name) {
         val prf_serial = entry_name.name.substring(7).toLong
         if (verbose) progress.echo("  proof " + prf_serial + " from " + entry_name.theory)
         Prelude.add_proof_ident(prf_serial,entry_name.theory)
       }
     }
-
-    if (!current_theories.contains(theory_name)) {
+    
+    val current_theory = mutable.Queue[Syntax.Command]()
+    if (translate) {
+      for (a <- theory.classes) {
+        if (verbose) progress.echo("  " + a.toString + a.serial)
+        current_theory.append(Translate.class_decl(a.name))
+      }
+      for (a <- theory.types) {
+        if (verbose) progress.echo("  " + a.toString + a.serial)
+        current_theory.append(Translate.type_decl(a.name, a.the_content.args, a.the_content.abbrev, a.the_content.syntax))
+      }
+      for (a <- theory.consts) {
+        if (verbose) progress.echo("  " + a.toString + " " + a.serial)
+        current_theory.append(Translate.const_decl(a.name, a.the_content.typargs, a.the_content.typ, a.the_content.abbrev, a.the_content.syntax))
+      }
+      for (a <- theory.axioms) {
+        if (verbose) progress.echo("  " + a.toString + " " + a.serial)
+        current_theory.append(Translate.stmt_decl(Prelude.axiom_ident(a.name), a.the_content.prop, None))
+      }
+    } else {
+      for (a <- theory.classes) {
+        if (verbose) progress.echo("  " + a.toString + a.serial)
+        Prelude.add_name(a.name,Markup.CLASS)
+      }
+      for (a <- theory.types) {
+        if (verbose) progress.echo("  " + a.toString + a.serial)
+        Prelude.add_name(a.name,Export_Theory.Kind.TYPE)
+      }
+      for (a <- theory.consts) {
+        if (verbose) progress.echo("  " + a.toString + " " + a.serial)
+        Prelude.add_name(a.name,Export_Theory.Kind.CONST)
+      }
+      for (a <- theory.axioms) {
+        if (verbose) progress.echo("  " + a.toString + " " + a.serial)
+        Prelude.add_name(a.name,Markup.AXIOM)
+      }
+      for (a <- theory.thms) {
+        if (verbose) progress.echo("  " + a.toString + " " + a.serial)
+        Prelude.add_name(a.name,Export_Theory.Kind.THM)
+      }
       return
     }
+
+    progress.echo("Translate proofs for " + theory_name + " ...")
 
     def get_thm_prf(thm : Export_Theory.Entity[Export_Theory.Thm]) = {
       def sub(p:Term.Proof) : Long = p match {
@@ -225,7 +250,7 @@ Export the specified THEORY of SESSION to a Dedukti or Lambdapi file with the sa
         if (verbose) progress.echo("Started at " + Build_Log.print_date(start_date) + "\n")
 
         progress.interrupt_handler {
-          try exporter(options, session, theory, progress, dirs, use_notations, eta_expand, output_lp, verbose)
+          try exporter(options, session, theory, true, progress, dirs, use_notations, eta_expand, output_lp, verbose)
           catch {case x: Exception =>
             progress.echo(x.getStackTrace.mkString("\n"))
             println(x)}

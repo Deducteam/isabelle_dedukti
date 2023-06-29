@@ -19,6 +19,7 @@ object Generator {
     options: Options,
     session: String,
     target_theory: String,
+    translate: Boolean,
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
     use_notations: Boolean = false,
@@ -27,18 +28,34 @@ object Generator {
     verbose: Boolean = false,
     ): Unit = {
 
-    // theory graph
-    val theory_graph = Rootfile.graph(options, session, progress, dirs, verbose)
-    if (verbose) { progress.echo("graph: " + theory_graph) }
-    val theories : List[Document.Node.Name] = theory_graph.topological_order
-    // if (verbose) { progress.echo("topological order: " + theories) }
+    // // theory graph
+    // val theory_graph = Rootfile.graph(options, session, progress, dirs, verbose)
+    // if (verbose) { progress.echo("graph: " + theory_graph) }
+    var theories = List[String]()
+    // // if (verbose) { progress.echo("topological order: " + theories) }
 
+    if (session != "Pure") {
+      //getting parent session
+      val full_stru = Sessions.load_structure(options, dirs = dirs)
+      val selected_sessions =
+        full_stru.selection(Sessions.Selection(sessions = List[String](session)))
+      val info = selected_sessions(session)
+      val anc = info.parent match{
+        case Some(x) => x
+        case _ => error("the session does not have any parent")
+      }
+      progress.echo("Reading parent session " + anc)
+      generator(options, anc, target_theory, false, progress, dirs, use_notations, eta_expand, output_lp, verbose)
+      // getting theories of session
+      val theory_graph = Rootfile.graph(options, session, anc, progress, dirs, verbose)    // if (verbose) { progress.echo("graph: " + theory_graph) }
+      theories = theory_graph.topological_order.tail.map(x => x.toString)
+    } else {
+      theories = List[String]("Pure")
+    }
     // Generate a dk or lp file for each theory
     breakable{
-      for (theory <- theories) {
-        val theory_name = theory.toString
-        val session_name = if (theory_name == "Pure") "Pure" else session
-        Exporter.exporter(options, session_name, theory_name,
+      for (theory_name <- theories) {
+        Exporter.exporter(options, session, theory_name, translate,
           progress = progress,
           dirs = dirs,
           use_notations = use_notations,
@@ -96,7 +113,7 @@ Generate a dk or lp file for every theory of SESSION (up to THEORY).""",
 
         progress.interrupt_handler {
           try {
-            generator(options, session, target_theory, progress, dirs, use_notations, eta_expand, output_lp, verbose)
+            generator(options, session, target_theory, true, progress, dirs, use_notations, eta_expand, output_lp, verbose)
           }
           catch {case x: Exception =>
             progress.echo(x.getStackTrace.mkString("\n"))

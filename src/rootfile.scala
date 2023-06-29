@@ -19,15 +19,17 @@ object Rootfile {
   def graph(
     options: Options,
     session: String,
+    anc: String,
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
     verbose: Boolean = false,
     ) = {
+
     var theory_graph =
       if (session == "Pure") {
         (Document.Node.Name.make_graph(List(((Document.Node.Name("Pure", theory = Thy_Header.PURE), ()),List[Document.Node.Name]()))))
       } else {
-        val base_info = Sessions.base_info(options, "Pure", progress, dirs)
+        val base_info = Sessions.base_info(options, anc, progress, dirs)
         val session_info =
           base_info.sessions_structure.get(session) match {
             case Some(info) => info
@@ -38,7 +40,8 @@ object Rootfile {
       }
     // remove HOL.Record, HOL.Nitpick and HOL.Nunchaku
     for ((k,e) <- theory_graph.iterator) {
-      if (Set[String]("HOL.Record","HOL.Nitpick","HOL.Nunchaku")(k.theory)) {
+      if (
+          Set[String]("HOL.Record","HOL.Nitpick","HOL.Nunchaku")(k.theory)) {
         theory_graph = theory_graph.del_node(k)
       }
     }
@@ -62,7 +65,7 @@ object Rootfile {
     ): Unit = {
 
     // theory graph
-    val theory_graph = graph(options, session, progress, dirs, verbose)
+    val theory_graph = graph(options, session, "Pure", progress, dirs, verbose)
     // if (verbose) progress.echo("graph: " +theory_graph)
     val theories : List[Document.Node.Name] = theory_graph.topological_order
     // if (verbose) progress.echo("Session graph top ordered: " + theories)

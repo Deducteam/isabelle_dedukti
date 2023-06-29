@@ -23,10 +23,20 @@ object Dkcheck {
     verbose: Boolean = false,
     ): Unit = {
 
+    // getting the ancestor
+    val full_stru = Sessions.load_structure(options, dirs = dirs)
+    val selected_sessions =
+      full_stru.selection(Sessions.Selection(sessions = List[String](session)))
+    val info = selected_sessions(session)
+    var anc = info.parent match{
+      case Some(x) => x
+      case _ => error("the session does not have any parent")
+    }
+
     // theory graph
-    val theory_graph = Rootfile.graph(options, session, progress, dirs, verbose)
+    val theory_graph = Rootfile.graph(options, session, anc, progress, dirs, verbose)
     // if (verbose) progress.echo("graph: " +theory_graph)
-    val theories : List[Document.Node.Name] = theory_graph.topological_order
+    val theories : List[Document.Node.Name] = theory_graph.topological_order.tail
     // if (verbose) progress.echo("Session graph top ordered: " + theories)
 
     // Generate script for checking dk files with kocheck
@@ -42,15 +52,28 @@ object Dkcheck {
     bw2.close()
 
     // Generate script for checking dk files with dkcheck
-    val filename3 = "dkcheck.sh"
+    val filename3 = session+"/dkcheck.sh"
     if (verbose) progress.echo("Generates " + filename3 + " ...")
     val file3 = new File(filename3)
     val bw3 = new BufferedWriter(new FileWriter(file3))
-    bw3.write("#!/bin/sh\nfor f in STTfa.dk")
+    bw3.write("#!/bin/sh\nfor f in")
     for (theory <- theories) {
       bw3.write(" " + Prelude.mod_name(theory.toString) + ".dk")
     }
-    bw3.write("\ndo\n  dk check -e --eta $f || exit 1\ndone\n")
+    bw3.write("\ndo\n  dk check -e --eta $f ") 
+    bw3.write("-I ../"+anc+"/ ")
+    while (anc != "Pure"){
+      val full_stru = Sessions.load_structure(options, dirs = dirs)
+      val selected_sessions =
+        full_stru.selection(Sessions.Selection(sessions = List[String](anc)))
+      val info = selected_sessions(anc)
+      anc = info.parent match{
+        case Some(x) => x
+        case _ => error("the session does not have any parent")
+      }
+      bw3.write("-I ../"+anc+"/ ")
+    }
+    bw3.write("|| exit 1\ndone\n")
     bw3.close()
   }
 
