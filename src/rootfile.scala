@@ -41,7 +41,7 @@ object Rootfile {
     // remove HOL.Record, HOL.Nitpick and HOL.Nunchaku
     for ((k,e) <- theory_graph.iterator) {
       if (
-          Set[String]("HOL.Record","HOL.Nitpick","HOL.Nunchaku")(k.theory)) {
+          Set[String]("HOL.Nitpick","HOL.Nunchaku","HOL-Library.Datatype_Records")(k.theory)) {
         theory_graph = theory_graph.del_node(k)
       }
     }
@@ -64,10 +64,18 @@ object Rootfile {
     verbose: Boolean = false,
     ): Unit = {
 
+    val full_stru = Sessions.load_structure(options, dirs = dirs)
+    val selected_sessions =
+      full_stru.selection(Sessions.Selection(sessions = List[String](session)))
+    val info = selected_sessions(session)
+    val anc = info.parent match{
+      case Some(x) => x
+      case _ => error("the session does not have any parent")
+    }
     // theory graph
-    val theory_graph = graph(options, session, "Pure", progress, dirs, verbose)
+    val theory_graph = graph(options, session, anc, progress, dirs, verbose)
     // if (verbose) progress.echo("graph: " +theory_graph)
-    val theories : List[Document.Node.Name] = theory_graph.topological_order
+    val theories : List[Document.Node.Name] = theory_graph.topological_order.tail
     // if (verbose) progress.echo("Session graph top ordered: " + theories)
 
     // Generate ROOT file with one session for each theory
@@ -75,16 +83,16 @@ object Rootfile {
     if (verbose) progress.echo("Generates " + filename + " ...")
     val file = new File(filename)
     val bw = new BufferedWriter(new FileWriter(file))
-    var previous_session = "Pure"
-    for (theory <- theories.tail) {
+    var previous_session = anc.replace("-","_")+"_wp"
+    for (theory <- theories) {
       val theory_name = theory.toString
-      val session_name = "Dedukti_" + theory_name
+      val session_name = "Dedukti_" + theory_name.replace("-","_")
       bw.write("session " + session_name + " in \"Ex/" + theory_name + "\" = " + previous_session + " +\n")
       bw.write("   options [export_theory, export_proofs, record_proofs = 2]\n")
       bw.write("   sessions\n")
-      bw.write("      " + session + "\n")
+      bw.write("      \"" + session + "\"\n")
       bw.write("   theories\n")
-      bw.write("      " + theory_name + "\n\n")
+      bw.write("      \"" + theory_name + "\"\n\n")
 
       //if (!Files.exists(Paths.get("Ex/"+theory_name))) { }
       "mkdir -p Ex/"+theory_name !

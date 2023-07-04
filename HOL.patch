@@ -512,6 +512,7 @@ diff -urNx '*~' ./Main.thy /home/blanqui/src/Isabelle2022/src/HOL/Main.thy
      Extraction
 -    Nunchaku
 +    (*Nunchaku*)
++    Record
      BNF_Greatest_Fixpoint
      Filter
      Conditionally_Complete_Lattices

@@ -78,7 +78,7 @@ object Prelude {
         (translated_id, module0)
     }
     //println(module + "/" + translated_id)
-    if (translated_id == "proof_159372") println("found it with id "+id+" and kind "+kind+" in "+module)
+    // if (translated_id == "ord_class_Least_dict") println("found it with id "+id+" and kind "+kind+" in "+module)
     namesMap += full_name(id, kind) -> translated_id
     namesSet += translated_id
     moduleOf += translated_id -> module
@@ -232,7 +232,13 @@ object Translate {
         val impl = try implArgsMap(id) catch { case _ : Throwable => Nil }
         Syntax.appls(Syntax.Symb(id), axm.types.map(typ), impl)
       case thm: Term.PThm =>
-        val head = if (thm.name.nonEmpty) thm_ident(thm.name) else ref_proof_ident(thm.serial)
+        val head = if (thm.name.nonEmpty) thm_ident(thm.name) else {
+          namesMap get (full_name("proof_"+thm.serial.toString, "")) match {
+            case None => println("proof "+thm.serial+" is badly identified from theory "+thm.theory_name)
+            case Some(s) => 
+          }
+          ref_proof_ident(thm.serial)
+        }
         val impl = try implArgsMap(head) catch { case _ : Throwable => Nil }
         Syntax.appls(Syntax.Symb(head), thm.types.map(typ), impl)
       case _ => error("Bad proof term encountered:\n" + prf)

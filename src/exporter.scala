@@ -47,7 +47,7 @@ object Exporter {
         Prelude.add_proof_ident(prf_serial,entry_name.theory)
       }
     }
-    
+
     val current_theory = mutable.Queue[Syntax.Command]()
     if (translate) {
       for (a <- theory.classes) {
@@ -68,9 +68,27 @@ object Exporter {
       }
     } else {
       for (a <- theory.classes) {
+        // if (theory_name == "HOL.Orderings") progress.echo("  here--- " + a.toString + a.serial)
         if (verbose) progress.echo("  " + a.toString + a.serial)
         Prelude.add_name(a.name,Markup.CLASS)
       }
+      // for (a <- theory.thms) {
+      //   if (theory_name == "HOL.Orderings") progress.echo("  here--- " + a.toString + a.serial)
+      //   if (verbose) progress.echo("  " + a.toString + a.serial)
+      //   Prelude.add_name(a.name,Markup.CLASS)
+      // }
+      // // for ((str,oth) <- theory.others) {
+      // for (a <- theory.locales) {
+      //   if (theory_name == "HOL.Orderings") progress.echo("  here--- " + a.toString + a.serial)
+      //   // if (verbose) progress.echo("  " + a.toString + a.serial)
+      //   // Prelude.add_name(a.name,Markup.CLASS)
+      // }
+      // }
+      // for (a <- theory.locale_dependencies) {
+      //   if (theory_name == "HOL.Orderings") progress.echo("  here--- " + a.toString + a.serial)
+      //   // if (verbose) progress.echo("  " + a.toString + a.serial)
+      //   // Prelude.add_name(a.name,Markup.CLASS)
+      // }
       for (a <- theory.types) {
         if (verbose) progress.echo("  " + a.toString + a.serial)
         Prelude.add_name(a.name,Export_Theory.Kind.TYPE)
