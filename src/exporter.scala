@@ -14,6 +14,7 @@ object Exporter {
     session: String,
     theory_name: String,
     translate: Boolean,
+    term_cache: Term.Cache = Term.Cache.make(),
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
     use_notations: Boolean = false,
@@ -27,11 +28,10 @@ object Exporter {
 
     progress.echo("Read theory " + theory_name + " ...")
 
-    val store = Sessions.store(options)
-    val term_cache = Term.Cache.make()
+    val store = Sessions.store(options, cache=term_cache)
     val base_info = Sessions.base_info(options, session, progress, dirs)
     val ses_cont = Export.open_session_context(store, base_info)
-    val provider = ses_cont.theory(theory_name)
+    val provider = ses_cont.theory(theory_name, other_cache=Some(term_cache))
     val current_theories = ses_cont.theory_names()
     val theory = Export_Theory.read_theory(provider)
 
@@ -48,7 +48,55 @@ object Exporter {
       }
     }
 
+    def read_entry_names(db: SQL.Database, session_name: String, theory_name: String): List[Export.Entry_Name] = {
+      val select =
+        Export.Data.table.select(List(Export.Data.theory_name, Export.Data.name), Export.Data.where_equal(session_name,theory_name))
+      db.using_statement(select)(stmt =>
+        stmt.execute_query().iterator(res =>
+          Export.Entry_Name(session = session_name,
+            theory = res.string(Export.Data.theory_name),
+            name = res.string(Export.Data.name))).toList)
+    }
+
+    val db = store.open_database(session)
     val current_theory = mutable.Queue[Syntax.Command]()
+    
+    def recover_prf(prfs_ser: List[Long]) : Unit = {
+      prfs_ser match {
+        case Nil =>
+        case ser :: prfs2 => {
+          ses_cont.entry_names().find(_.name == "proofs/"+ser.toString) match {
+            case None => {
+              progress.echo("Proof "+ser+" was not recovered because no entry")
+              recover_prf(prfs2)
+            }
+            case Some(pre_entry) => {
+              pre_entry.read(db,term_cache) match {
+                case Some(entry) => {
+                  Export_Theory.read_proof(ses_cont, Export_Theory.Thm_Id(ser,entry.theory_name),other_cache=Some(term_cache)) match {
+                    case Some(prf) => {
+                      progress.echo("Proof "+ser+" was recovered")
+                      val (com, decs) = Translate.stmt_decl(Prelude.ref_proof_ident(ser), prf.prop, Some(prf.proof))
+                      recover_prf(prfs2++decs)
+                      current_theory.append(com)
+                    }
+                    case None => {
+                      progress.echo("Proof "+ser+" was not recovered because no proof")
+                      recover_prf(prfs2)
+                    }
+                  }
+                }
+                case None => {
+                  progress.echo("Proof "+ser+" was not recovered because no content")
+                  recover_prf(prfs2)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
     if (translate) {
       for (a <- theory.classes) {
         if (verbose) progress.echo("  " + a.toString + a.serial)
@@ -64,7 +112,9 @@ object Exporter {
       }
       for (a <- theory.axioms) {
         if (verbose) progress.echo("  " + a.toString + " " + a.serial)
-        current_theory.append(Translate.stmt_decl(Prelude.axiom_ident(a.name), a.the_content.prop, None))
+        val (com,decs) = Translate.stmt_decl(Prelude.axiom_ident(a.name), a.the_content.prop, None)
+        recover_prf(decs)
+        current_theory.append(com)
       }
     } else {
       for (a <- theory.classes) {
@@ -122,9 +172,11 @@ object Exporter {
       sub(thm.the_content.proof)
     }
 
-    def translate_thm(thm : Export_Theory.Entity[Export_Theory.Thm]) = {
+    def translate_thm(thm : Export_Theory.Entity[Export_Theory.Thm]) : Unit = {
       if (verbose) progress.echo("  " + thm.toString + " " + thm.serial)
-      current_theory.append(Translate.stmt_decl(Prelude.thm_ident(thm.name), thm.the_content.prop, Some(thm.the_content.proof)))
+      val (com,decs) = Translate.stmt_decl(Prelude.thm_ident(thm.name), thm.the_content.prop, Some(thm.the_content.proof))
+      recover_prf(decs)
+      current_theory.append(com)
     }
 
     def prf_loop(prfs : List[(Long,Export_Theory.Proof)], thm : Export_Theory.Entity[Export_Theory.Thm], thms : List[Export_Theory.Entity[Export_Theory.Thm]],thm_prf : Long) : Unit = prfs match {
@@ -140,22 +192,15 @@ object Exporter {
           }
         } else {
           if (verbose) progress.echo("  proof " + prf_serial)
-          current_theory.append(Translate.stmt_decl(Prelude.ref_proof_ident(prf_serial), prf.prop, Some(prf.proof)))
+          val (com,decs) = Translate.stmt_decl(Prelude.ref_proof_ident(prf_serial), prf.prop, Some(prf.proof))
+          recover_prf(decs)
+          current_theory.append(com)
           prf_loop(prfs2,thm,thms,thm_prf)
         }
       case _ =>
     }
     if (verbose) progress.echo("reading proofs")
-    def read_entry_names(db: SQL.Database, session_name: String, theory_name: String): List[Export.Entry_Name] = {
-      val select =
-        Export.Data.table.select(List(Export.Data.theory_name, Export.Data.name), Export.Data.where_equal(session_name,theory_name))
-      db.using_statement(select)(stmt =>
-        stmt.execute_query().iterator(res =>
-          Export.Entry_Name(session = session_name,
-            theory = res.string(Export.Data.theory_name),
-            name = res.string(Export.Data.name))).toList)
-    }
-    val db = store.open_database(session)
+
     val exports = read_entry_names(db,session,theory_name)
     val prfs =
       exports.foldLeft(Nil: List[(Long,Export_Theory.Proof)]) {
@@ -167,7 +212,7 @@ object Exporter {
               val thy_name = entry.theory_name
               if (prf_name.startsWith("proofs/")) {
                 val prf_serial = prf_name.substring(7).toLong
-                Export_Theory.read_proof(ses_cont, Export_Theory.Thm_Id(prf_serial,thy_name)) match {
+                Export_Theory.read_proof(ses_cont, Export_Theory.Thm_Id(prf_serial,thy_name),other_cache=Some(term_cache)) match {
                   case Some(prf) => (prf_serial,prf)::prfs2
                   case None => prfs2
                 }
@@ -268,7 +313,7 @@ Export the specified THEORY of SESSION to a Dedukti or Lambdapi file with the sa
         if (verbose) progress.echo("Started at " + Build_Log.print_date(start_date) + "\n")
 
         progress.interrupt_handler {
-          try exporter(options, session, theory, true, progress, dirs, use_notations, eta_expand, output_lp, verbose)
+          try exporter(options, session, theory, true, Term.Cache.make(), progress, dirs, use_notations, eta_expand, output_lp, verbose)
           catch {case x: Exception =>
             progress.echo(x.getStackTrace.mkString("\n"))
             println(x)}

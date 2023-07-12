@@ -212,35 +212,47 @@ object Translate {
   def eps(tm: Syntax.Term): Syntax.Term =
     Syntax.Appl(epsT, tm)
 
-  def proof(prf: Term.Proof, bounds: Bounds): Syntax.Term =
+  def proof(prf: Term.Proof, bounds: Bounds): (Syntax.Term, List[Long]) =
     prf match {
       case Term.PBound(i) =>
-        try Syntax.Var(var_ident(bounds.get_prf(i)))
+        try (Syntax.Var(var_ident(bounds.get_prf(i))), List[Long]())
         catch { case _: IndexOutOfBoundsException => isabelle.error("Loose bound variable (proof) " + i) }
-      case Term.Abst(x, ty, b) =>
-        Syntax.Abst(bound_term_argument(x, ty), proof(b, bounds.add_trm(x)))
-      case Term.AbsP(x, prf, b) =>
-        Syntax.Abst(
-          bound_proof_argument(x, prf, bounds),
-          proof(b, bounds.add_prf(x)))
-      case Term.Appt(a, b) =>
-        Syntax.Appl(proof(a, bounds), term(b, bounds))
-      case Term.AppP(a, b) =>
-        Syntax.Appl(proof(a, bounds), proof(b, bounds))
+      case Term.Abst(x, ty, b) => {
+        val (prf, decs) = proof(b, bounds.add_trm(x))
+        (Syntax.Abst(bound_term_argument(x, ty), prf), decs)
+      }
+      case Term.AbsP(x, prf, b) => {
+        val (prfp, decs) = proof(b, bounds.add_prf(x))
+        (Syntax.Abst(bound_proof_argument(x, prf, bounds), prfp), decs)
+      }
+      case Term.Appt(a, b) => {
+        val (prf, decs) = proof(a, bounds)
+        (Syntax.Appl(prf, term(b, bounds)), decs)
+      }
+      case Term.AppP(a, b) => {
+        val (prf, decs) = proof(a, bounds)
+        val (prfp, decsp) = proof(b, bounds)
+        (Syntax.Appl(prf, prfp), decs++decsp)
+      }
       case axm: Term.PAxm =>
         val id = axiom_ident(axm.name)
         val impl = try implArgsMap(id) catch { case _ : Throwable => Nil }
-        Syntax.appls(Syntax.Symb(id), axm.types.map(typ), impl)
+        (Syntax.appls(Syntax.Symb(id), axm.types.map(typ), impl), List[Long]())
       case thm: Term.PThm =>
+        var decs = List[Long]()
         val head = if (thm.name.nonEmpty) thm_ident(thm.name) else {
           namesMap get (full_name("proof_"+thm.serial.toString, "")) match {
-            case None => println("proof "+thm.serial+" is badly identified from theory "+thm.theory_name)
+            case None => {
+              println("proof "+thm.serial+" is badly identified from theory "+thm.theory_name+thm.types.foldLeft(""){case (s,ty) => s+" "+ty.toString})
+              add_proof_ident(thm.serial,current_module)
+              decs = List[Long](thm.serial)
+            }
             case Some(s) => 
           }
           ref_proof_ident(thm.serial)
         }
         val impl = try implArgsMap(head) catch { case _ : Throwable => Nil }
-        Syntax.appls(Syntax.Symb(head), thm.types.map(typ), impl)
+        (Syntax.appls(Syntax.Symb(head), thm.types.map(typ), impl), decs)
       case _ => error("Bad proof term encountered:\n" + prf)
     }
 
@@ -622,7 +634,7 @@ object Translate {
 
   /* theorems and proof terms */
 
-  def stmt_decl(s: String, prop: Export_Theory.Prop, prf_opt: Option[Term.Proof]): Syntax.Command = {
+  def stmt_decl(s: String, prop: Export_Theory.Prop, prf_opt: Option[Term.Proof]): (Syntax.Command, List[Long]) = {
     val args =
       prop.typargs.map(_._1).map(bound_type_argument(_)) :::
       prop.args.map(arg => bound_term_argument(arg._1, arg._2))
@@ -633,16 +645,17 @@ object Translate {
     implArgsMap  += s -> List.fill(prop.typargs.length)(false) // Only those are applied immediately
     global_types += s -> contracted_ty
 
+    var decs = List[Long]()
     try prf_opt match {
       case None => {
         val (new_args, final_ty) = (Nil, contracted_ty) // fetch_head_args_type(contracted_ty)
-        Syntax.Declaration(s, new_args, final_ty)
+        (Syntax.Declaration(s, new_args, final_ty), decs)
       }
       case Some(prf) => {
-        val translated_rhs = proof(prf, Bounds())
+        val (translated_rhs, decs) = proof(prf, Bounds())
         val full_prf : Syntax.Term = args.foldRight(translated_rhs)(Syntax.Abst.apply)
         val (new_args, contracted, final_ty) = fetch_head_args(eta_expand(eta_contract(full_prf)), contracted_ty)
-        Syntax.Theorem(s, new_args, final_ty, contracted)
+        (Syntax.Theorem(s, new_args, final_ty, contracted), decs)
       }
     }
     catch { case e : Throwable => e.printStackTrace

@@ -53,9 +53,11 @@ object Generator {
       theories = List[String]("Pure")
     }
     // Generate a dk or lp file for each theory
+    val term_cache = Term.Cache.make()
     breakable{
       for (theory_name <- theories) {
         Exporter.exporter(options, session, theory_name, translate,
+          term_cache = term_cache,
           progress = progress,
           dirs = dirs,
           use_notations = use_notations,
