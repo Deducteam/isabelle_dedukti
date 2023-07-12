@@ -36,7 +36,7 @@ object Dkcheck {
     // theory graph
     val theory_graph = Rootfile.graph(options, session, anc, progress, dirs, verbose)
     // if (verbose) progress.echo("graph: " +theory_graph)
-    val theories : List[Document.Node.Name] = theory_graph.topological_order.tail
+    val theories : List[Document.Node.Name] = theory_graph.topological_order
     // if (verbose) progress.echo("Session graph top ordered: " + theories)
 
     // Generate script for checking dk files with kocheck

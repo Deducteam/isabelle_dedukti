@@ -38,10 +38,29 @@ object Rootfile {
         val resources = new Resources(base_info.sessions_structure, base_info.check_errors.base)
         resources.session_dependencies(session_info, progress = progress).theory_graph
       }
+    var anc_theories = 
+      if (session == "Pure") {
+        List[String]()
+      } else {
+        val base_info = Sessions.base_info(options, "Pure", progress, dirs)
+        val session_info =
+          base_info.sessions_structure.get(anc) match {
+            case Some(info) => info
+            case None => error("Bad session " + quote(anc))
+          }
+        val resources = new Resources(base_info.sessions_structure, base_info.check_errors.base)
+        resources.session_dependencies(session_info, progress = progress).theories.map(x => x.theory)
+      }
     // remove HOL.Record, HOL.Nitpick and HOL.Nunchaku
     for ((k,e) <- theory_graph.iterator) {
-      if (
-          Set[String]("HOL-Library.RBT_Impl","HOL-Library.RBT","HOL-Library.RBT_Mapping","HOL-Library.RBT_Set","HOL-Library.Datatype_Records")(k.theory)) {
+      if (anc_theories.contains(k.theory)) {
+        // progress.echo("Removing "+k.theory)
+        theory_graph = theory_graph.del_node(k)
+      }
+    }
+    for ((k,e) <- theory_graph.iterator) {
+      if (Set[String]("HOL-Library.RBT_Impl","HOL-Library.RBT","HOL-Library.RBT_Mapping","HOL-Library.RBT_Set","HOL-Library.Datatype_Records")(k.theory)) {
+        // progress.echo("Removing "+k.theory)
         theory_graph = theory_graph.del_node(k)
       }
     }

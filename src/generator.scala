@@ -34,12 +34,12 @@ object Generator {
     var theories = List[String]()
     // // if (verbose) { progress.echo("topological order: " + theories) }
 
+    val full_stru = Sessions.load_structure(options, dirs = dirs)
+    val selected_sessions =
+      full_stru.selection(Sessions.Selection(sessions = List[String](session)))
+    val info = selected_sessions(session)
     if (session != "Pure") {
       //getting parent session
-      val full_stru = Sessions.load_structure(options, dirs = dirs)
-      val selected_sessions =
-        full_stru.selection(Sessions.Selection(sessions = List[String](session)))
-      val info = selected_sessions(session)
       val anc = info.parent match{
         case Some(x) => x
         case _ => error("the session does not have any parent")
@@ -47,8 +47,8 @@ object Generator {
       progress.echo("Reading parent session " + anc)
       generator(options, anc, target_theory, false, progress, dirs, use_notations, eta_expand, output_lp, verbose)
       // getting theories of session
-      val theory_graph = Rootfile.graph(options, session, anc, progress, dirs, verbose)    // if (verbose) { progress.echo("graph: " + theory_graph) }
-      theories = theory_graph.topological_order.tail.map(x => x.toString)
+      val theory_graph = Rootfile.graph(options, session, anc, progress, dirs, verbose)    // if (verbose) { progress.echo("graph: " + theory_graph) 
+      theories = theory_graph.topological_order.map(x => x.toString)
     } else {
       theories = List[String]("Pure")
     }

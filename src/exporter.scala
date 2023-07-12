@@ -32,7 +32,6 @@ object Exporter {
     val base_info = Sessions.base_info(options, session, progress, dirs)
     val ses_cont = Export.open_session_context(store, base_info)
     val provider = ses_cont.theory(theory_name, other_cache=Some(term_cache))
-    val current_theories = ses_cont.theory_names()
     val theory = Export_Theory.read_theory(provider)
 
     // progress.echo("Translate theory " + theory_name + " ...")
@@ -60,7 +59,7 @@ object Exporter {
 
     val db = store.open_database(session)
     val current_theory = mutable.Queue[Syntax.Command]()
-    
+
     def recover_prf(prfs_ser: List[Long]) : Unit = {
       prfs_ser match {
         case Nil =>
