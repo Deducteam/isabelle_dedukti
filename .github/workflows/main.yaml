@@ -72,10 +72,10 @@ jobs:
       #     lambdapi check HOL_Groups.lp
       - name: Generate dk and lp outputs, check dk output for HOL.Groups
         run: |
-          cd examples/
+          cd ../../
           mkdir -p HOL.Groups_wp/dkcheck/
           mkdir -p HOL.Groups_wp/lambdapi/
-          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle build -b -d. HOL.Groups_wp
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle build -d. HOL.Groups_wp
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_session -d. HOL.Groups_wp
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_check -d. HOL.Groups_wp
           cd HOL.Groups_wp/dkcheck/
