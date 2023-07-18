@@ -1,6 +1,6 @@
-diff -urNx '*~' ./Enum.thy /home/blanqui/src/Isabelle2022/src/HOL/Enum.thy
+diff -urNx '*~' ./Enum.thy /Applications/Isabelle2022.app/src/HOL/Enum.thy
 --- ./Enum.thy	2022-10-25 03:37:32.000000000 +0900
-+++ /home/blanqui/src/Isabelle2022/src/HOL/Enum.thy	2023-06-02 16:51:56.420006039 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Enum.thy	2023-06-05 09:48:57.000000000 +0900
 @@ -929,15 +929,47 @@
  definition "x mod y = (case y of a\<^sub>1 \<Rightarrow> x | _ \<Rightarrow> a\<^sub>1)"
  definition "abs = (\<lambda>x. case x of a\<^sub>3 \<Rightarrow> a\<^sub>2 | _ \<Rightarrow> x)"
@@ -189,9 +189,9 @@ diff -urNx '*~' ./Enum.thy /home/blanqui/src/Isabelle2022/src/HOL/Enum.thy
  end
  
  
-diff -urNx '*~' ./Euclidean_Division.thy /home/blanqui/src/Isabelle2022/src/HOL/Euclidean_Division.thy
+diff -urNx '*~' ./Euclidean_Division.thy /Applications/Isabelle2022.app/src/HOL/Euclidean_Division.thy
 --- ./Euclidean_Division.thy	2022-10-25 03:37:32.000000000 +0900
-+++ /home/blanqui/src/Isabelle2022/src/HOL/Euclidean_Division.thy	2023-06-02 16:51:56.420006039 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Euclidean_Division.thy	2023-06-05 09:48:57.000000000 +0900
 @@ -1684,7 +1684,8 @@
  lemma divide_int_unfold:
    \<open>(sgn k * int m) div (sgn l * int n) = (sgn k * sgn l * int (m div n)
@@ -221,9 +221,9 @@ diff -urNx '*~' ./Euclidean_Division.thy /home/blanqui/src/Isabelle2022/src/HOL/
  qed
  
  
-diff -urNx '*~' ./Factorial.thy /home/blanqui/src/Isabelle2022/src/HOL/Factorial.thy
+diff -urNx '*~' ./Factorial.thy /Applications/Isabelle2022.app/src/HOL/Factorial.thy
 --- ./Factorial.thy	2022-10-25 03:37:32.000000000 +0900
-+++ /home/blanqui/src/Isabelle2022/src/HOL/Factorial.thy	2023-06-02 16:51:56.420006039 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Factorial.thy	2023-06-05 09:48:57.000000000 +0900
 @@ -28,7 +28,7 @@
    have "prod Suc {0..<n} = \<Prod>{1..n}"
      by (simp add: atLeast0LessThan prod.atLeast1_atMost_eq)
@@ -233,9 +233,9 @@ diff -urNx '*~' ./Factorial.thy /home/blanqui/src/Isabelle2022/src/HOL/Factorial
    then show ?thesis
      unfolding fact_prod_Suc by (simp add: atLeast0LessThan prod.atLeast1_atMost_eq)
  qed
-diff -urNx '*~' ./Groups_List.thy /home/blanqui/src/Isabelle2022/src/HOL/Groups_List.thy
+diff -urNx '*~' ./Groups_List.thy /Applications/Isabelle2022.app/src/HOL/Groups_List.thy
 --- ./Groups_List.thy	2022-10-25 03:37:32.000000000 +0900
-+++ /home/blanqui/src/Isabelle2022/src/HOL/Groups_List.thy	2023-06-02 16:51:56.420006039 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Groups_List.thy	2023-06-05 09:48:57.000000000 +0900
 @@ -3,7 +3,7 @@
  section \<open>Sum and product over lists\<close>
  
@@ -245,9 +245,1228 @@ diff -urNx '*~' ./Groups_List.thy /home/blanqui/src/Isabelle2022/src/HOL/Groups_
  begin
  
  locale monoid_list = monoid
-diff -urNx '*~' ./List.thy /home/blanqui/src/Isabelle2022/src/HOL/List.thy
+diff -urNx '*~' ./Library/Code_Abstract_Char.thy /Applications/Isabelle2022.app/src/HOL/Library/Code_Abstract_Char.thy
+--- ./Library/Code_Abstract_Char.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Library/Code_Abstract_Char.thy	2023-07-03 14:16:25.000000000 +0900
+@@ -30,7 +30,7 @@
+ qed
+ 
+ definition byte :: \<open>bool \<Rightarrow> bool \<Rightarrow> bool \<Rightarrow> bool \<Rightarrow> bool \<Rightarrow> bool \<Rightarrow> bool \<Rightarrow> bool \<Rightarrow> integer\<close>
+-  where [simp]: \<open>byte b0 b1 b2 b3 b4 b5 b6 b7 = horner_sum of_bool 2 [b0, b1, b2, b3, b4, b5, b6, b7]\<close>
++  where [simp]: \<open>byte b0 b1 b2 b3 b4 b5 b6 b7 = horner_sum of_bool 2 [b0, b1, b2, b3, b4, b5, b6, b7]\<close> 
+ 
+ lemma byte_code [code]:
+   \<open>byte b0 b1 b2 b3 b4 b5 b6 b7 = (
+@@ -44,7 +44,7 @@
+       s6 = if b6 then s5 + 64 else s5;
+       s7 = if b7 then s6 + 128 else s6
+     in s7)\<close>
+-  by simp
++  by (simp add: Let_unfold)
+ 
+ lemma Char_code [code]:
+   \<open>integer_of_char (Char b0 b1 b2 b3 b4 b5 b6 b7) = byte b0 b1 b2 b3 b4 b5 b6 b7\<close>
+@@ -52,35 +52,51 @@
+ 
+ lemma digit_0_code [code]:
+   \<open>digit0 c \<longleftrightarrow> bit (integer_of_char c) 0\<close>
+-  by (cases c) (simp add: integer_of_char_def)
++  apply (cases c)
++  by (simp only: Char_code bit_horner_sum_bit_iff byte_def; simp)
++(*  by (cases c) (simp add: integer_of_char_def)*)
+ 
+ lemma digit_1_code [code]:
+   \<open>digit1 c \<longleftrightarrow> bit (integer_of_char c) 1\<close>
+-  by (cases c) (simp add: integer_of_char_def)
++  apply (cases c)
++  by (simp only: Char_code bit_horner_sum_bit_iff byte_def; simp)
++(*  by (cases c) (simp add: integer_of_char_def)*)
+ 
+ lemma digit_2_code [code]:
+   \<open>digit2 c \<longleftrightarrow> bit (integer_of_char c) 2\<close>
+-  by (cases c) (simp add: integer_of_char_def)
++  apply (cases c)
++  by (simp only: Char_code bit_horner_sum_bit_iff byte_def; simp)
++(*  by (cases c) (simp add: integer_of_char_def)*)
+ 
+ lemma digit_3_code [code]:
+   \<open>digit3 c \<longleftrightarrow> bit (integer_of_char c) 3\<close>
+-  by (cases c) (simp add: integer_of_char_def)
++  apply (cases c)
++  by (simp only: Char_code bit_horner_sum_bit_iff byte_def; simp)
++(*  by (cases c) (simp add: integer_of_char_def)*)
+ 
+ lemma digit_4_code [code]:
+   \<open>digit4 c \<longleftrightarrow> bit (integer_of_char c) 4\<close>
+-  by (cases c) (simp add: integer_of_char_def)
++  apply (cases c)
++  by (simp only: Char_code bit_horner_sum_bit_iff byte_def; simp)
++(*  by (cases c) (simp add: integer_of_char_def)*)
+ 
+ lemma digit_5_code [code]:
+   \<open>digit5 c \<longleftrightarrow> bit (integer_of_char c) 5\<close>
+-  by (cases c) (simp add: integer_of_char_def)
++  apply (cases c)
++  by (simp only: Char_code bit_horner_sum_bit_iff byte_def; simp)
++(*  by (cases c) (simp add: integer_of_char_def)*)
+ 
+ lemma digit_6_code [code]:
+   \<open>digit6 c \<longleftrightarrow> bit (integer_of_char c) 6\<close>
+-  by (cases c) (simp add: integer_of_char_def)
++  apply (cases c)
++  by (simp only: Char_code bit_horner_sum_bit_iff byte_def; simp)
++(*  by (cases c) (simp add: integer_of_char_def)*)
+ 
+ lemma digit_7_code [code]:
+   \<open>digit7 c \<longleftrightarrow> bit (integer_of_char c) 7\<close>
+-  by (cases c) (simp add: integer_of_char_def)
++  apply (cases c)
++  by (simp only: Char_code bit_horner_sum_bit_iff byte_def; simp)
++(*  by (cases c) (simp add: integer_of_char_def)*)
+ 
+ lemma case_char_code [code]:
+   \<open>case_char f c = f (digit0 c) (digit1 c) (digit2 c) (digit3 c) (digit4 c) (digit5 c) (digit6 c) (digit7 c)\<close>
+diff -urNx '*~' ./Library/Countable_Set_Type.thy /Applications/Isabelle2022.app/src/HOL/Library/Countable_Set_Type.thy
+--- ./Library/Countable_Set_Type.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Library/Countable_Set_Type.thy	2023-07-05 11:38:18.000000000 +0900
+@@ -99,7 +99,37 @@
+ lift_definition minus_cset :: "'a cset \<Rightarrow> 'a cset \<Rightarrow> 'a cset"
+ is minus parametric Diff_transfer by simp
+ 
+-instance by standard (transfer; auto)+
++instance 
++proof (standard)
++  fix x :: "'a cset"
++  show "x \<le> x"
++    by (transfer; simp)
++  show "bot \<le> x"
++    by (transfer; simp)
++  fix y :: "'a cset"
++  show "(x < y) = (x \<le> y \<and> \<not> y \<le> x)"
++    by (transfer; simp add: subset_not_subset_eq)
++  show "inf x y \<le> x"
++    by (transfer; simp)
++  show "inf x y \<le> y"
++    by (transfer; simp)
++  show "x \<le> sup x y"
++    by (transfer; simp)
++  show "y \<le> sup x y"
++    by (transfer; simp)
++  fix z :: "'a cset"
++  show "x \<le> y \<Longrightarrow> y \<le> z \<Longrightarrow> x \<le> z"
++    by (transfer; simp)
++  show "x \<le> y \<Longrightarrow>y \<le> x \<Longrightarrow> x = y"
++    by (transfer; simp)
++  show "x \<le> y \<Longrightarrow> x \<le> z \<Longrightarrow> x \<le> inf y z"
++    by (transfer; simp)
++  show "y \<le> x \<Longrightarrow> z \<le> x \<Longrightarrow> sup y z \<le> x"
++    by (transfer; simp)
++  show "sup x (inf y z) = inf (sup x y) (sup x z)"
++    by (transfer; simp add: Un_Int_distrib)
++qed
++(*  by standard (transfer; auto)+*)
+ 
+ end
+ 
+@@ -472,7 +502,8 @@
+ lemma cUnion_parametric [transfer_rule]:
+   "(rel_cset (rel_cset A) ===> rel_cset A) cUnion cUnion"
+   unfolding rel_fun_def
+-  by transfer (auto simp: rel_set_def, metis+)
++  by transfer (metis Union_transfer rel_fun_def)
++(*  by transfer (auto simp: rel_set_def, metis+)*)
+ 
+ lemma cimage_parametric [transfer_rule]:
+   "((A ===> B) ===> rel_cset A ===> rel_cset B) cimage cimage"
+diff -urNx '*~' ./Library/Dlist.thy /Applications/Isabelle2022.app/src/HOL/Library/Dlist.thy
+--- ./Library/Dlist.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Library/Dlist.thy	2023-07-03 14:21:39.000000000 +0900
+@@ -226,7 +226,7 @@
+ 
+ subsection \<open>Quickcheck generators\<close>
+ 
+-quickcheck_generator dlist predicate: distinct constructors: Dlist.empty, Dlist.insert
++(*quickcheck_generator dlist predicate: distinct constructors: Dlist.empty, Dlist.insert*)
+ 
+ subsection \<open>BNF instance\<close>
+ 
+diff -urNx '*~' ./Library/Equipollence.thy /Applications/Isabelle2022.app/src/HOL/Library/Equipollence.thy
+--- ./Library/Equipollence.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Library/Equipollence.thy	2023-07-03 16:35:03.000000000 +0900
+@@ -131,15 +131,49 @@
+ lemma infinite_insert_lepoll:
+   assumes "infinite A" shows "insert a A \<lesssim> A"
+ proof -
+-  obtain f :: "nat \<Rightarrow> 'a" where "inj f" and f: "range f \<subseteq> A"
++  obtain f :: "nat \<Rightarrow> 'a" where injf: "inj f" and f: "range f \<subseteq> A"
+     using assms infinite_countable_subset by blast
+-  let ?g = "(\<lambda>z. if z=a then f 0 else if z \<in> range f then f (Suc (inv f z)) else z)"
++  let ?g = "(\<lambda>z. if z=a then f 0 else if z \<in> range f then (f \<circ> (Suc \<circ> (inv f))) z else z)"
+   show ?thesis
+     unfolding lepoll_def
+   proof (intro exI conjI)
++    from injf have "inj_on (inv f) (range f)"
++      by (simp add: inj_on_inv_into)
++    from comp_inj_on[OF this inj_Suc]
++    have "inj_on (Suc \<circ> (inv f)) (range f)" by auto
++    from comp_inj_on[OF this inj_on_subset[OF injf]]
++    have *: "inj_on (f \<circ> (Suc \<circ> (inv f))) (range f)" by auto
++    have **: "(f \<circ> (Suc \<circ> inv f)) ` range f \<inter> id ` (A - range f) = {}" by force
++    have "range f \<union> (A - range f) = A"
++      using f by auto
++    with ** inj_on_disjoint_Un[OF * inj_on_id2[of "A-(range f)"]]
++    have ***: "inj_on (\<lambda>z. if z \<in> range f then (f \<circ> (Suc \<circ> (inv f))) z else z) A"
++      by auto
++    have "f 0 \<notin> (\<lambda>z. if z \<in> range f then (f \<circ> (Suc \<circ> inv f)) z else z) ` A"
++    proof(rule ccontr)
++      assume "\<not> f 0 \<notin> (\<lambda>z. if z \<in> range f then (f \<circ> (Suc \<circ> inv f)) z else z) ` A"
++      then obtain x where "x \<in> A" and f0: "(\<lambda>z. if z \<in> range f then (f \<circ> (Suc \<circ> inv f)) z else z) x = f 0" 
++        by auto
++      show False
++      proof (cases "x \<in> range f")
++        case True
++        with f0 have "f 0 = (f \<circ> (Suc \<circ> inv f)) x" by auto
++        with injf have "0 = (Suc \<circ> inv f) x"
++          by (metis comp_apply inv_f_f)
++        then show ?thesis by auto
++      next
++        case False
++        with f0 have "f 0 = x" by auto
++        with False show ?thesis by auto
++      qed
++    qed
++    then have "(\<lambda>z. f 0) ` {a} \<inter> (\<lambda>z. if z \<in> range f then (f \<circ> (Suc \<circ> inv f)) z else z) ` A = {}" 
++      by auto  
++    with inj_on_disjoint_Un[of "\<lambda>z. f 0" "{a}", OF _ ***]
+     show "inj_on ?g (insert a A)"
+-      using inj_on_eq_iff [OF \<open>inj f\<close>]
+-      by (auto simp: inj_on_def)
++      by auto
++      (*using inj_on_eq_iff [OF \<open>inj f\<close>]
++      by (auto simp: inj_on_def inj_on_disjoint_Un)*)
+     show "?g ` insert a A \<subseteq> A"
+       using f by auto
+   qed
+diff -urNx '*~' ./Library/Extended.thy /Applications/Isabelle2022.app/src/HOL/Library/Extended.thy
+--- ./Library/Extended.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Library/Extended.thy	2023-07-03 12:36:29.000000000 +0900
+@@ -26,12 +26,32 @@
+ "((x::'a extended) < y) = (x \<le> y \<and> \<not> y \<le> x)"
+ 
+ instance
+-  by intro_classes (auto simp: less_extended_def less_eq_extended_case split: extended.splits)
++proof(intro_classes)
++  fix x :: "'a extended"
++  show "x \<le> x" 
++    by (cases x; simp add: less_eq_extended_case)
++next
++  fix x y :: "'a extended"
++  show "(x < y) = (x \<le> y \<and>  \<not> y \<le> x)"
++    by (cases x; cases y; simp add: less_eq_extended_case less_extended_def)
++  show "x \<le> y \<Longrightarrow> y \<le> x \<Longrightarrow> x = y"
++    by (cases x; cases y; simp add: less_eq_extended_case)
++next
++  fix x y z :: "'a extended"
++  show "x \<le> y \<Longrightarrow> y \<le> z \<Longrightarrow> x \<le> z"
++    by (cases x; cases y; cases z; simp add: less_eq_extended_case)
++qed
++(*  by intro_classes (auto simp: less_extended_def less_eq_extended_case split: extended.splits)*)
+ 
+ end
+ 
+ instance extended :: (linorder)linorder
+-  by intro_classes (auto simp: less_eq_extended_case split:extended.splits)
++proof(intro_classes)
++  fix x y :: "'a extended"
++  show "x \<le> y \<or> y \<le> x"
++    by (cases x; cases y; simp add: linear less_eq_extended_case)
++qed
++(*  by intro_classes (auto simp: less_eq_extended_case split:extended.splits)*)
+ 
+ lemma Minf_le[simp]: "Minf \<le> y"
+ by(cases y) auto
+@@ -111,10 +131,23 @@
+ 
+ 
+ instance extended :: (ab_semigroup_add)ab_semigroup_add
+-  by intro_classes (simp_all add: ac_simps plus_case split: extended.splits)
++proof(intro_classes)
++  fix a b :: "'a extended"
++  show "a + b = b + a"
++    by (cases a; cases b; simp add: ac_simps plus_case)
++  fix c :: "'a extended"
++  show "a + b + c = a + (b + c)"
++    by (cases a; cases b; cases c; simp add: ac_simps plus_case)
++qed
++(*  by intro_classes (simp_all add: ac_simps plus_case split: extended.splits)*)
+ 
+ instance extended :: (ordered_ab_semigroup_add)ordered_ab_semigroup_add
+-  by intro_classes (auto simp: add_left_mono plus_case split: extended.splits)
++proof(intro_classes)
++  fix a b c :: "'a extended"
++  show "a \<le> b \<Longrightarrow> c + a \<le> c + b"
++    by (cases a; cases b; cases c; simp add: add_left_mono plus_case)
++qed
++(*  by intro_classes (auto simp: add_left_mono plus_case split: extended.splits)*)
+ 
+ instance extended :: (comm_monoid_add)comm_monoid_add
+ proof
+@@ -191,8 +224,29 @@
+ case_of_simps sup_extended_case: sup_extended.simps
+ 
+ instance
+-  by (intro_classes) (auto simp: inf_extended_case sup_extended_case less_eq_extended_case
+-    bot_extended_def top_extended_def split: extended.splits)
++proof(intro_classes)
++  fix x :: "'a extended"
++  show "bot \<le> x" 
++    by (cases x; simp add: bot_extended_def less_eq_extended_case)
++  show "x \<le> top" 
++    by (cases x; simp add: top_extended_def less_eq_extended_case)
++  fix y :: "'a extended"
++  show "inf x y \<le> x" 
++    by (cases x; cases y; simp add: inf_extended_case less_eq_extended_case)
++  show "inf x y \<le> y" 
++    by (cases x; cases y; simp add: inf_extended_case less_eq_extended_case)
++  show "x \<le> sup x y" 
++    by (cases x; cases y; simp add: sup_extended_case less_eq_extended_case)
++  show "y \<le> sup x y" 
++    by (cases x; cases y; simp add: sup_extended_case less_eq_extended_case)
++  fix z :: "'a extended"
++  show "x \<le> y \<Longrightarrow> x \<le> z \<Longrightarrow> x \<le> inf y z"
++    by (cases x; cases y; cases z; simp add: inf_extended_case less_eq_extended_case)
++  show "y \<le> x \<Longrightarrow> z \<le> x \<Longrightarrow> sup y z \<le> x"
++    by (cases x; cases y; cases z; simp add: sup_extended_case less_eq_extended_case)
++qed
++(*  by (intro_classes) (auto simp: inf_extended_case sup_extended_case less_eq_extended_case
++    bot_extended_def top_extended_def split: extended.splits)*)
+ end
+ 
+ end
+diff -urNx '*~' ./Library/Extended_Nat.thy /Applications/Isabelle2022.app/src/HOL/Library/Extended_Nat.thy
+--- ./Library/Extended_Nat.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Library/Extended_Nat.thy	2023-07-05 12:15:04.000000000 +0900
+@@ -218,7 +218,8 @@
+   fix a b c :: enat
+   show "(a * b) * c = a * (b * c)"
+     unfolding times_enat_def zero_enat_def
+-    by (simp split: enat.split)
++    by (cases a b c rule: enat3_cases; simp)
++    (*by (simp split: enat.split)*)
+   show comm: "a * b = b * a"
+     unfolding times_enat_def zero_enat_def
+     by (simp split: enat.split)
+@@ -227,7 +228,8 @@
+     by (simp split: enat.split)
+   show distr: "(a + b) * c = a * c + b * c"
+     unfolding times_enat_def zero_enat_def
+-    by (simp split: enat.split add: distrib_right)
++    by (cases a b c rule: enat3_cases;simp add: distrib_right)
++    (*by (simp split: enat.split add: distrib_right)*)
+   show "0 * a = 0"
+     unfolding times_enat_def zero_enat_def
+     by (simp split: enat.split)
+@@ -323,6 +325,7 @@
+ lemma eSuc_minus_1 [simp]: "eSuc n - 1 = n"
+   by (simp add: one_enat_def flip: eSuc_enat zero_enat_def)
+ 
++(*do not touch this comment*)
+ (*lemmas idiff_self_eq_0_enat = idiff_self_eq_0[unfolded zero_enat_def]*)
+ 
+ subsection \<open>Ordering\<close>
+@@ -380,7 +383,8 @@
+   fix a b c :: enat
+   show "a \<le> b \<Longrightarrow> 0 \<le> c \<Longrightarrow>c * a \<le> c * b"
+     unfolding times_enat_def less_eq_enat_def zero_enat_def
+-    by (simp split: enat.splits)
++    by (cases a b c rule: enat3_cases;simp)
++    (*by (simp split: enat.splits)*)
+   show "a < b \<Longrightarrow> c < d \<Longrightarrow> a + c < b + d" for a b c d :: enat
+     by (cases a b c d rule: enat2_cases[case_product enat2_cases]) auto
+   show "a < b \<Longrightarrow> a + 1 < b + 1"
+diff -urNx '*~' ./Library/Extended_Real.thy /Applications/Isabelle2022.app/src/HOL/Library/Extended_Real.thy
+--- ./Library/Extended_Real.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Library/Extended_Real.thy	2023-07-05 12:50:39.000000000 +0900
+@@ -2045,10 +2045,10 @@
+     then have "0 < - c" "- c < \<infinity>"
+       by (auto simp: ereal_uminus_reorder ereal_less_uminus_reorder[of 0])
+     then have "((\<lambda>x. (- c) * f x) \<longlongrightarrow> (- c) * x) F"
+-      by (rule *)
++      by (rule * )
+     from tendsto_uminus_ereal[OF this] show ?thesis
+       by simp
+-  qed (auto intro!: *)
++  qed (auto intro!: * )
+ qed
+ 
+ lemma tendsto_cmult_ereal_not_0[tendsto_intros, simp, intro]:
+@@ -2364,11 +2364,11 @@
+       by (cases a b rule: ereal2_cases) auto }
+   note * = this
+   have "(INF i. f i + g i) = (INF i. - ((- f i) + (- g i)))"
+-    by (simp add: fin *)
++    by (simp add: fin * )
+   also have "\<dots> = Inf (f ` UNIV) + Inf (g ` UNIV)"
+     unfolding ereal_INF_uminus_eq
+     using assms INF_less
+-    by (subst SUP_ereal_add) (auto simp: ereal_SUP_uminus fin *)
++    by (subst SUP_ereal_add) (auto simp: ereal_SUP_uminus fin * )
+   finally show ?thesis .
+ qed
+ 
+@@ -2675,7 +2675,7 @@
+   have *: "A = ereal ` (ereal -` A) \<union> (if \<infinity> \<in> A then {ereal x<..} else {}) \<union> (if -\<infinity> \<in> A then {..< ereal y} else {})"
+     using A(2,3) by auto
+   from open_ereal[OF A(1)] show "open A"
+-    by (subst *) (auto simp: open_Un)
++    by (subst * ) (auto simp: open_Un)
+ qed
+ 
+ lemma open_PInfty2:
+@@ -3509,7 +3509,7 @@
+   show ?thesis
+     using assms
+     apply (subst (1 2) suminf_ereal_eq_SUP)
+-    apply (auto intro!: SUP_upper2 SUP_commute simp: *)
++    apply (auto intro!: SUP_upper2 SUP_commute simp: * )
+     done
+ qed
+ 
+diff -urNx '*~' ./Library/FSet.thy /Applications/Isabelle2022.app/src/HOL/Library/FSet.thy
+--- ./Library/FSet.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Library/FSet.thy	2023-07-05 14:28:20.000000000 +0900
+@@ -53,8 +53,36 @@
+   by simp
+ 
+ instance
+-  by (standard; transfer; auto)+
+-
++proof (standard)
++  fix x :: "'a fset"
++  show "x \<le> x"
++    by (transfer; simp)
++  show "bot \<le> x"
++    by (transfer; simp)
++  fix y :: "'a fset"
++  show "(x < y) = (x \<le> y \<and> \<not> y \<le> x)"
++    by (transfer; simp add: subset_not_subset_eq)
++  show "inf x y \<le> x"
++    by (transfer; simp)
++  show "inf x y \<le> y"
++    by (transfer; simp)
++  show "x \<le> sup x y"
++    by (transfer; simp)
++  show "y \<le> sup x y"
++    by (transfer; simp)
++  fix z :: "'a fset"
++  show "x \<le> y \<Longrightarrow> y \<le> z \<Longrightarrow> x \<le> z"
++    by (transfer; simp)
++  show "x \<le> y \<Longrightarrow>y \<le> x \<Longrightarrow> x = y"
++    by (transfer; simp)
++  show "x \<le> y \<Longrightarrow> x \<le> z \<Longrightarrow> x \<le> inf y z"
++    by (transfer; simp)
++  show "y \<le> x \<Longrightarrow> z \<le> x \<Longrightarrow> sup y z \<le> x"
++    by (transfer; simp)
++  show "sup x (inf y z) = inf (sup x y) (sup x z)"
++    by (transfer; simp add: Un_Int_distrib)
++qed
++(*  by (standard; transfer; auto)+*)
+ end
+ 
+ abbreviation fempty :: "'a fset" ("{||}") where "{||} \<equiv> bot"
+@@ -1022,7 +1050,9 @@
+ 
+ lemma ffUnion_transfer [transfer_rule]:
+   "(rel_fset (rel_fset A) ===> rel_fset A) ffUnion ffUnion"
+-  unfolding rel_fun_def rel_fset_alt_def by transfer (simp, fast)
++  unfolding rel_fun_def
++  by transfer (metis Union_transfer rel_fun_def)
++(*  unfolding rel_fun_def rel_fset_alt_def by transfer (simp, fast)*)
+ 
+ lemma fimage_transfer [transfer_rule]:
+   "((A ===> B) ===> rel_fset A ===> rel_fset B) fimage fimage"
+@@ -1146,7 +1176,7 @@
+       by (transfer, auto simp add: image_def Int_def split: prod.splits)
+     from * show "b = fimage snd R'" using conjunct2[OF \<open>?L\<close>]
+       by (transfer, auto simp add: image_def Int_def split: prod.splits)
+-  qed (auto simp add: *)
++  qed (auto simp add: * )
+ next
+   assume ?R thus ?L unfolding Grp_def relcompp.simps conversep.simps
+   apply (simp add: subset_eq Ball_def)
+@@ -1177,7 +1207,8 @@
+ done
+ 
+ lemma rel_fset_fset: "rel_set \<chi> (fset A1) (fset A2) = rel_fset \<chi> A1 A2"
+-  by transfer (rule refl)
++  by (simp add: rel_fset.rep_eq)
++(*  by transfer (rule refl)*)
+ 
+ end
+ 
+@@ -1350,7 +1381,7 @@
+ 
+ no_notation Quickcheck_Exhaustive.orelse (infixr "orelse" 55)
+ 
+-instantiation fset :: (random) random
++(*instantiation fset :: (random) random
+ begin
+ 
+ context
+@@ -1383,6 +1414,6 @@
+ 
+ end
+ 
+-end
++end*)
+ 
+ end
+diff -urNx '*~' ./Library/Finite_Map.thy /Applications/Isabelle2022.app/src/HOL/Library/Finite_Map.thy
+--- ./Library/Finite_Map.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Library/Finite_Map.thy	2023-07-05 14:41:15.000000000 +0900
+@@ -1316,7 +1316,7 @@
+ 
+ 
+ code_datatype fmap_of_list
+-quickcheck_generator fmap constructors: fmap_of_list
++(*quickcheck_generator fmap constructors: fmap_of_list*)
+ 
+ context includes fset.lifting begin
+ 
+@@ -1441,7 +1441,7 @@
+   fBall fmrel fmran fmran' fmdom fmdom' fmpred pred_fmap fmsubset fmupd fmrel_on_fset
+   fmdrop fmdrop_set fmdrop_fset fmrestrict_set fmrestrict_fset fmimage fmlookup fmempty
+   fmfilter fmadd fmmap fmmap_keys fmcomp
+-  checking SML Scala Haskell? OCaml?
++  checking (*SML*) Scala Haskell? OCaml?
+ 
+ \<comment> \<open>\<open>lifting\<close> through \<^type>\<open>fmap\<close>\<close>
+ 
+diff -urNx '*~' ./Library/Interval.thy /Applications/Isabelle2022.app/src/HOL/Library/Interval.thy
+--- ./Library/Interval.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Library/Interval.thy	2023-07-10 15:50:13.000000000 +0900
+@@ -578,18 +578,33 @@
+ lemma set_of_distrib_left:
+   "set_of (B * (A1 + A2)) \<subseteq> set_of (B * A1 + B * A2)"
+   for A1 :: "'a::linordered_ring interval"
+-  apply transfer
+-  apply (clarsimp simp: Let_def distrib_left distrib_right)
+-  apply (intro conjI)
+-         apply (metis add_mono min.cobounded1 min.left_commute)
+-        apply (metis add_mono min.cobounded1 min.left_commute)
+-       apply (metis add_mono min.cobounded1 min.left_commute)
+-      apply (metis add_mono min.assoc min.cobounded2)
+-     apply (meson add_mono order.trans max.cobounded1 max.cobounded2)
+-    apply (meson add_mono order.trans max.cobounded1 max.cobounded2)
+-   apply (meson add_mono order.trans max.cobounded1 max.cobounded2)
+-  apply (meson add_mono order.trans max.cobounded1 max.cobounded2)
+-  done
++proof-
++  define X where "X \<equiv> {(lower B)*(lower A1) + (lower B) * (lower A2),(lower B)*(upper A1) + (lower B)*(upper A2),(upper B)*(lower A1) + (upper B)*(lower A2),(upper B)*(upper A1) + (upper B)*(upper A2)}"
++  define Y1 where "Y1 \<equiv> {(lower B)*(lower A1),(lower B)*(upper A1),(upper B)*(lower A1),(upper B)*(upper A1)}"
++  define Y2 where "Y2 \<equiv> {(lower B)*(lower A2),(lower B)*(upper A2),(upper B)*(lower A2),(upper B)*(upper A2)}"
++  have l1: "lower(B * (A1 + A2)) = Min X"
++    by (simp add: lower_times distrib_left X_def)
++  have l2: "lower (B * A1) = Min Y1"
++    by (simp add: lower_times Y1_def)
++  have l3: "lower(B * A2) = Min Y2"
++    by (simp add: lower_times Y2_def)
++  have l: "lower (B * A1 + B * A2) \<le> lower(B * (A1 + A2))"
++    apply (simp only: l1 X_def, rule Min.boundedI,simp?,auto)
++    using l2 l3 Min.coboundedI[of Y1] Min.coboundedI[of Y2]
++    by (simp_all add: add_mono_thms_linordered_semiring(1) Y1_def Y2_def)
++  have u1: "upper(B * (A1 + A2)) = Max X"
++    by (simp add: upper_times distrib_left X_def)
++  have l2: "upper (B * A1) = Max Y1"
++    by (simp add: upper_times Y1_def)
++  have l3: "upper(B * A2) = Max Y2"
++    by (simp add: upper_times Y2_def)
++  have u: "upper (B * (A1 + A2)) \<le> upper (B * A1 + B * A2)"
++    apply (simp only: u1 X_def, rule Max.boundedI,simp?,auto)
++    using l2 l3 Max.coboundedI[of Y1] Max.coboundedI[of Y2]
++    by (simp_all add: add_mono_thms_linordered_semiring(1) Y1_def Y2_def)
++  with l show ?thesis
++    by (auto simp: set_of_eq)
++qed
+ 
+ lemma set_of_distrib_right:
+   "set_of ((A1 + A2) * B) \<subseteq> set_of (A1 * B + A2 * B)"
+@@ -757,7 +772,14 @@
+ 
+ lemma split_intervalD: "split_interval X x = (A, B) \<Longrightarrow> set_of X \<subseteq> set_of A \<union> set_of B"
+   unfolding set_of_eq
+-  by transfer (auto simp: min_def max_def split: if_splits)
++proof (transfer)
++  fix X A B ::"'a \<times> 'a" and x :: "'a" assume "X \<in> {(x, y). x \<le> y}" and "A \<in> {(x, y). x \<le> y}" and "B \<in> {(x, y). x \<le> y}"
++    and *: "(case X of (l, u) \<Rightarrow> \<lambda>x. ((min l x, max l x), min u x, max u x)) x = (A, B)"
++  then obtain l u where X: "X = (l,u)" and "l \<le> u" by auto
++  with * have A: "A = (min l x, max l x)" and B: "B = (min u x, max u x)" by auto
++  with X show "{fst X..snd X} \<subseteq> {fst A..snd A} \<union> {fst B..snd B}"
++    by (cases "l \<le> x"; cases "u \<le> x";auto simp add: min_def max_def)
++qed
+ 
+ instantiation interval :: ("{topological_space, preorder}") topological_space
+ begin
+diff -urNx '*~' ./Library/Interval_Float.thy /Applications/Isabelle2022.app/src/HOL/Library/Interval_Float.thy
+--- ./Library/Interval_Float.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Library/Interval_Float.thy	2023-07-10 17:50:11.000000000 +0900
+@@ -121,7 +121,9 @@
+   by (auto simp: set_of_eq)
+ 
+ lemma real_interval_times: "real_interval (A * B) = real_interval A * real_interval B"
+-  by (auto simp: interval_eq_iff lower_times upper_times min_def max_def)
++  apply (rule interval_eq_iff[THEN iffD2]; intro conjI; simp)
++   apply (auto simp: lower_times min_def)
++  by (auto simp: upper_times max_def)
+ 
+ lemma times_in_float_intervalI: "a * b \<in>\<^sub>r A * B" if "a \<in>\<^sub>r A" "b \<in>\<^sub>r B"
+   using times_in_intervalI[OF that]
+@@ -294,11 +296,18 @@
+   hence "x' \<in>\<^sub>r I" "xs all_in Is"
+     using Cons(2)
+     by auto
++  from split_correct[OF \<open>x' \<in>\<^sub>r I\<close>] 
++  obtain U where U: "U \<in> set (split I)" "x' \<in>\<^sub>r U"
++    by (auto simp add: list_ex_iff)
++  from Cons(1)[OF \<open>xs all_in Is\<close>] list_ex_iff
++  obtain Y where Y: "Y \<in> set (split_domain split Is)" "xs all_in Y"
++    by (auto simp add: list_ex_iff)
++  from U(1) Y(1)
+   show ?case
+-    using Cons(1)[OF \<open>xs all_in Is\<close>]
+-      split_correct[OF \<open>x' \<in>\<^sub>r I\<close>]
+-    apply (auto simp add: list_ex_iff set_of_eq)
+-    by (smt (verit, ccfv_SIG) One_nat_def Suc_pred \<open>x \<noteq> []\<close> le_simps(3) length_greater_0_conv length_tl linorder_not_less list.sel(3) neq0_conv nth_Cons' x_decomp)
++    apply (simp add: list_ex_iff;intro bexI[of _ Y] conjI bexI[of _ U] allI;simp)
++    using Y(2) x_decomp apply simp
++    using U(2) Y(2)[THEN all_in_def[THEN iffD1]] x_decomp 
++    by (metis Suc_le_eq less_Suc_eq_le not0_implies_Suc nth_Cons_0 nth_Cons_Suc)
+ qed simp
+ 
+ 
+diff -urNx '*~' ./Library/Lattice_Constructions.thy /Applications/Isabelle2022.app/src/HOL/Library/Lattice_Constructions.thy
+--- ./Library/Lattice_Constructions.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Library/Lattice_Constructions.thy	2023-07-03 17:31:50.000000000 +0900
+@@ -51,16 +51,37 @@
+   by (simp add: less_bot_def)
+ 
+ instance
+-  by standard
+-    (auto simp add: less_eq_bot_def less_bot_def less_le_not_le elim: order_trans split: bot.splits)
++proof standard
++  fix x :: "'a bot"
++  show "x \<le> x"
++    by (cases x; simp)
++  fix y :: "'a bot"
++  show "(x < y) = (x \<le> y \<and> \<not> y \<le> x)" 
++    by (cases x; cases y; simp add: less_le_not_le)
++  fix z :: "'a bot" 
++  show "x \<le> y \<Longrightarrow> y \<le> z \<Longrightarrow> x \<le> z"
++    by (cases x; cases y; cases z; auto elim: order_trans)
++qed
++(*  by standard
++    (auto simp add: less_eq_bot_def less_bot_def less_le_not_le elim: order_trans split: bot.splits)*)
+ 
+ end
+ 
+ instance bot :: (order) order
+-  by standard (auto simp add: less_eq_bot_def less_bot_def split: bot.splits)
++proof standard
++  fix x y :: "'a bot"
++  show "x \<le> y \<Longrightarrow> y \<le> x \<Longrightarrow> x = y"
++    by (cases x; cases y; simp)
++qed
++(*  by standard (auto simp add: less_eq_bot_def less_bot_def split: bot.splits)*)
+ 
+ instance bot :: (linorder) linorder
+-  by standard (auto simp add: less_eq_bot_def less_bot_def split: bot.splits)
++proof standard
++  fix x y :: "'a bot"
++  show "x \<le> y \<or> y \<le> x"
++    by (cases x; cases y; simp add: linear)
++qed
++(*  by standard (auto simp add: less_eq_bot_def less_bot_def split: bot.splits)*)
+ 
+ instantiation bot :: (order) bot
+ begin
+@@ -88,7 +109,17 @@
+         | Value v' \<Rightarrow> Value (inf v v')))"
+ 
+ instance
+-  by standard (auto simp add: inf_bot_def less_eq_bot_def split: bot.splits)
++proof standard
++  fix x y :: "'a bot"
++  show "inf x y \<le> x"
++    by (cases x; cases y; simp add: inf_bot_def)
++  show "inf x y \<le> y"
++    by (cases x; cases y; simp add: inf_bot_def)
++  fix z :: "'a bot"
++  show "x \<le> y \<Longrightarrow> x \<le> z \<Longrightarrow> x \<le> inf y z"
++    by (cases x; cases y; cases z; simp add: inf_bot_def)
++qed
++(*  by standard (auto simp add: inf_bot_def less_eq_bot_def split: bot.splits)*)
+ 
+ end
+ 
+@@ -106,7 +137,17 @@
+         | Value v' \<Rightarrow> Value (sup v v')))"
+ 
+ instance
+-  by standard (auto simp add: sup_bot_def less_eq_bot_def split: bot.splits)
++proof standard
++  fix x y :: "'a bot"
++  show "x \<le> sup x y"
++    by (cases x; cases y; simp add: sup_bot_def)
++  show "y \<le> sup x y"
++    by (cases x; cases y; simp add: sup_bot_def)
++  fix z :: "'a bot"
++  show "y \<le> x \<Longrightarrow> z \<le> x \<Longrightarrow> sup y z \<le> x"
++    by (cases x; cases y; cases z; simp add: sup_bot_def)
++qed
++(*  by standard (auto simp add: sup_bot_def less_eq_bot_def split: bot.splits)*)
+ 
+ end
+ 
+@@ -158,16 +199,37 @@
+   by (simp add: less_top_def)
+ 
+ instance
+-  by standard
+-    (auto simp add: less_eq_top_def less_top_def less_le_not_le elim: order_trans split: top.splits)
++proof standard
++  fix x :: "'a top"
++  show "x \<le> x"
++    by (cases x; simp)
++  fix y :: "'a top"
++  show "(x < y) = (x \<le> y \<and> \<not> y \<le> x)" 
++    by (cases x; cases y; simp add: less_le_not_le)
++  fix z :: "'a top" 
++  show "x \<le> y \<Longrightarrow> y \<le> z \<Longrightarrow> x \<le> z"
++    by (cases x; cases y; cases z; auto elim: order_trans)
++qed
++(*  by standard
++    (auto simp add: less_eq_top_def less_top_def less_le_not_le elim: order_trans split: top.splits)*)
+ 
+ end
+ 
+ instance top :: (order) order
+-  by standard (auto simp add: less_eq_top_def less_top_def split: top.splits)
++proof standard
++  fix x y :: "'a top"
++  show "x \<le> y \<Longrightarrow> y \<le> x \<Longrightarrow> x = y"
++    by (cases x; cases y; simp)
++qed
++(*  by standard (auto simp add: less_eq_top_def less_top_def split: top.splits)*)
+ 
+ instance top :: (linorder) linorder
+-  by standard (auto simp add: less_eq_top_def less_top_def split: top.splits)
++proof standard
++  fix x y :: "'a top"
++  show "x \<le> y \<or> y \<le> x"
++    by (cases x; cases y; simp add: linear)
++qed
++(*  by standard (auto simp add: less_eq_top_def less_top_def split: top.splits)*)
+ 
+ instantiation top :: (order) top
+ begin
+@@ -195,7 +257,17 @@
+         | Value v' \<Rightarrow> Value (inf v v')))"
+ 
+ instance
+-  by standard (auto simp add: inf_top_def less_eq_top_def split: top.splits)
++proof standard
++  fix x y :: "'a top"
++  show "inf x y \<le> x"
++    by (cases x; cases y; simp add: inf_top_def)
++  show "inf x y \<le> y"
++    by (cases x; cases y; simp add: inf_top_def)
++  fix z :: "'a top"
++  show "x \<le> y \<Longrightarrow> x \<le> z \<Longrightarrow> x \<le> inf y z"
++    by (cases x; cases y; cases z; simp add: inf_top_def)
++qed
++(*  by standard (auto simp add: inf_top_def less_eq_top_def split: top.splits)*)
+ 
+ end
+ 
+@@ -213,7 +285,17 @@
+         | Value v' \<Rightarrow> Value (sup v v')))"
+ 
+ instance
+-  by standard (auto simp add: sup_top_def less_eq_top_def split: top.splits)
++proof standard
++  fix x y :: "'a top"
++  show "x \<le> sup x y"
++    by (cases x; cases y; simp add: sup_top_def)
++  show "y \<le> sup x y"
++    by (cases x; cases y; simp add: sup_top_def)
++  fix z :: "'a top"
++  show "y \<le> x \<Longrightarrow> z \<le> x \<Longrightarrow> sup y z \<le> x"
++    by (cases x; cases y; cases z; simp add: sup_top_def)
++qed
++(*  by standard (auto simp add: sup_top_def less_eq_top_def split: top.splits)*)
+ 
+ end
+ 
+@@ -267,9 +349,22 @@
+   by (cases z) (auto simp add: less_eq_flat_complete_lattice_def)
+ 
+ instance
+-  by standard
++proof standard
++  fix x :: "'a flat_complete_lattice"
++  show "x \<le> x"
++    by (cases x; simp add: less_eq_flat_complete_lattice_def)
++  fix y :: "'a flat_complete_lattice"
++  show "(x < y) = (x \<le> y \<and> \<not> y \<le> x)"
++    by (cases x; cases y; simp add: less_eq_flat_complete_lattice_def less_flat_complete_lattice_def)
++  show "x \<le> y \<Longrightarrow> y \<le> x \<Longrightarrow> x = y"
++    by (cases x; cases y; simp add: less_eq_flat_complete_lattice_def)
++  fix z :: "'a flat_complete_lattice"
++  show "x \<le> y \<Longrightarrow> y \<le> z \<Longrightarrow> x \<le> z"
++    by (cases x; cases y; cases z; simp add: less_eq_flat_complete_lattice_def)
++qed
++(*  by standard
+     (auto simp add: less_eq_flat_complete_lattice_def less_flat_complete_lattice_def
+-      split: flat_complete_lattice.splits)
++      split: flat_complete_lattice.splits)*)
+ 
+ end
+ 
+@@ -313,9 +408,25 @@
+     | Top \<Rightarrow> Top)"
+ 
+ instance
+-  by standard
++proof standard
++  fix x y :: "'a flat_complete_lattice"
++  show "inf x y \<le> x"
++    by (cases x; cases y; simp add: inf_flat_complete_lattice_def less_eq_flat_complete_lattice_def)
++  show "inf x y \<le> y"
++    by (cases x; cases y; simp add: inf_flat_complete_lattice_def less_eq_flat_complete_lattice_def)
++  show "x \<le> sup x y"
++    by (cases x; cases y; simp add: sup_flat_complete_lattice_def less_eq_flat_complete_lattice_def)
++  show "y \<le> sup x y"
++    by (cases x; cases y; simp add: sup_flat_complete_lattice_def less_eq_flat_complete_lattice_def)
++  fix z :: "'a flat_complete_lattice"
++  show "x \<le> y \<Longrightarrow> x \<le> z \<Longrightarrow> x \<le> inf y z"
++    by (cases x; cases y; cases z; simp add: inf_flat_complete_lattice_def less_eq_flat_complete_lattice_def)
++  show "y \<le> x \<Longrightarrow> z \<le> x \<Longrightarrow> sup y z \<le> x"
++    by (cases x; cases y; cases z; simp add: sup_flat_complete_lattice_def less_eq_flat_complete_lattice_def)
++qed
++(*  by standard
+     (auto simp add: inf_flat_complete_lattice_def sup_flat_complete_lattice_def
+-      less_eq_flat_complete_lattice_def split: flat_complete_lattice.splits)
++      less_eq_flat_complete_lattice_def split: flat_complete_lattice.splits)*)
+ 
+ end
+ 
+diff -urNx '*~' ./Library/Mapping.thy /Applications/Isabelle2022.app/src/HOL/Library/Mapping.thy
+--- ./Library/Mapping.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Library/Mapping.thy	2023-07-04 17:01:45.000000000 +0900
+@@ -959,8 +959,10 @@
+     \<lbrakk> finite (keys m); k \<notin> keys m; (\<And>k'. k' \<in> keys m \<Longrightarrow> k' \<le> k); P m \<rbrakk>
+     \<Longrightarrow> P (update k v m)"
+   shows "P m"
+-  using assms by transfer (simp add: linorder_finite_Map_induct)
+-
++  using assms 
++  apply transfer
++  apply (rule linorder_finite_Map_induct; assumption?)
++  by blast
+ 
+ subsection \<open>Code generator setup\<close>
+ 
+diff -urNx '*~' ./Library/Multiset.thy /Applications/Isabelle2022.app/src/HOL/Library/Multiset.thy
+--- ./Library/Multiset.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Library/Multiset.thy	2023-07-03 09:56:18.000000000 +0900
+@@ -3739,7 +3739,7 @@
+ lemma mset_le_asym: "M < N \<Longrightarrow> (\<not> P \<Longrightarrow> N < (M::'a::preorder multiset)) \<Longrightarrow> P"
+   by (fact less_asym)
+ 
+-declaration \<open>
++(*declaration \<open>
+   let
+     fun multiset_postproc _ maybe_name all_values (T as Type (_, [elem_T])) (Const _ $ t') =
+           let
+@@ -3759,7 +3759,7 @@
+           end
+       | multiset_postproc _ _ _ _ t = t
+   in Nitpick_Model.register_term_postprocessor \<^typ>\<open>'a multiset\<close> multiset_postproc end
+-\<close>
++\<close>*)
+ 
+ 
+ subsection \<open>Naive implementation using lists\<close>
+@@ -3924,7 +3924,7 @@
+ 
+ end
+ 
+-instantiation multiset :: (random) random
++(*instantiation multiset :: (random) random
+ begin
+ 
+ context
+@@ -3938,9 +3938,9 @@
+ 
+ end
+ 
+-end
++end*)
+ 
+-instantiation multiset :: (full_exhaustive) full_exhaustive
++(*instantiation multiset :: (full_exhaustive) full_exhaustive
+ begin
+ 
+ definition full_exhaustive_multiset :: "('a multiset \<times> (unit \<Rightarrow> term) \<Rightarrow> (bool \<times> term list) option) \<Rightarrow> natural \<Rightarrow> (bool \<times> term list) option"
+@@ -3949,7 +3949,7 @@
+ 
+ instance ..
+ 
+-end
++end*)
+ 
+ hide_const (open) msetify
+ 
+diff -urNx '*~' ./Library/Poly_Mapping.thy /Applications/Isabelle2022.app/src/HOL/Library/Poly_Mapping.thy
+--- ./Library/Poly_Mapping.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Library/Poly_Mapping.thy	2023-07-04 17:54:40.000000000 +0900
+@@ -552,7 +552,15 @@
+       also have "\<dots> = (\<Sum>(a, bc, b, c). f a * g b * h c when bc = b + c when k = a + bc)"
+       proof -
+         have "bij (\<lambda>(a, d, b, c). (d, c, a, b))"
+-          by (auto intro!: bijI injI surjI [of _ "\<lambda>(d, c, a, b). (a, d, b, c)"] simp add: split_def)
++        proof (intro bijI injI surjI [of _ "\<lambda>(d, c, a, b). (a, d, b, c)"])
++          fix x
++          show "(case case x of (d, c, a, b) \<Rightarrow> (a, d, b, c) of (a, d, b, c) \<Rightarrow> (d, c, a, b)) =  x"
++            by (cases x;simp)
++          fix y 
++          show "(case x of (a, d, b, c) \<Rightarrow> (d, c, a, b)) = (case y of (a, d, b, c) \<Rightarrow> (d, c, a, b)) \<Longrightarrow> x = y"
++            by (cases x; cases y; simp)
++        qed
++          (*by (auto intro!: bijI injI surjI [of _ "\<lambda>(d, c, a, b). (a, d, b, c)"] simp add: split_def)*)
+         then show ?thesis
+           by (rule Sum_any.reindex_cong) auto
+       qed
+diff -urNx '*~' ./Library/Predicate_Compile_Alternative_Defs.thy /Applications/Isabelle2022.app/src/HOL/Library/Predicate_Compile_Alternative_Defs.thy
+--- ./Library/Predicate_Compile_Alternative_Defs.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Library/Predicate_Compile_Alternative_Defs.thy	2023-07-12 19:07:40.000000000 +0900
+@@ -205,7 +205,7 @@
+ lemma list_all2_ConsI [code_pred_intro]: "list_all2 P xs ys ==> P x y ==> list_all2 P (x#xs) (y#ys)"
+ by auto
+ 
+-code_pred [skip_proof] list_all2
++code_pred list_all2
+ proof -
+   case list_all2
+   from this show thesis
+diff -urNx '*~' ./Library/Predicate_Compile_Quickcheck.thy /Applications/Isabelle2022.app/src/HOL/Library/Predicate_Compile_Quickcheck.thy
+--- ./Library/Predicate_Compile_Quickcheck.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Library/Predicate_Compile_Quickcheck.thy	2023-07-07 14:13:57.000000000 +0900
+@@ -8,6 +8,6 @@
+   imports Predicate_Compile_Alternative_Defs
+ begin
+ 
+-ML_file \<open>../Tools/Predicate_Compile/predicate_compile_quickcheck.ML\<close>
++(*ML_file \<open>../Tools/Predicate_Compile/predicate_compile_quickcheck.ML\<close>*)
+ 
+ end
+diff -urNx '*~' ./Library/Uprod.thy /Applications/Isabelle2022.app/src/HOL/Library/Uprod.thy
+--- ./Library/Uprod.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Library/Uprod.thy	2023-07-11 09:43:17.000000000 +0900
+@@ -152,7 +152,7 @@
+ instance by standard(simp add: equal_uprod_def)
+ end
+ 
+-quickcheck_generator uprod constructors: Upair
++(*quickcheck_generator uprod constructors: Upair*)
+ 
+ lemma UNIV_uprod: "UNIV = (\<lambda>x. Upair x x) ` UNIV \<union> (\<lambda>(x, y). Upair x y) ` Sigma UNIV (\<lambda>x. UNIV - {x})"
+ apply(rule set_eqI)
+diff -urNx '*~' ./Library/Word.thy /Applications/Isabelle2022.app/src/HOL/Library/Word.thy
+--- ./Library/Word.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Library/Word.thy	2023-07-07 14:03:56.000000000 +0900
+@@ -57,7 +57,31 @@
+   by (auto simp add: take_bit_eq_mod intro: mod_mult_cong)
+ 
+ instance
+-  by (standard; transfer) (simp_all add: algebra_simps)
++proof (standard)
++  show "(0 :: 'a word) \<noteq> 1"
++    by (transfer;simp)
++  fix a :: "'a word"
++  show "1 * a = a"
++    by (transfer;simp)
++  show "0 + a = a"
++    by (transfer;simp)
++  show "- a + a = 0"
++    by (transfer;simp)
++  fix b :: "'a word"
++  show "a * b = b * a"
++    by (transfer;simp add: ac_simps)
++  show "a + b = b + a"
++    by (transfer;simp add: ac_simps)
++  show "a - b = a + - b"
++    by (transfer;simp)
++  fix c :: "'a word"
++  show "a * b * c = a * (b * c)"
++    by (transfer;simp add: ac_simps)
++  show "a + b + c = a + (b + c)"
++    by (transfer;simp add: ac_simps)
++  show "(a + b) * c = a * c + b * c"
++    by (transfer;simp add: distrib_right)
++qed
+ 
+ end
+ 
+@@ -150,10 +174,10 @@
+   \<open>Word.Word = of_int\<close>
+   by (rule; transfer) simp
+ 
+-quickcheck_generator word
++(*quickcheck_generator word
+   constructors:
+     \<open>0 :: 'a::len word\<close>,
+-    \<open>numeral :: num \<Rightarrow> 'a::len word\<close>
++    \<open>numeral :: num \<Rightarrow> 'a::len word\<close>*)
+ 
+ instantiation word :: (len) equal
+ begin
+@@ -987,7 +1011,8 @@
+   is \<open>\<lambda>n. take_bit (min LENGTH('a) n)\<close>
+   by (simp add: ac_simps) (simp only: flip: take_bit_take_bit)
+ 
+-instance apply (standard; transfer)
++instance 
++  apply (standard; transfer)
+   apply (auto simp add: minus_eq_not_minus_1 mask_eq_exp_minus_1
+     bit_simps set_bit_def flip_bit_def take_bit_drop_bit
+     simp flip: drop_bit_eq_div take_bit_eq_mod)
+@@ -1290,7 +1315,7 @@
+     by simp
+   case False
+   then show ?thesis
+-    by transfer (auto simp add: signed_take_bit_eq intro: order_trans *)
++    by transfer (auto simp add: signed_take_bit_eq intro: order_trans * )
+ qed
+ 
+ lemma sint_less:
+@@ -1668,11 +1693,11 @@
+     by simp
+   have \<open>a = 0\<close> if \<open>2 * a = 0\<close> and \<open>a \<noteq> 2 ^ (LENGTH('a) - Suc 0)\<close>
+     using that by transfer
+-      (auto simp add: take_bit_eq_0_iff take_bit_eq_mod *)
++      (auto simp add: take_bit_eq_0_iff take_bit_eq_mod * )
+   moreover have \<open>2 ^ LENGTH('a) = (0 :: 'a word)\<close>
+     by transfer simp
+   then have \<open>2 * 2 ^ (LENGTH('a) - Suc 0) = (0 :: 'a word)\<close>
+-    by (simp add: *)
++    by (simp add: * )
+   ultimately show ?thesis
+     by auto
+ qed
+@@ -1849,14 +1874,22 @@
+   case (Suc n)
+   from Suc.prems have \<open>take_bit n (k div 2) = take_bit n (l div 2)\<close>
+     by (simp add: take_bit_Suc)
+-  then have \<open>map (bit (k div 2)) [0..<n] = map (bit (l div 2)) [0..<n]\<close>
+-    by (rule Suc.IH)
+-  moreover have \<open>bit (r div 2) = bit r \<circ> Suc\<close> for r :: int
++  then have *: \<open>map (bit (k div 2)) [0..<n] = map (bit (l div 2)) [0..<n]\<close>
++ by (rule Suc.IH)
++  have \<open>bit (r div 2) = bit r \<circ> Suc\<close> for r :: int
+     by (simp add: fun_eq_iff bit_Suc)
+-  moreover from Suc.prems have \<open>even k \<longleftrightarrow> even l\<close>
+-    by (auto simp add: take_bit_Suc elim!: evenE oddE) arith+
++  with * have \<open>map (bit k \<circ> Suc) [0..<n] = map (bit l \<circ> Suc) [0..<n]\<close>
++    by simp
++  moreover from Suc.prems have \<open>odd k \<longleftrightarrow> odd l\<close>
++    apply (simp only: take_bit_Suc)
++    by arith
+   ultimately show ?case
+-    by (simp only: map_Suc_upt upt_conv_Cons flip: list.map_comp) (simp add: bit_0)
++    apply (simp only: upt_conv_Cons[of 0 "Suc n"])
++    apply (simp only: list.map(2)[of "bit k" 0 "[Suc 0..<Suc n]"] list.map(2)[of "bit l" 0 "[Suc 0..<Suc n]"])
++    apply (simp only: list.inject[of "bit k 0" "map (bit k) [Suc 0..<Suc n]" "bit l 0" "map (bit l) [Suc 0..<Suc n]"])
++    apply (intro conjI)
++     apply (simp only: flip: bit_0[of k] bit_0[of l])
++    by (simp only: map_Suc_upt[of 0 n] flip: list.map_comp[of "bit l" Suc "[0..<n]"] list.map_comp[of "bit k" Suc "[0..<n]"])
+ qed
+ 
+ lemma
+@@ -2975,10 +3008,53 @@
+     (if unat a + unat b < 2 ^ LENGTH('a)
+     then unat a + unat b
+     else unat a + unat b - 2 ^ LENGTH('a))\<close> for a b :: \<open>'a::len word\<close>
+-  apply (auto simp add: not_less le_iff_add)
+-   apply (metis (mono_tags, lifting) of_nat_add of_nat_unat take_bit_nat_eq_self_iff unsigned_less unsigned_of_nat unsigned_word_eqI)
+-  apply (smt (verit, ccfv_SIG) dbl_simps(3) dbl_simps(5) numerals(1) of_nat_0_le_iff of_nat_add of_nat_eq_iff of_nat_numeral of_nat_power of_nat_unat uint_plus_if' unsigned_1)
+-  done
++proof (transfer; simp add: not_less le_iff_add, intro conjI impI)
++  fix a b assume bound: "nat (take_bit LENGTH('a) a) + nat (take_bit  LENGTH('a) b)  < 2 ^ LENGTH('a)"
++  note eq_nat_nat_iff[OF take_bit_nonnegative[of "LENGTH('a)" _] take_bit_nonnegative[of "LENGTH('a)" _], THEN iffD2, OF 
++      take_bit_add[of "LENGTH('a)" a b]]
++  with take_bit_nat_eq[of _ "LENGTH('a)"] take_bit_nonnegative[of "LENGTH('a)" _]
++  have "take_bit LENGTH('a) (nat (take_bit LENGTH('a) a + take_bit LENGTH('a) b)) = nat (take_bit LENGTH('a) (a + b))"
++    by simp
++  with nat_add_distrib take_bit_nonnegative[of "LENGTH('a)" _]
++  have "take_bit LENGTH('a) (nat (take_bit LENGTH('a) a) + nat (take_bit LENGTH('a) b)) = ..."
++    by simp
++  with take_bit_nat_eq_self_iff[THEN iffD2, OF bound]
++  show "nat (take_bit LENGTH('a) (a + b)) = nat (take_bit LENGTH('a) a) + nat (take_bit LENGTH('a) b)"
++    by simp
++next
++  fix a b assume "\<exists>c. nat (take_bit LENGTH('a) a) + nat (take_bit LENGTH('a)  b) = 2 ^ LENGTH('a) + c"
++  then obtain c where c: "nat (take_bit LENGTH('a) a) + nat (take_bit LENGTH('a)  b) = 2 ^ LENGTH('a) + c" by auto
++  note eq_nat_nat_iff[OF take_bit_nonnegative[of "LENGTH('a)" _] take_bit_nonnegative[of "LENGTH('a)" _], THEN iffD2, OF 
++      take_bit_add[of "LENGTH('a)" a b]]
++  with take_bit_nat_eq[of _ "LENGTH('a)"] take_bit_nonnegative[of "LENGTH('a)" _]
++  have "take_bit LENGTH('a) (nat (take_bit LENGTH('a) a + take_bit LENGTH('a) b)) = nat (take_bit LENGTH('a) (a + b))"
++    by simp
++  with nat_add_distrib take_bit_nonnegative[of "LENGTH('a)" _]
++  have "take_bit LENGTH('a) (nat (take_bit LENGTH('a) a) + nat (take_bit LENGTH('a) b)) = ..."
++    by simp
++  with c 
++  have "take_bit LENGTH('a) (2 ^ LENGTH('a) + c) = ..."
++    by simp
++  with take_bit_add[of "LENGTH('a)" "2 ^ LENGTH('a)" "c"]
++  have *: "take_bit LENGTH('a) ((take_bit LENGTH('a) (2 ^ LENGTH('a))) + (take_bit LENGTH('a) c)) = ..."
++    by presburger
++  with take_bit_of_exp[of "LENGTH('a)" "LENGTH('a)"]
++  have "take_bit LENGTH('a) (2 ^ LENGTH('a)) = 0"
++    by (smt (verit) mult_zero_left of_bool_eq(1) of_nat_0 of_nat_numeral of_nat_power order_less_irrefl take_bit_of_nat)
++  with * have "take_bit LENGTH('a) (take_bit LENGTH('a) c) = nat (take_bit LENGTH('a) (a + b))"
++    by (smt (verit, best) add_0)
++  with take_bit_take_bit[of "LENGTH('a)" "LENGTH('a)" c]
++  have **: "take_bit LENGTH('a) c = ..."
++    by simp
++  with take_bit_int_less_exp[of "LENGTH('a)" a] take_bit_int_less_exp[of "LENGTH('a)" b] c
++  have "c < 2 ^ LENGTH('a)"
++    by (metis add_less_cancel_left add_mono_thms_linordered_field(5) id_apply of_nat_eq_id unsigned_less unsigned_of_int)
++  from take_bit_nat_eq_self_iff[THEN iffD2, OF this] **
++  have "c = nat (take_bit LENGTH('a) (a + b))"
++    by simp
++  with c show "nat (take_bit LENGTH('a) (a + b)) = nat (take_bit LENGTH('a) a) + nat (take_bit  LENGTH('a) b) - 2 ^ LENGTH('a)"
++    by simp
++qed
+ 
+ lemma unat_sub_if_size:
+   "unat (x - y) =
+@@ -3991,9 +4067,95 @@
+   from that have **: \<open>LENGTH('b) = n + k - LENGTH('a)\<close>
+     by simp
+   show \<open>bit (slice1 n (word_reverse w :: 'b word) :: 'a word) m \<longleftrightarrow> bit (word_reverse (slice1 k w :: 'a word)) m\<close>
+-    unfolding bit_slice1_iff bit_word_reverse_iff
+-    using * **
+-    by (cases \<open>n \<le> LENGTH('a)\<close>; cases \<open>k \<le> LENGTH('a)\<close>) auto
++  proof (cases \<open>n < LENGTH('b)\<close>; cases \<open>k < LENGTH('b)\<close>)
++    assume nlb: "n < LENGTH('b)" and klb: "k < LENGTH('b)"
++    with that have nlea: "LENGTH('a) \<le> n" and klea: "LENGTH('a) \<le> k"
++      by auto
++    with * have mla: "m  < n" and mlb: "m < k"
++      by auto
++    from nlb nlea *
++    have "True = (n - LENGTH('b) \<le> m \<and>  m < min LENGTH('a) n \<and> m + (LENGTH('b) - n) - (n - LENGTH('b)) < LENGTH('b))"
++      by auto 
++    with klb klea *
++    have 1: "(m < LENGTH('a) \<and> k - LENGTH('b) \<le> LENGTH('a) -  Suc m \<and> LENGTH('a) - Suc m < min LENGTH('a) k) = ..."
++      by auto
++    from that klb
++    have "n - Suc m = (LENGTH('a) - Suc m + (LENGTH('b) - k) - (k - LENGTH('b)))"
++      by (simp add: "*" Suc_leI)
++    with nlb
++    have 2: "(LENGTH('b) - Suc (m + (LENGTH('b) - n) - (n - LENGTH('b)))) = ..."
++      by auto
++    show ?thesis
++      apply (unfold bit_slice1_iff bit_word_reverse_iff)
++      using 1 2
++      by metis
++  next
++    assume nlb: "n < LENGTH('b)" and nklb: "\<not> k < LENGTH('b)"
++    then have kleb: "LENGTH('b) \<le> k" by auto
++    with nlb that have alk: "LENGTH('a) < k" and mlea: "n \<le> LENGTH('a)"
++      by auto
++    with * have mlk: "m < k" by auto
++    with * nlb
++    have "(m < n) = (n - LENGTH('b) \<le> m \<and>  m < min LENGTH('a) n \<and> m + (LENGTH('b) - n) - (n - LENGTH('b)) < LENGTH('b))"
++      by auto
++    with * that alk
++    have 1: "(m < LENGTH('a) \<and> k - LENGTH('b) \<le> LENGTH('a) -  Suc m \<and> LENGTH('a) - Suc m < min LENGTH('a) k) = ..."
++      by auto
++    from kleb * that
++    have "n - Suc m = (LENGTH('a) - Suc m + (LENGTH('b) - k) - (k - LENGTH('b)))"
++      by auto
++    with nlb 
++    have 2: "(LENGTH('b) - Suc (m + (LENGTH('b) - n) - (n - LENGTH('b)))) = ..."
++      by auto
++    show ?thesis
++      apply (unfold bit_slice1_iff bit_word_reverse_iff)
++      using 1 2
++      by metis
++  next
++    assume nnlb: "\<not> n < LENGTH('b)" and klb: "k < LENGTH('b)"
++    then have nleb: "LENGTH('b) \<le> n" by auto
++    with klb that have klea: "k \<le> LENGTH('a)" and aln: "LENGTH('a) < n"
++      by auto
++    with * have mln: "m < n" by auto
++    from * mln
++    have "(n - LENGTH('b) \<le> m) = (n - LENGTH('b) \<le> m \<and>  m < min LENGTH('a) n \<and> m + (LENGTH('b) - n) - (n - LENGTH('b)) < LENGTH('b))"
++      by auto
++    with * klb that
++    have 1: "(m < LENGTH('a) \<and> k - LENGTH('b) \<le> LENGTH('a) -  Suc m \<and> LENGTH('a) - Suc m < min LENGTH('a) k) = ..."
++      by (simp add: "**" add.commute le_diff_conv less_Suc_eq_le less_diff_conv2)
++    from that klb *
++    have "n - Suc m = (LENGTH('a) - Suc m + (LENGTH('b) - k) - (k - LENGTH('b)))"
++      by auto
++    with nleb 
++    have 2: "(n - LENGTH('b) \<le> m) \<Longrightarrow> (LENGTH('b) - Suc (m + (LENGTH('b) - n) - (n - LENGTH('b)))) = ..."
++      by (metis add.right_neutral diff_Suc_diff_eq1 diff_is_0_eq' le_add_diff_inverse)
++    show ?thesis
++      apply (unfold bit_slice1_iff bit_word_reverse_iff)
++      using 1 2
++      by metis
++  next
++    assume nnlb: "\<not> n < LENGTH('b)" and nklb: "\<not> k < LENGTH('b)"
++    then have blen: "LENGTH('b) \<le> n" and blek: "LENGTH('b) \<le> k"
++      by auto
++    with that have klea: "k \<le> LENGTH('a)" and nlea: "n \<le> LENGTH('a)"
++      by auto
++    from * blen
++    have "(n - LENGTH('b) \<le> m \<and> m < n) = (n - LENGTH('b) \<le> m \<and>  m < min LENGTH('a) n \<and> m + (LENGTH('b) - n) - (n - LENGTH('b)) < LENGTH('b))"
++      by auto
++    with * that blek
++    have 1: "(m < LENGTH('a) \<and> k - LENGTH('b) \<le> LENGTH('a) -  Suc m \<and> LENGTH('a) - Suc m < min LENGTH('a) k) = ..."
++      by (smt (verit, ccfv_SIG) Nat.diff_cancel Nat.le_diff_conv2 Suc_leI add.commute add_le_imp_le_diff klea le_add_diff_inverse2 le_imp_less_Suc less_Suc_eq_le less_diff_conv2 less_eq_Suc_le min.absorb2 nat_add_left_cancel_le)
++    from that blek
++    have "m < n \<Longrightarrow> n - Suc m = (LENGTH('a) - Suc m + (LENGTH('b) - k) - (k - LENGTH('b)))"
++      by auto
++    with blen nlea that
++    have 2: "(n - LENGTH('b) \<le> m) \<Longrightarrow> (LENGTH('b) - Suc (m + (LENGTH('b) - n) - (n - LENGTH('b)))) = ..."
++      by simp
++    show ?thesis
++      apply (unfold bit_slice1_iff bit_word_reverse_iff)
++      using 1 2
++      by metis
++  qed
+ qed
+ 
+ lemma rev_slice:
+@@ -4484,12 +4646,11 @@
+     by (metis (no_types, lifting) \<section> diff_add_cancel minus_diff_eq uminus_add_conv_diff word_rec_id_eq)
+   finally show ?thesis .
+ qed
+-
+ end
+ 
+-
+ subsection \<open>Tool support\<close>
+ 
+ ML_file \<open>Tools/smt_word.ML\<close>
+ 
++
+ end
+diff -urNx '*~' ./List.thy /Applications/Isabelle2022.app/src/HOL/List.thy
 --- ./List.thy	2022-10-25 03:37:32.000000000 +0900
-+++ /home/blanqui/src/Isabelle2022/src/HOL/List.thy	2023-06-02 16:51:56.424006129 +0900
++++ /Applications/Isabelle2022.app/src/HOL/List.thy	2023-06-05 09:48:57.000000000 +0900
 @@ -5,7 +5,7 @@
  section \<open>The datatype of finite lists\<close>
  
@@ -363,9 +1582,9 @@ diff -urNx '*~' ./List.thy /home/blanqui/src/Isabelle2022/src/HOL/List.thy
    moreover have "i < min (length (u@v)) (length (w@z))"
      using assms(2) \<open>i < length w\<close> by simp
    moreover have "take i (u@v) = take i (w@z)"
-diff -urNx '*~' ./MacLaurin.thy /home/blanqui/src/Isabelle2022/src/HOL/MacLaurin.thy
+diff -urNx '*~' ./MacLaurin.thy /Applications/Isabelle2022.app/src/HOL/MacLaurin.thy
 --- ./MacLaurin.thy	2022-10-25 03:37:32.000000000 +0900
-+++ /home/blanqui/src/Isabelle2022/src/HOL/MacLaurin.thy	2023-06-02 16:51:56.428006218 +0900
++++ /Applications/Isabelle2022.app/src/HOL/MacLaurin.thy	2023-06-05 09:48:57.000000000 +0900
 @@ -22,7 +22,7 @@
  
  lemma eq_diff_eq': "x = y - z \<longleftrightarrow> y = x + z"
@@ -503,22 +1722,9 @@ diff -urNx '*~' ./MacLaurin.thy /home/blanqui/src/Isabelle2022/src/HOL/MacLaurin
    ultimately have "\<exists>t>c. t < x \<and> f x =
      (\<Sum>m<n. diff m c / (fact m) * (x - c) ^ m) + diff n t / (fact n) * (x - c) ^ n"
      by (rule Taylor_up)
-diff -urNx '*~' ./Main.thy /home/blanqui/src/Isabelle2022/src/HOL/Main.thy
---- ./Main.thy	2022-10-25 03:37:32.000000000 +0900
-+++ /home/blanqui/src/Isabelle2022/src/HOL/Main.thy	2023-06-02 16:51:56.428006218 +0900
-@@ -11,7 +11,7 @@
-     Quickcheck_Narrowing
-     Mirabelle
-     Extraction
--    Nunchaku
-+    (*Nunchaku*)
-+    Record
-     BNF_Greatest_Fixpoint
-     Filter
-     Conditionally_Complete_Lattices
-diff -urNx '*~' ./Nitpick.thy /home/blanqui/src/Isabelle2022/src/HOL/Nitpick.thy
+diff -urNx '*~' ./Nitpick.thy /Applications/Isabelle2022.app/src/HOL/Nitpick.thy
 --- ./Nitpick.thy	2022-10-25 03:37:32.000000000 +0900
-+++ /home/blanqui/src/Isabelle2022/src/HOL/Nitpick.thy	2023-06-02 16:51:56.428006218 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Nitpick.thy	2023-06-05 09:48:57.000000000 +0900
 @@ -8,7 +8,7 @@
  section \<open>Nitpick: Yet Another Counterexample Generator for Isabelle/HOL\<close>
  
@@ -528,9 +1734,9 @@ diff -urNx '*~' ./Nitpick.thy /home/blanqui/src/Isabelle2022/src/HOL/Nitpick.thy
  keywords
    "nitpick" :: diag and
    "nitpick_params" :: thy_decl
-diff -urNx '*~' ./Quickcheck_Exhaustive.thy /home/blanqui/src/Isabelle2022/src/HOL/Quickcheck_Exhaustive.thy
+diff -urNx '*~' ./Quickcheck_Exhaustive.thy /Applications/Isabelle2022.app/src/HOL/Quickcheck_Exhaustive.thy
 --- ./Quickcheck_Exhaustive.thy	2022-10-25 03:37:32.000000000 +0900
-+++ /home/blanqui/src/Isabelle2022/src/HOL/Quickcheck_Exhaustive.thy	2023-06-02 16:53:54.914538365 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Quickcheck_Exhaustive.thy	2023-06-05 09:48:57.000000000 +0900
 @@ -6,7 +6,7 @@
  
  theory Quickcheck_Exhaustive
@@ -561,9 +1767,9 @@ diff -urNx '*~' ./Quickcheck_Exhaustive.thy /home/blanqui/src/Isabelle2022/src/H
  hide_fact (open) orelse_def
  no_notation orelse  (infixr "orelse" 55)
  
-diff -urNx '*~' ./Quickcheck_Narrowing.thy /cygdrive/c/Isabelle2022/src/HOL/Quickcheck_Narrowing.thy
---- ./Quickcheck_Narrowing.thy	2023-05-30 11:49:56.782383300 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/Quickcheck_Narrowing.thy	2023-06-02 23:15:38.354426700 +0900
+diff -urNx '*~' ./Quickcheck_Narrowing.thy /Applications/Isabelle2022.app/src/HOL/Quickcheck_Narrowing.thy
+--- ./Quickcheck_Narrowing.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Quickcheck_Narrowing.thy	2023-06-05 09:48:57.000000000 +0900
 @@ -196,7 +196,9 @@
  
  external_file \<open>~~/src/HOL/Tools/Quickcheck/Narrowing_Engine.hs\<close>
@@ -622,9 +1828,9 @@ diff -urNx '*~' ./Quickcheck_Narrowing.thy /cygdrive/c/Isabelle2022/src/HOL/Quic
  
  code_printing constant "Code_Evaluation.term_of :: integer \<Rightarrow> term" \<rightharpoonup> (Haskell_Quickcheck) 
    "(let { t = Typerep.Typerep \"Code'_Numeral.integer\" [];
-diff -urNx '*~' ./Quickcheck_Random.thy /cygdrive/c/Isabelle2022/src/HOL/Quickcheck_Random.thy
---- ./Quickcheck_Random.thy	2023-05-30 11:49:56.406913000 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/Quickcheck_Random.thy	2023-06-01 15:38:09.316303000 +0900
+diff -urNx '*~' ./Quickcheck_Random.thy /Applications/Isabelle2022.app/src/HOL/Quickcheck_Random.thy
+--- ./Quickcheck_Random.thy	2022-10-25 03:37:32.000000000 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Quickcheck_Random.thy	2023-06-05 09:48:57.000000000 +0900
 @@ -213,6 +213,7 @@
  
  end
@@ -696,9 +1902,9 @@ diff -urNx '*~' ./Quickcheck_Random.thy /cygdrive/c/Isabelle2022/src/HOL/Quickch
  subsection \<open>Code setup\<close>
  
  code_printing
-diff -urNx '*~' ./Random_Prep.thy /home/blanqui/src/Isabelle2022/src/HOL/Random_Prep.thy
+diff -urNx '*~' ./Random_Prep.thy /Applications/Isabelle2022.app/src/HOL/Random_Prep.thy
 --- ./Random_Prep.thy	1970-01-01 09:00:00.000000000 +0900
-+++ /home/blanqui/src/Isabelle2022/src/HOL/Random_Prep.thy	2023-06-02 16:51:56.428006218 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Random_Prep.thy	2023-06-05 09:48:57.000000000 +0900
 @@ -0,0 +1,386 @@
 +(*  Title:      HOL/Quickcheck_Random.thy
 +    Author:     Florian Haftmann & Lukas Bulwahn, TU Muenchen
@@ -1086,9 +2292,9 @@ diff -urNx '*~' ./Random_Prep.thy /home/blanqui/src/Isabelle2022/src/HOL/Random_
 +
 +
 +end
-diff -urNx '*~' ./Rat.thy /home/blanqui/src/Isabelle2022/src/HOL/Rat.thy
+diff -urNx '*~' ./Rat.thy /Applications/Isabelle2022.app/src/HOL/Rat.thy
 --- ./Rat.thy	2022-10-25 03:37:32.000000000 +0900
-+++ /home/blanqui/src/Isabelle2022/src/HOL/Rat.thy	2023-06-02 16:51:56.432006308 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Rat.thy	2023-06-05 09:48:57.000000000 +0900
 @@ -1010,7 +1010,7 @@
    by (cases p) (simp add: quotient_of_Fract of_rat_rat)
  
@@ -1107,9 +2313,9 @@ diff -urNx '*~' ./Rat.thy /home/blanqui/src/Isabelle2022/src/HOL/Rat.thy
  
  
  subsection \<open>Float syntax\<close>
-diff -urNx '*~' ./Real.thy /home/blanqui/src/Isabelle2022/src/HOL/Real.thy
+diff -urNx '*~' ./Real.thy /Applications/Isabelle2022.app/src/HOL/Real.thy
 --- ./Real.thy	2022-10-25 03:37:32.000000000 +0900
-+++ /home/blanqui/src/Isabelle2022/src/HOL/Real.thy	2023-06-02 16:51:56.432006308 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Real.thy	2023-06-05 09:48:57.000000000 +0900
 @@ -1655,7 +1655,7 @@
        of_int_floor_le of_rat_of_int_eq real_less_eq_code)
  
@@ -1128,9 +2334,9 @@ diff -urNx '*~' ./Real.thy /home/blanqui/src/Isabelle2022/src/HOL/Real.thy
  
  
  subsection \<open>Setup for SMT\<close>
-diff -urNx '*~' ./String.thy /home/blanqui/src/Isabelle2022/src/HOL/String.thy
+diff -urNx '*~' ./String.thy /Applications/Isabelle2022.app/src/HOL/String.thy
 --- ./String.thy	2022-10-25 03:37:32.000000000 +0900
-+++ /home/blanqui/src/Isabelle2022/src/HOL/String.thy	2023-06-02 16:51:56.432006308 +0900
++++ /Applications/Isabelle2022.app/src/HOL/String.thy	2023-06-05 09:48:57.000000000 +0900
 @@ -40,11 +40,21 @@
  
  lemma (in comm_semiring_1) of_nat_of_char:
@@ -1167,9 +2373,9 @@ diff -urNx '*~' ./String.thy /home/blanqui/src/Isabelle2022/src/HOL/String.thy
      by simp
    moreover have \<open>Literal' b0 b1 b2 b3 b4 b5 b6 s = String.literal_of_asciis
      [of_char (Char b0 b1 b2 b3 b4 b5 b6 False)] + s\<close>
-diff -urNx '*~' ./Transcendental.thy /home/blanqui/src/Isabelle2022/src/HOL/Transcendental.thy
+diff -urNx '*~' ./Transcendental.thy /Applications/Isabelle2022.app/src/HOL/Transcendental.thy
 --- ./Transcendental.thy	2022-10-25 03:37:32.000000000 +0900
-+++ /home/blanqui/src/Isabelle2022/src/HOL/Transcendental.thy	2023-06-02 16:51:56.436006397 +0900
++++ /Applications/Isabelle2022.app/src/HOL/Transcendental.thy	2023-06-05 09:48:57.000000000 +0900
 @@ -3422,12 +3422,14 @@
      have "(-1) ^ ((n - Suc 0) div 2) * (-1) ^ ((p - Suc n) div 2) = - ((-1 :: real) ^ (p div 2))"
        if np: "odd n" "even p"
