@@ -55,6 +55,13 @@ jobs:
           git clone https://github.com/01mf02/kontroli-rs.git
           cd ~/kontroli-rs
           cargo install --path kocheck
+      - name: Generate dk and lp outputs, check dk output for Pure
+        run: |
+          cd examples/
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_session -d. Pure
+          cd Pure/dkcheck/
+          eval $(opam env)
+          bash dkcheck.sh
       # - name: Generate and check lp output for HOL.Groups
       #   run: |
       #     cp STTfa.dk STTfa.lp lambdapi.pkg examples/HOL.Groups
