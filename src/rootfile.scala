@@ -53,7 +53,7 @@ object Rootfile {
       }
     // remove HOL.Record, HOL.Nitpick and HOL.Nunchaku
     for ((k,e) <- theory_graph.iterator) {
-      if (anc_theories.contains(k.theory)) {
+      if (anc_theories.contains(k.theory) || (k.theory == "Pure" && session != "Pure")) {
         // progress.echo("Removing "+k.theory)
         theory_graph = theory_graph.del_node(k)
       }

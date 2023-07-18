@@ -56,7 +56,9 @@ object Prelude {
 
   // currently translated module
   var current_module: String = "STTfa"
+  var theory_session: Map[String, String] = Map("STTfa" -> "Pure")
   def set_current_module(m: String) = { current_module = m }
+  def set_theory_session(t: String, s: String) = {theory_session += t -> s}
 
   // add a new mapping from an Isabelle full_name to its translation
   def add_name(id: String, kind: String, module0: String = current_module) : String = {
@@ -243,7 +245,7 @@ object Translate {
         val head = if (thm.name.nonEmpty) thm_ident(thm.name) else {
           namesMap get (full_name("proof_"+thm.serial.toString, "")) match {
             case None => {
-              println("proof "+thm.serial+" is badly identified from theory "+thm.theory_name+thm.types.foldLeft(""){case (s,ty) => s+" "+ty.toString})
+              // println("proof "+thm.serial+" is badly identified from theory "+thm.theory_name+thm.types.foldLeft(""){case (s,ty) => s+" "+ty.toString})
               add_proof_ident(thm.serial,current_module)
               decs = List[Long](thm.serial)
             }

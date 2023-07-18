@@ -15,6 +15,33 @@ import scala.io.Source
 
 object Dkcheck {
 
+  def format(
+    writer : BufferedWriter,
+    ancestors : List[String],
+  ): Unit = {
+    writer.write("for f in")
+    for (anc <- ancestors) {
+      writer.write(" "+anc+"*.dk")
+    }
+    writer.write("\ndo\n")
+    writer.write("\tcp $f $f.bak\n")
+    writer.write("\tsed -e 's/#REQUIRE .*\\./(;&;)/' -e \"s/${f%.dk}\\./(;&;)/g\" $f.bak > $f\n")
+    writer.write("done\n")
+  }
+  
+  def deformat(
+    writer : BufferedWriter,
+    ancestors : List[String],
+  ): Unit = {
+    writer.write("for f in")
+    for (anc <- ancestors) {
+      writer.write(" "+anc+"*.dk")
+    }
+    writer.write("\ndo\n")
+    writer.write("\tmv $f.bak $f\n")
+    writer.write("done\n")
+  }
+
   def dkcheck(
     options: Options,
     session: String,
@@ -39,20 +66,44 @@ object Dkcheck {
     val theories : List[Document.Node.Name] = theory_graph.topological_order
     // if (verbose) progress.echo("Session graph top ordered: " + theories)
 
-    // Generate script for checking dk files with kocheck
-    val filename2 = "kocheck.sh"
-    if (verbose) progress.echo("Generates " + filename2 + " ...")
-    val file2 = new File(filename2)
-    val bw2 = new BufferedWriter(new FileWriter(file2))
-    bw2.write("#!/bin/sh\nkocheck --eta -j ${JOBS:-7} STTfa.dk")
-    for (theory <- theories) {
-      bw2.write(" " + Prelude.mod_name(theory.toString) + ".dk")
-    }
-    bw2.write("\n")
-    bw2.close()
+    // // Generate script for checking dk files with kocheck
+    // val filename2 = session+"/dkcheck/kocheck.sh"
+    // if (verbose) progress.echo("Generates " + filename2 + " ...")
+    // val file2 = new File(filename2)
+    // val bw2 = new BufferedWriter(new FileWriter(file2))
+    // bw2.write("#!/bin/sh\n")
+    // var theory_list = ""
+    // for (theory <- theories) {
+    //   theory_list += " " + Prelude.mod_name(theory.toString) + ".dk"
+    // }
+    // var anc_list = List[String]("")
+    // while (anc != "Pure") {
+    //   anc_list = ("../../"+anc+"/dkcheck/") :: anc_list
+    //   var selected_sessions_anc =
+    //     full_stru.selection(Sessions.Selection(sessions = List[String](anc)))
+    //   var info_anc = selected_sessions_anc(anc)
+    //   var anc_anc = info_anc.parent match{
+    //     case Some(x) => x
+    //     case _ => error("the session does not have any parent")
+    //   }
+    //   var theory_graph_anc = Rootfile.graph(options, anc, anc_anc, progress, dirs, verbose)
+    //   var theories : List[Document.Node.Name] = theory_graph_anc.topological_order
+    //   var theory_list_anc = ""
+    //   for (theory <- theories) {
+    //     theory_list_anc += " ../../" + session + "/dkcheck/" + Prelude.mod_name(theory.toString) + ".dk"
+    //   }
+    //   theory_list = theory_list_anc + theory_list
+    //   anc = anc_anc
+    // }
+    // anc_list = ("../../Pure/dkcheck/") :: anc_list
+    // format(bw2, anc_list)
+    // bw2.write("kocheck --eta -j ${JOBS:-7} ../../Pure/dkcheck/STTfa.dk ../../Pure/dkcheck/Pure.dk")
+    // bw2.write(theory_list+"\n")
+    // deformat(bw2, anc_list)
+    // bw2.close()
 
     // Generate script for checking dk files with dkcheck
-    val filename3 = session+"/dkcheck.sh"
+    val filename3 = session+"/dkcheck/dkcheck.sh"
     if (verbose) progress.echo("Generates " + filename3 + " ...")
     val file3 = new File(filename3)
     val bw3 = new BufferedWriter(new FileWriter(file3))
@@ -61,7 +112,7 @@ object Dkcheck {
       bw3.write(" " + Prelude.mod_name(theory.toString) + ".dk")
     }
     bw3.write("\ndo\n  dk check -e --eta $f ") 
-    bw3.write("-I ../"+anc+"/ ")
+    bw3.write("-I ../../"+anc+"/dkcheck/ ")
     while (anc != "Pure"){
       val full_stru = Sessions.load_structure(options, dirs = dirs)
       val selected_sessions =
@@ -71,7 +122,7 @@ object Dkcheck {
         case Some(x) => x
         case _ => error("the session does not have any parent")
       }
-      bw3.write("-I ../"+anc+"/ ")
+      bw3.write("-I ../../"+anc+"/dkcheck/ ")
     }
     bw3.write("|| exit 1\ndone\n")
     bw3.close()
