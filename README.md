@@ -159,9 +159,10 @@ For each one, you should run the following commands:
 
 ```
 cd examples/
-isabelle build -d. $session_name // generates the database of proofs
-isabelle dedukti_check -d. $session_name // generates scripts for checking proofs, not necessary for Pure
-isabelle dedukti_session -d. $session_name // generates the lambdapi and dedukti proofs
+isabelle build -d. $session_name # generates the database of proofs
+mkdir -p $session_name/dkcheck $session_name/lambdapi
+isabelle dedukti_check -d. $session_name # generates scripts for checking proofs, not necessary for Pure
+isabelle dedukti_session -d. $session_name # generates the lambdapi and dedukti proofs
 ```
 
 ## Creating other examples
@@ -170,6 +171,7 @@ To add other seesions, follow theses steps:
 
 - add the relevant components to isabelle (for example, AFP),
 - create a folder in `examples/` with the session name,
+- create the sub-folders `dkcheck/` and `lambdapi/`
 - add a ROOT file as described above,
 - add the session name in the `examples/ROOTS`,
 - run the commands of the previous section.
@@ -187,8 +189,7 @@ bash dkcheck.sh
 
 The whole `HOL_wp` session in `examples/HOL/` can be exported and checked:
   * `isabelle build -b -d; HOL_wp`: 51m42s, 249 Mo
-  * `isabelle dedukti_session -d. HOL_wp`: 26m14s
-  * `isabelle dedukti_session -d. -l HOL_wp`: idem
+  * `isabelle dedukti_session -d. HOL_wp`: 28m26s
   * `bash kocheck.sh`: 4m14s
   * `bash dkcheck.sh`: 13m17s
   * `lambdapi check Complex_Main.lp`: out of memory
