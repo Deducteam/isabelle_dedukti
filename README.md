@@ -159,7 +159,7 @@ For each one, you should run the following commands:
 
 ```
 cd examples/
-isabelle build -d. $session_name # generates the database of proofs
+isabelle build -b -d. $session_name # generates the database of proofs
 mkdir -p $session_name/dkcheck $session_name/lambdapi
 isabelle dedukti_check -d. $session_name # generates scripts for checking proofs, not necessary for Pure
 isabelle dedukti_session -d. $session_name # generates the lambdapi and dedukti proofs
