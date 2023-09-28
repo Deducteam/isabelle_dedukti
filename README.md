@@ -188,7 +188,7 @@ bash dkcheck.sh
 ## Performances (to update)
 
 The whole `HOL_wp` session in `examples/HOL/` can be exported and checked:
-  * `isabelle build -b -d; HOL_wp`: 51m42s, 249 Mo
+  * `isabelle build -b -d. HOL_wp`: 51m42s, 249 Mo
   * `isabelle dedukti_session -d. HOL_wp`: 28m26s
   * `bash kocheck.sh`: 4m14s
   * `bash dkcheck.sh`: 13m17s
