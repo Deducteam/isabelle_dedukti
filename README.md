@@ -82,7 +82,7 @@
     patch -uREp0 -d <path to your Isabelle distribution>/src/HOL/ < HOL.patch
     ```
 
-    - To create the patch:
+    - To update the patch:
     
     ```
     cd path_to_unpatched_Isabelle_dir
@@ -123,14 +123,16 @@ session HOL_wp (main) = Pure +
 Then, to actually generate Isabelle proofs, one has to do:
 
 ```
-isabelle build -d $directory_of_ROOT(S)_file $session_name
+isabelle build -b -d $directory_of_ROOT(S)_file $session_name
 ```
 
 For instance, to generate the Isabelle proofs up to HOL.Groups, do:
 ```
 cd examples/
-isabelle build -d. HOL.Groups_wp
+isabelle build -b -d. HOL.Groups_wp
 ```
+
+Warning: as `examples/` contains an [AFP library](https://www.isa-afp.org/download/), one should first [add AFP as Isabelle components](https://www.isa-afp.org/help/) and use a version of AFP >= 2023-05-18.
 
 To visualize theory dependencies in HOL, you can look at the [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2022/dist/library/HOL/HOL/session_graph.pdf)
 
