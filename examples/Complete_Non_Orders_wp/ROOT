@@ -1,4 +1,4 @@
-session Complete_Non_Orders_wp (AFP) = "HOL-Library_wp" +
+session Complete_Non_Orders_wp (AFP) = "HOL_wp" +
   description "
     Fixed-Point Theorems for Non-Transitive Relations.
   "

@@ -134,7 +134,7 @@ isabelle build -b -d. HOL.Groups_wp
 
 Warning: as `examples/` contains an [AFP library](https://www.isa-afp.org/download/), one should first [add AFP as Isabelle components](https://www.isa-afp.org/help/) and use a version of AFP >= 2023-05-18.
 
-To visualize theory dependencies in HOL, you can look at the [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2022/dist/library/HOL/HOL/session_graph.pdf)
+Remark: to visualize theory dependencies in HOL, you can look at the [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2022/dist/library/HOL/HOL/session_graph.pdf)
 
 
 ## Commands to translate Isabelle proofs to Dedukti or Lambdapi proofs
