@@ -13,60 +13,151 @@ object Exporter {
     options: Options,
     session: String,
     theory_name: String,
+    translate: Boolean,
+    term_cache: Term.Cache = Term.Cache.make(),
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
-    fresh_build: Boolean = false,
     use_notations: Boolean = false,
     eta_expand: Boolean = false,
-    output_lp: Boolean = false,
     verbose: Boolean = false
   ): Unit = {
 
     // to generate qualified identifiers
     Prelude.set_current_module(theory_name)
+    Prelude.set_theory_session(theory_name, session)
 
     progress.echo("Read theory " + theory_name + " ...")
 
-    val build_options = {
-      val options1 = options + "export_theory" + "record_proofs=2"
-      if (options.bool("export_standard_proofs")) options1
-      else options1 + "export_proofs"
-    }
-    Build.build_logic(build_options, session, progress = progress, dirs = dirs,
-      fresh = fresh_build, strict = true)
+    val store = Sessions.store(options, cache=term_cache)
+    val base_info = Sessions.base_info(options, session, progress, dirs)
+    val ses_cont = Export.open_session_context(store, base_info)
+    val provider = ses_cont.theory(theory_name, other_cache=Some(term_cache))
+    val theory = Export_Theory.read_theory(provider)
 
-    val store = Sessions.store(options)
-    val term_cache = Term.Cache.make()
-    val db = store.open_database(session)
-    //progress.echo("DB: " + db)
-    val provider = Export.Provider.database(db, store.cache, session, theory_name)
+    // progress.echo("Translate theory " + theory_name + " ...")
 
-    val theory =
-      if (theory_name == Thy_Header.PURE) {
-        Export_Theory.read_pure_theory(store, cache = term_cache)
-      } else {
-        Export_Theory.read_theory(provider, session, theory_name, cache = term_cache)
+ 
+    // to mark the theory the proof belongs
+    val entry_names = ses_cont.entry_names()
+    for (entry_name <- entry_names) {
+      if (entry_name.name.startsWith("proofs/") && entry_name.theory == theory_name) {
+        val prf_serial = entry_name.name.substring(7).toLong
+        if (verbose) progress.echo("  proof " + prf_serial + " from " + entry_name.theory)
+        Prelude.add_proof_ident(prf_serial,entry_name.theory)
       }
+    }
 
-    progress.echo("Translate theory " + theory_name + " ...")
+    def read_entry_names(db: SQL.Database, session_name: String, theory_name: String): List[Export.Entry_Name] = {
+      val select =
+        Export.Data.table.select(List(Export.Data.theory_name, Export.Data.name), Export.Data.where_equal(session_name,theory_name))
+      db.using_statement(select)(stmt =>
+        stmt.execute_query().iterator(res =>
+          Export.Entry_Name(session = session_name,
+            theory = res.string(Export.Data.theory_name),
+            name = res.string(Export.Data.name))).toList)
+    }
 
+    val db = store.open_database(session)
     val current_theory = mutable.Queue[Syntax.Command]()
-    for (a <- theory.classes) {
-      // if (verbose) progress.echo("  " + a.toString + a.serial)
-      current_theory.append(Translate.class_decl(a.name))
+
+    def recover_prf(prfs_ser: List[Long]) : Unit = {
+      prfs_ser match {
+        case Nil =>
+        case ser :: prfs2 => {
+          ses_cont.entry_names().find(_.name == "proofs/"+ser.toString) match {
+            case None => {
+              progress.echo("Proof "+ser+" was not recovered because no entry")
+              recover_prf(prfs2)
+            }
+            case Some(pre_entry) => {
+              pre_entry.read(db,term_cache) match {
+                case Some(entry) => {
+                  Export_Theory.read_proof(ses_cont, Export_Theory.Thm_Id(ser,entry.theory_name),other_cache=Some(term_cache)) match {
+                    case Some(prf) => {
+                      // progress.echo("Proof "+ser+" was recovered")
+                      val (com, decs) = Translate.stmt_decl(Prelude.ref_proof_ident(ser), prf.prop, Some(prf.proof))
+                      recover_prf(prfs2++decs)
+                      current_theory.append(com)
+                    }
+                    case None => {
+                      progress.echo("Proof "+ser+" was not recovered because no proof")
+                      recover_prf(prfs2)
+                    }
+                  }
+                }
+                case None => {
+                  progress.echo("Proof "+ser+" was not recovered because no content")
+                  recover_prf(prfs2)
+                }
+              }
+            }
+          }
+        }
+      }
     }
-    for (a <- theory.types) {
-      // if (verbose) progress.echo("  " + a.toString + a.serial)
-      current_theory.append(Translate.type_decl(a.name, a.the_content.args, a.the_content.abbrev, a.the_content.syntax))
+
+    if (translate) {
+      for (a <- theory.classes) {
+        if (verbose) progress.echo("  " + a.toString + a.serial)
+        current_theory.append(Translate.class_decl(a.name))
+      }
+      for (a <- theory.types) {
+        if (verbose) progress.echo("  " + a.toString + a.serial)
+        current_theory.append(Translate.type_decl(a.name, a.the_content.args, a.the_content.abbrev, a.the_content.syntax))
+      }
+      for (a <- theory.consts) {
+        if (verbose) progress.echo("  " + a.toString + " " + a.serial)
+        current_theory.append(Translate.const_decl(a.name, a.the_content.typargs, a.the_content.typ, a.the_content.abbrev, a.the_content.syntax))
+      }
+      for (a <- theory.axioms) {
+        if (verbose) progress.echo("  " + a.toString + " " + a.serial)
+        val (com,decs) = Translate.stmt_decl(Prelude.axiom_ident(a.name), a.the_content.prop, None)
+        recover_prf(decs)
+        current_theory.append(com)
+      }
+    } else {
+      for (a <- theory.classes) {
+        // if (theory_name == "HOL.Orderings") progress.echo("  here--- " + a.toString + a.serial)
+        if (verbose) progress.echo("  " + a.toString + a.serial)
+        Prelude.add_name(a.name,Markup.CLASS)
+      }
+      // for (a <- theory.thms) {
+      //   if (theory_name == "HOL.Orderings") progress.echo("  here--- " + a.toString + a.serial)
+      //   if (verbose) progress.echo("  " + a.toString + a.serial)
+      //   Prelude.add_name(a.name,Markup.CLASS)
+      // }
+      // // for ((str,oth) <- theory.others) {
+      // for (a <- theory.locales) {
+      //   if (theory_name == "HOL.Orderings") progress.echo("  here--- " + a.toString + a.serial)
+      //   // if (verbose) progress.echo("  " + a.toString + a.serial)
+      //   // Prelude.add_name(a.name,Markup.CLASS)
+      // }
+      // }
+      // for (a <- theory.locale_dependencies) {
+      //   if (theory_name == "HOL.Orderings") progress.echo("  here--- " + a.toString + a.serial)
+      //   // if (verbose) progress.echo("  " + a.toString + a.serial)
+      //   // Prelude.add_name(a.name,Markup.CLASS)
+      // }
+      for (a <- theory.types) {
+        if (verbose) progress.echo("  " + a.toString + a.serial)
+        Prelude.add_name(a.name,Export_Theory.Kind.TYPE)
+      }
+      for (a <- theory.consts) {
+        if (verbose) progress.echo("  " + a.toString + " " + a.serial)
+        Prelude.add_name(a.name,Export_Theory.Kind.CONST)
+      }
+      for (a <- theory.axioms) {
+        if (verbose) progress.echo("  " + a.toString + " " + a.serial)
+        Prelude.add_name(a.name,Markup.AXIOM)
+      }
+      for (a <- theory.thms) {
+        if (verbose) progress.echo("  " + a.toString + " " + a.serial)
+        Prelude.add_name(a.name,Export_Theory.Kind.THM)
+      }
+      return
     }
-    for (a <- theory.consts) {
-      // if (verbose) progress.echo("  " + a.toString + " " + a.serial)
-      current_theory.append(Translate.const_decl(a.name, a.the_content.typargs, a.the_content.typ, a.the_content.abbrev, a.the_content.syntax))
-    }
-    for (a <- theory.axioms) {
-      // if (verbose) progress.echo("  " + axm.toString + " " + axm.serial)
-      current_theory.append(Translate.stmt_decl(Prelude.axiom_ident(a.name), a.the_content.prop, None))
-    }
+
+    progress.echo("Translate proofs for " + theory_name + " ...")
 
     def get_thm_prf(thm : Export_Theory.Entity[Export_Theory.Thm]) = {
       def sub(p:Term.Proof) : Long = p match {
@@ -80,9 +171,11 @@ object Exporter {
       sub(thm.the_content.proof)
     }
 
-    def translate_thm(thm : Export_Theory.Entity[Export_Theory.Thm]) = {
-      // if (verbose) progress.echo("  " + thm.toString + " " + thm.serial)
-      current_theory.append(Translate.stmt_decl(Prelude.thm_ident(thm.name), thm.the_content.prop, Some(thm.the_content.proof)))
+    def translate_thm(thm : Export_Theory.Entity[Export_Theory.Thm]) : Unit = {
+      if (verbose) progress.echo("  " + thm.toString + " " + thm.serial)
+      val (com,decs) = Translate.stmt_decl(Prelude.thm_ident(thm.name), thm.the_content.prop, Some(thm.the_content.proof))
+      recover_prf(decs)
+      current_theory.append(com)
     }
 
     def prf_loop(prfs : List[(Long,Export_Theory.Proof)], thm : Export_Theory.Entity[Export_Theory.Thm], thms : List[Export_Theory.Entity[Export_Theory.Thm]],thm_prf : Long) : Unit = prfs match {
@@ -97,25 +190,38 @@ object Exporter {
             prf_loop(prfs,null,null,Long.MaxValue)
           }
         } else {
-          // if (verbose) progress.echo("  proof " + prf_serial)
-          current_theory.append(Translate.stmt_decl(Prelude.proof_ident(prf_serial), prf.prop, Some(prf.proof)))
+          if (verbose) progress.echo("  proof " + prf_serial)
+          val (com,decs) = Translate.stmt_decl(Prelude.ref_proof_ident(prf_serial), prf.prop, Some(prf.proof))
+          recover_prf(decs)
+          current_theory.append(com)
           prf_loop(prfs2,thm,thms,thm_prf)
         }
       case _ =>
     }
-    val exports = Export.read_theory_exports(db,session)
-    val prfs = 
+    if (verbose) progress.echo("reading proofs")
+
+    val exports = read_entry_names(db,session,theory_name)
+    val prfs =
       exports.foldLeft(Nil: List[(Long,Export_Theory.Proof)]) {
-        case (prfs2 : List[(Long,Export_Theory.Proof)],(thy_name,prf_name)) => (
-          if (prf_name.startsWith("proofs/")) {
-            val prf_serial = prf_name.substring(7).toLong
-            Export_Theory.read_proof(provider, Export_Theory.Thm_Id(prf_serial,thy_name), cache = term_cache) match {
-              case Some(prf) => (prf_serial,prf)::prfs2
-              case None => prfs2
+        case (prfs2 : List[(Long,Export_Theory.Proof)],entry_name) => {
+          val op_entry = entry_name.read(db,term_cache)
+          op_entry match {
+            case Some(entry) => {
+              val prf_name = entry.name
+              val thy_name = entry.theory_name
+              if (prf_name.startsWith("proofs/")) {
+                val prf_serial = prf_name.substring(7).toLong
+                Export_Theory.read_proof(ses_cont, Export_Theory.Thm_Id(prf_serial,thy_name),other_cache=Some(term_cache)) match {
+                  case Some(prf) => (prf_serial,prf)::prfs2
+                  case None => prfs2
+                }
+              } else { prfs2 }
             }
-          } else { prfs2 }
-        )
+            case _ => { prfs2 }
+          }
+        }
       }
+    if (verbose) progress.echo("reading thms")
     theory.thms match {
       case thm :: thms => prf_loop(prfs.sortBy(_._1),thm,thms,get_thm_prf(thm))
       case _ => prf_loop(prfs.sortBy(_._1),null,null,Long.MaxValue)
@@ -127,7 +233,6 @@ object Exporter {
       notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation],
       theory: List[Syntax.Command]
     ): Unit = {
-      progress.echo("Write theory " + theory_name + " ...")
       for (command <- theory) {
         command match {
           case Syntax.Definition(_,_,_,_,_) =>
@@ -139,26 +244,28 @@ object Exporter {
     Translate.global_eta_expand = eta_expand
 
     val notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation] = collection.mutable.Map()
-    val ext = if (output_lp) "lp" else "dk"
-    val filename = Path.explode (Prelude.mod_name(theory_name) + "." + ext)
+    val filename_lp = Path.explode (session + "/lambdapi/" + Prelude.mod_name(theory_name) + ".lp")
+    val filename_dk = Path.explode (session + "/dkcheck/" + Prelude.mod_name(theory_name) + ".dk")
     val deps = Prelude.deps_of(theory_name)
 
-    if (output_lp) {
-      using(new Part_Writer(filename)) { writer =>
-        val syntax = new LP_Writer(use_notations, writer)
-        syntax.comment("translation of " + theory_name)
-        if (!eta_expand) syntax.eta_equality()
-        for (dep <- deps.iterator) { syntax.require(dep) }
-        write_theory(theory_name, syntax, notations, current_theory.toList)
-      }
-    } else {
-      using(new Part_Writer(filename)) { writer =>
-        val syntax = new DK_Writer(writer)
-        syntax.comment("translation of " + theory_name)
-        for (dep <- deps.iterator) { syntax.require(dep) }
-        write_theory(theory_name, syntax, notations, current_theory.toList)
-      }
+    // if (output_lp) {
+    using(new Part_Writer(filename_lp)) { writer =>
+      val syntax = new LP_Writer(use_notations, writer)
+      syntax.comment("Lambdapi translation of " + theory_name)
+      progress.echo("Write theory " + theory_name + " in Lambdapi...")
+      if (!eta_expand) syntax.eta_equality()
+      for (dep <- deps.iterator) { syntax.require(dep) }
+      write_theory(theory_name, syntax, notations, current_theory.toList)
     }
+    // } else {
+    using(new Part_Writer(filename_dk)) { writer =>
+      val syntax = new DK_Writer(writer)
+      syntax.comment("Dedukti translation of " + theory_name)
+      progress.echo("Write theory " + theory_name + " in Dedukti...")
+      for (dep <- deps.iterator) { syntax.require(dep) }
+      write_theory(theory_name, syntax, notations, current_theory.toList)
+    }
+    // }
   }
 
   // Isabelle tool wrapper and CLI handler
@@ -166,9 +273,7 @@ object Exporter {
   val isabelle_tool: Isabelle_Tool =
     Isabelle_Tool(cmd_name, "export theory content to Dedukti or Lambdapi", Scala_Project.here,
       { args =>
-        var output_lp = false
         var dirs: List[Path] = Nil
-        var fresh_build = false
         var use_notations = false
         var eta_expand = false
         var options = Options.init()
@@ -184,12 +289,10 @@ object Exporter {
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
     -v           verbose mode
 
-Export the specified THEORY in SESSION to a Dedukti or Lambdapi file with the same name except that every dot is replaced by an underscore.""",
+Export the specified THEORY of SESSION to a Dedukti or Lambdapi file with the same name except that every dot is replaced by an underscore.""",
 
         "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
         "e" -> (_ => eta_expand = true),
-        "f" -> (_ => fresh_build = true),
-        "l" -> (arg => output_lp = true),
         "n" -> (_ => use_notations = true),
         "o:" -> (arg => { options += arg }),
         "v" -> (_ => verbose = true))
@@ -208,7 +311,7 @@ Export the specified THEORY in SESSION to a Dedukti or Lambdapi file with the sa
         if (verbose) progress.echo("Started at " + Build_Log.print_date(start_date) + "\n")
 
         progress.interrupt_handler {
-          try exporter(options, session, theory, progress, dirs, fresh_build, use_notations, eta_expand, output_lp, verbose)
+          try exporter(options, session, theory, true, Term.Cache.make(), progress, dirs, use_notations, eta_expand, verbose)
           catch {case x: Exception =>
             progress.echo(x.getStackTrace.mkString("\n"))
             println(x)}

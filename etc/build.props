@@ -10,8 +10,10 @@ sources = \
   src/translate.scala \
   src/writers.scala \
   src/generator.scala \
-  src/rootfile.scala
+  src/rootfile.scala \
+  src/dkcheck.scala
 services = \
   isabelle.dedukti.ExporterTool \
   isabelle.dedukti.RootfileTool \
-  isabelle.dedukti.GeneratorTool
+  isabelle.dedukti.GeneratorTool \
+  isabelle.dedukti.DkcheckTool

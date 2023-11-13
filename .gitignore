@@ -6,19 +6,14 @@ lib/classes/dedukti.jar
 .metals/**
 .idea/**
 
-HOL*.dk
-HOL*.lp
-Pure.dk
-Pure.lp
-Tools*.dk
-Tools*.lp
-Complex_Main.dk
-Complex_Main.lp
-Main.dk
-Main.lp
+examples/**/*.dk
+examples/**/*.lp
+examples/**/*.v
+examples/**/lambdapi.pkg
+examples/**/_CoqProject
 
-deps.mk
+*.dko
+*.lpo
 
-ROOT
 dkcheck.sh
 kocheck.sh
