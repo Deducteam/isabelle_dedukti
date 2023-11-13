@@ -205,7 +205,7 @@ object Exporter {
     val prfs =
       exports.foldLeft(Nil: List[(Long,Export_Theory.Proof)]) {
         case (prfs2 : List[(Long,Export_Theory.Proof)],entry_name) => {
-          val op_entry = entry_name.read(db,term_cache)
+          val op_entry = Export.read_entry(db,entry_name,term_cache)
           op_entry match {
             case Some(entry) => {
               val prf_name = entry.name
