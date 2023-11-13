@@ -42,13 +42,13 @@ object Rootfile {
       if (session == "Pure") {
         List[String]()
       } else {
-        val base_info = Sessions.background(options, "Pure", progress, dirs)
+        val background = Sessions.background(options, "Pure", progress, dirs)
         val session_info =
-          base_info.sessions_structure.get(anc) match {
+          background.sessions_structure.get(anc) match {
             case Some(info) => info
             case None => error("Bad session " + quote(anc))
           }
-        val resources = new Resources(base_info)
+        val resources = new Resources(background)
         resources.session_dependencies(session_info, progress = progress).theories.map(x => x.theory)
       }
     // remove HOL.Record, HOL.Nitpick and HOL.Nunchaku
