@@ -58,7 +58,7 @@ object Exporter {
     for (entry_name <- entry_names) {
       if (entry_name.name.startsWith("proofs/")) {
         val prf_serial = entry_name.name.substring(7).toLong
-        if (verbose) progress.echo("  proof " + prf_serial + " from " + entry_name.theory)
+        // if (verbose) progress.echo("  proof " + prf_serial + " from " + entry_name.theory)
         Prelude.add_proof_ident(prf_serial,entry_name.theory)
       }
     }
@@ -191,7 +191,7 @@ object Exporter {
               prf_loop(prfs,null,null,Long.MaxValue)
             }
           } else {
-            if (verbose) progress.echo("  proof " + prf_serial)
+            // if (verbose) progress.echo("  proof " + prf_serial)
             val (com,decs) = Translate.stmt_decl(Prelude.ref_proof_ident(prf_serial), prf.prop, Some(prf.proof))
             recover_prf(decs)
             current_theory.append(com)
