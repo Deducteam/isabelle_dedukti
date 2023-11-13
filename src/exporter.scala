@@ -8,7 +8,15 @@ import scala.collection.mutable
 import scala.util.control.Breaks._
 
 object Exporter {
-
+    def read_entry_names_of_theory(db: SQL.Database, session_name: String, theory_name: String): List[Export.Entry_Name] = {
+      val select =
+        Export.private_data.Base.table.select(List(Export.private_data.Base.theory_name, Export.private_data.Base.name), sql = Export.private_data.where_equal(session_name,theory_name))
+      db.using_statement(select)(stmt =>
+        stmt.execute_query().iterator(res =>
+          Export.Entry_Name(session = session_name,
+            theory = res.string(Export.private_data.Base.theory_name),
+            name = res.string(Export.private_data.Base.name))).toList)
+    }
   def exporter(
     options: Options,
     session: String,
@@ -193,7 +201,7 @@ object Exporter {
     }
     if (verbose) progress.echo("reading proofs")
 
-    val exports = Export.read_entry_names(db,session,theory_name)
+    val exports = read_entry_names_of_theory(db,session,theory_name)
     val prfs =
       exports.foldLeft(Nil: List[(Long,Export_Theory.Proof)]) {
         case (prfs2 : List[(Long,Export_Theory.Proof)],entry_name) => {
