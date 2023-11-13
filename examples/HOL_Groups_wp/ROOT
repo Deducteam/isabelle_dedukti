@@ -1,4 +1,4 @@
-session HOL.Groups_wp = Pure +
+session HOL_Groups_wp = Pure +
   description "
     Classical Higher-order Logic.
   "
