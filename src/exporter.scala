@@ -31,8 +31,9 @@ object Exporter {
     val build_results =
       Build.build(options, selection = Sessions.Selection.session(session),
         dirs = dirs, progress = progress)
+    val store = build_results.store
     val session_background = Document_Build.session_background(options, session, dirs = dirs)
-    val ses_cont = Export.open_session_context(build_results.store, session_background)
+    val ses_cont = Export.open_session_context(store, session_background)
     val provider = ses_cont.theory(theory_name, other_cache=Some(term_cache))
     val theory = Export_Theory.read_theory(provider)
 
