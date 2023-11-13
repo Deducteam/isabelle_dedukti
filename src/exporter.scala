@@ -28,9 +28,11 @@ object Exporter {
 
     progress.echo("Read theory " + theory_name + " ...")
 
-    val store = Sessions.store(options, cache=term_cache)
-    val base_info = Sessions.base_info(options, session, progress, dirs)
-    val ses_cont = Export.open_session_context(store, base_info)
+    val build_results =
+      Build.build(options, selection = Sessions.Selection.session(session),
+        dirs = dirs, progress = progress)
+    val session_background = Document_Build.session_background(options, session, dirs = dirs)
+    val ses_cont = Export.open_session_context(build_results.store, session_background)
     val provider = ses_cont.theory(theory_name, other_cache=Some(term_cache))
     val theory = Export_Theory.read_theory(provider)
 
