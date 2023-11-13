@@ -8,15 +8,7 @@ import scala.collection.mutable
 import scala.util.control.Breaks._
 
 object Exporter {
-    def read_entry_names_of_theory(db: SQL.Database, session_name: String, theory_name: String): List[Export.Entry_Name] = {
-      val select =
-        Export.private_data.Base.table.select(List(Export.private_data.Base.theory_name, Export.private_data.Base.name), sql = Export.private_data.where_equal(session_name,theory_name))
-      db.using_statement(select)(stmt =>
-        stmt.execute_query().iterator(res =>
-          Export.Entry_Name(session = session_name,
-            theory = res.string(Export.private_data.Base.theory_name),
-            name = res.string(Export.private_data.Base.name))).toList)
-    }
+
   def exporter(
     options: Options,
     session: String,
@@ -56,6 +48,16 @@ object Exporter {
         if (verbose) progress.echo("  proof " + prf_serial + " from " + entry_name.theory)
         Prelude.add_proof_ident(prf_serial,entry_name.theory)
       }
+    }
+
+    def read_entry_names_of_theory(db: SQL.Database, session_name: String, theory_name: String): List[Export.Entry_Name] = {
+      val select =
+        Export.private_data.Base.table.select(List(Export.private_data.Base.theory_name, Export.private_data.Base.name), sql = Export.private_data.where_equal(session_name,theory_name))
+      db.using_statement(select)(stmt =>
+        stmt.execute_query().iterator(res =>
+          Export.Entry_Name(session = session_name,
+            theory = res.string(Export.private_data.Base.theory_name),
+            name = res.string(Export.private_data.Base.name))).toList)
     }
 
     val db = store.open_database(session)
