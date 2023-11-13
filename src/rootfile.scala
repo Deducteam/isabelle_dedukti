@@ -29,13 +29,13 @@ object Rootfile {
       if (session == "Pure") {
         (Document.Node.Name.make_graph(List(((Document.Node.Name("Pure", theory = Thy_Header.PURE), ()),List[Document.Node.Name]()))))
       } else {
-        val base_info = Sessions.base_info(options, anc, progress, dirs)
+        val background = Sessions.background(options, anc, progress, dirs)
         val session_info =
-          base_info.sessions_structure.get(session) match {
+          background.sessions_structure.get(session) match {
             case Some(info) => info
             case None => error("Bad session " + quote(session))
           }
-        val resources = new Resources(base_info.sessions_structure, base_info.check_errors.base)
+        val resources = new Resources(background, background.check_errors.base)
         resources.session_dependencies(session_info, progress = progress).theory_graph
       }
     var anc_theories = 
