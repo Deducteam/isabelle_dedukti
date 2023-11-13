@@ -49,16 +49,6 @@ object Exporter {
       }
     }
 
-    def read_entry_names(db: SQL.Database, session_name: String, theory_name: String): List[Export.Entry_Name] = {
-      val select =
-        Export.Data.table.select(List(Export.Data.theory_name, Export.Data.name), Export.Data.where_equal(session_name,theory_name))
-      db.using_statement(select)(stmt =>
-        stmt.execute_query().iterator(res =>
-          Export.Entry_Name(session = session_name,
-            theory = res.string(Export.Data.theory_name),
-            name = res.string(Export.Data.name))).toList)
-    }
-
     val db = store.open_database(session)
     val current_theory = mutable.Queue[Syntax.Command]()
 
@@ -202,7 +192,7 @@ object Exporter {
     }
     if (verbose) progress.echo("reading proofs")
 
-    val exports = read_entry_names(db,session,theory_name)
+    val exports = Export.read_entry_names(db,session,theory_name)
     val prfs =
       exports.foldLeft(Nil: List[(Long,Export_Theory.Proof)]) {
         case (prfs2 : List[(Long,Export_Theory.Proof)],entry_name) => {
