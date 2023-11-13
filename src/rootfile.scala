@@ -42,7 +42,7 @@ object Rootfile {
       if (session == "Pure") {
         List[String]()
       } else {
-        val base_info = Sessions.base_info(options, "Pure", progress, dirs)
+        val base_info = Sessions.background(options, "Pure", progress, dirs)
         val session_info =
           base_info.sessions_structure.get(anc) match {
             case Some(info) => info
