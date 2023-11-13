@@ -63,7 +63,7 @@ object Exporter {
               recover_prf(prfs2)
             }
             case Some(pre_entry) => {
-              pre_entry.read(db,term_cache) match {
+              Export.read_entry(db, pre_entry, store.cache) match {
                 case Some(entry) => {
                   Export_Theory.read_proof(ses_cont, Export_Theory.Thm_Id(ser,entry.theory_name),other_cache=Some(term_cache)) match {
                     case Some(prf) => {
