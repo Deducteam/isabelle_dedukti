@@ -35,7 +35,7 @@ object Rootfile {
             case Some(info) => info
             case None => error("Bad session " + quote(session))
           }
-        val resources = new Resources(background, background.check_errors.base)
+        val resources = new Resources(background)
         resources.session_dependencies(session_info, progress = progress).theory_graph
       }
     var anc_theories = 
@@ -48,7 +48,7 @@ object Rootfile {
             case Some(info) => info
             case None => error("Bad session " + quote(anc))
           }
-        val resources = new Resources(base_info.sessions_structure, base_info.check_errors.base)
+        val resources = new Resources(base_info)
         resources.session_dependencies(session_info, progress = progress).theories.map(x => x.theory)
       }
     // remove HOL.Record, HOL.Nitpick and HOL.Nunchaku
