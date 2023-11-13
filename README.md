@@ -2,7 +2,7 @@
 
 ## Dependencies
 
-* [Isabelle2022](https://isabelle.in.tum.de/website-Isabelle2022/dist/Isabelle2022_linux.tar.gz)
+* [Isabelle2023](https://isabelle.in.tum.de/website-Isabelle2023/dist/Isabelle2023_linux.tar.gz)
 
 * one dk file checker among:
 
@@ -19,9 +19,9 @@
 
   * **Isabelle**
 
-      - Download [Isabelle2022](https://isabelle.in.tum.de/website-Isabelle2022/dist/Isabelle2022_linux.tar.gz)
+      - Download [Isabelle2023](https://isabelle.in.tum.de/website-Isabelle2023/dist/Isabelle2023_linux.tar.gz)
 
-      - Unpack and run `Isabelle2022/bin/isabelle jedit` at least
+      - Unpack and run `Isabelle2023/bin/isabelle jedit` at least
         once, to ensure that everything works (e.g. see Documentation
         panel with Examples).
 
@@ -94,7 +94,7 @@
     If something goes wrong, you may delete the databases (which means the proof terms will be rebuilt anew) located somewhere like:
 
     ```
-    $ISABELLE_HOME_USER/Isabelle2022/heaps/polyml-<something>/log/
+    $ISABELLE_HOME_USER/Isabelle2023/heaps/polyml-<something>/log/
     ```
 
 ## How to make Isabelle record proofs?
@@ -134,7 +134,7 @@ isabelle build -b -d. HOL.Groups_wp
 
 Warning: as `examples/` contains an [AFP library](https://www.isa-afp.org/download/), one should first [add AFP as Isabelle components](https://www.isa-afp.org/help/) and use a version of AFP >= 2023-05-18.
 
-Remark: to visualize theory dependencies in HOL, you can look at the [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2022/dist/library/HOL/HOL/session_graph.pdf)
+Remark: to visualize theory dependencies in HOL, you can look at the [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2023/dist/library/HOL/HOL/session_graph.pdf)
 
 
 ## Commands to translate Isabelle proofs to Dedukti or Lambdapi proofs
