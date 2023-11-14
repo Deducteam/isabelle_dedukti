@@ -60,14 +60,16 @@ object Prelude {
   def set_current_module(m: String) = { current_module = m }
   def set_theory_session(t: String, s: String) = {theory_session += t -> s}
 
+  val STTfa: String = "STTfa"
+
   // add a new mapping from an Isabelle full_name to its translation
-  def add_name(id: String, kind: String, module0: String = current_module) : String = {
+  def add_name(id: String, kind: String, module0: String) : String = {
     //print("add_name " + full_name(id, kind) + " -> ")
-    val (translated_id, module) = id match {
-      case Pure_Thy.FUN => ("arr", "STTfa")
-      case Pure_Thy.PROP => ("prop", "STTfa")
-      case Pure_Thy.IMP => ("imp", "STTfa")
-      case Pure_Thy.ALL => ("all", "STTfa")
+    val (translated_id,module) = id match {
+      case Pure_Thy.FUN => ("arr",STTfa)
+      case Pure_Thy.PROP => ("prop",STTfa)
+      case Pure_Thy.IMP => ("imp",STTfa)
+      case Pure_Thy.ALL => ("all",STTfa)
       case id =>
         val cut = id.split("[.]", 2)
         val (prefix, radical) = if (cut.length == 1) ("", cut(0)) else (cut(0), cut(1))
@@ -77,7 +79,7 @@ object Prelude {
         if (namesSet(translated_id)) translated_id += "_" + kind
         if (namesSet(translated_id)) translated_id = prefix + "_" + translated_id
         if (namesSet(translated_id)) error("duplicated name: " + translated_id)
-        (translated_id, module0)
+        (translated_id,module0)
     }
     //println(module + "/" + translated_id)
     // if (translated_id == "ord_class_Least_dict") println("found it with id "+id+" and kind "+kind+" in "+module)
@@ -88,45 +90,42 @@ object Prelude {
   }
 
   // translate an Isabelle full_name
-  def get_name(id: String, kind: String, module: String = current_module): String = {
+  def get_name(id: String, kind: String ): String = {
     namesMap get (full_name(id, kind)) match {
-      case None => add_name(id, kind, module)
+      case None => error ("id '"+id+"' not found")
       case Some(s) => { add_dep(module_of(s)); s }
     }
   }
 
   /* kinds */
 
-  def class_ident(a: String): String = get_name(a, Markup.CLASS)
-  def  type_ident(a: String): String = get_name(a, Export_Theory.Kind.TYPE )
-  def const_ident(a: String): String = get_name(a, Export_Theory.Kind.CONST)
-  def axiom_ident(a: String): String = get_name(a, Markup.AXIOM)
-  def   thm_ident(a: String): String = get_name(a, Export_Theory.Kind.THM  )
-  def   var_ident(a: String): String = get_name(a, "var")
-
-  def add_proof_ident(serial: Long, module: String = current_module): Unit = {
-    namesMap get (full_name(f"proof_$serial", "")) match {
-      case None => add_name(f"proof_$serial", "", module)
-      case Some(s) =>
-    }
-  }
-
+  def add_class_ident(a: String, module: String): String = add_name(a, Markup.CLASS, module)
+  def add_type_ident(a: String, module: String): String = add_name(a, Export_Theory.Kind.TYPE, module)
+  def add_const_ident(a: String, module: String): String = add_name(a, Export_Theory.Kind.CONST, module)
+  def add_axiom_ident(a: String, module: String): String = add_name(a, Markup.AXIOM, module)
+  def add_thm_ident(a: String, module: String): String = add_name(a, Export_Theory.Kind.THM, module)
+  def add_proof_ident(serial: Long, module: String): String = add_name(f"proof_$serial", "", module)
+  def ref_class_ident(a: String): String = get_name(a, Markup.CLASS)
+  def ref_type_ident(a: String): String = get_name(a, Export_Theory.Kind.TYPE )
+  def ref_const_ident(a: String): String = get_name(a, Export_Theory.Kind.CONST)
+  def ref_axiom_ident(a: String): String = get_name(a, Markup.AXIOM)
+  def ref_thm_ident(a: String): String = get_name(a, Export_Theory.Kind.THM)
   def ref_proof_ident(serial: Long): String = get_name(f"proof_$serial", "")
+  def   var_ident(a: String): String = a+"__var"
 
   /* prologue proper */
-
-  val typeId: String = const_ident("Set")
-  val  etaId: String = const_ident("El")
-  val  epsId: String = const_ident("Prf")
+  val typeId: String = add_const_ident("Set",STTfa)
+  val  etaId: String = add_const_ident("El",STTfa)
+  val  epsId: String = add_const_ident("Prf",STTfa)
 
   val typeT: Syntax.Term = Syntax.Symb(typeId)
   val  etaT: Syntax.Term = Syntax.Symb( etaId)
   val  epsT: Syntax.Term = Syntax.Symb( epsId)
 
-  val propId: String = type_ident(Pure_Thy.PROP)
-  val  funId: String = type_ident(Pure_Thy.FUN)
-  val  impId: String = const_ident(Pure_Thy.IMP)
-  val  allId: String = const_ident(Pure_Thy.ALL)
+  val propId: String = add_type_ident(Pure_Thy.PROP,STTfa)
+  val  funId: String = add_type_ident(Pure_Thy.FUN,STTfa)
+  val  impId: String = add_const_ident(Pure_Thy.IMP,STTfa)
+  val  allId: String = add_const_ident(Pure_Thy.ALL,STTfa)
 
   val typeD: Syntax.Command  = Syntax.Declaration(typeId, Nil, Syntax.TYPE)
 
@@ -182,7 +181,7 @@ object Translate {
       case Term.TFree(a, _) =>
         Syntax.Var(var_ident(a))
       case Term.Type(c, args) =>
-        val id_c = type_ident(c)
+        val id_c = ref_type_ident(c)
         val impl = try implArgsMap(id_c) catch { case _ : Throwable => Nil }
         Syntax.appls(Syntax.Symb(id_c), args.map(typ), impl)
       case Term.TVar(xi, _) => error("Illegal schematic type variable " + xi.toString)
@@ -194,7 +193,7 @@ object Translate {
   def term(tm: Term.Term, bounds: Bounds): Syntax.Term =
     tm match {
       case Term.Const(c, typargs) =>
-        val id_c = const_ident(c)
+        val id_c = ref_const_ident(c)
         val impl = try implArgsMap(id_c) catch { case _ : Throwable => Nil }
         Syntax.appls(Syntax.Symb(id_c), typargs.map(typ), impl)
       case Term.Free(x, _) =>
@@ -206,7 +205,7 @@ object Translate {
       case Term.Abs(x, ty, b) =>
         Syntax.Abst(bound_term_argument(x, ty), term(b, bounds.add_trm(x)))
       case Term.OFCLASS(t, c) =>
-        Syntax.Appl(Syntax.Symb(class_ident(c)), typ(t))
+        Syntax.Appl(Syntax.Symb(ref_class_ident(c)), typ(t))
       case Term.App(a, b) =>
         Syntax.Appl(term(a, bounds), term(b, bounds))
     }
@@ -237,12 +236,12 @@ object Translate {
         (Syntax.Appl(prf, prfp), decs++decsp)
       }
       case axm: Term.PAxm =>
-        val id = axiom_ident(axm.name)
+        val id = ref_axiom_ident(axm.name)
         val impl = try implArgsMap(id) catch { case _ : Throwable => Nil }
         (Syntax.appls(Syntax.Symb(id), axm.types.map(typ), impl), List[Long]())
       case thm: Term.PThm =>
         var decs = List[Long]()
-        val head = if (thm.name.nonEmpty) thm_ident(thm.name) else {
+        val head = if (thm.name.nonEmpty) ref_thm_ident(thm.name) else {
           namesMap get (full_name("proof_"+thm.serial.toString, "")) match {
             case None => {
               // println("proof "+thm.serial+" is badly identified from theory "+thm.theory_name+thm.types.foldLeft(""){case (s,ty) => s+" "+ty.toString})
@@ -548,9 +547,9 @@ object Translate {
 
   /* type classes */
 
-  def class_decl(c: String): Syntax.Command = {
+  def class_decl(module: String, c: String): Syntax.Command = {
     val class_type = Syntax.arrow(typeT, Syntax.Appl(etaT, Syntax.Symb(propId)))
-    val id_c = class_ident(c)
+    val id_c = add_class_ident(c,module)
     implArgsMap  += id_c -> List(false)
     global_types += id_c -> class_type
     Syntax.Declaration(id_c, Nil, class_type)
@@ -559,9 +558,9 @@ object Translate {
 
   /* types */
 
-  def type_decl(c: String, args: List[String], rhs: Option[Term.Typ], not: Export_Theory.Syntax): Syntax.Command = {
+  def type_decl(module: String, c: String, args: List[String], rhs: Option[Term.Typ], not: Export_Theory.Syntax): Syntax.Command = {
     val full_ty = Syntax.arrows(List.fill(args.length)(typeT), typeT)
-    val id_c = type_ident(c)
+    val id_c = add_type_ident(c,module)
     implArgsMap  += id_c -> List.fill(args.length)(false)
     global_types += id_c -> full_ty
 
@@ -612,8 +611,8 @@ object Translate {
       case (_, Nil) => isabelle.error("Implicit list too short.")
     }
 
-  def const_decl(c: String, typargs: List[String], ty: Term.Typ, rhs: Option[Term.Term], not: Export_Theory.Syntax): Syntax.Command = {
-    val id_c = const_ident(c)
+  def const_decl(module: String, c: String, typargs: List[String], ty: Term.Typ, rhs: Option[Term.Term], not: Export_Theory.Syntax): Syntax.Command = {
+    val id_c = add_const_ident(c,module)
     val impl = const_implicit_args(typargs, ty)
     implArgsMap += id_c -> impl
     val bound_args = bound_type_arguments(typargs, impl)
