@@ -19,27 +19,48 @@ object Rootfile {
   def graph(
     options: Options,
     session: String,
+    anc: String,
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
     verbose: Boolean = false,
     ) = {
+
     var theory_graph =
       if (session == "Pure") {
         (Document.Node.Name.make_graph(List(((Document.Node.Name("Pure", theory = Thy_Header.PURE), ()),List[Document.Node.Name]()))))
       } else {
-        val base_info = Sessions.base_info(options, "Pure", progress, dirs)
+        val base_info = Sessions.base_info(options, anc, progress, dirs)
         val session_info =
           base_info.sessions_structure.get(session) match {
             case Some(info) => info
             case None => error("Bad session " + quote(session))
           }
-        val resources = new Resources(base_info.sessions_structure, base_info.check.base)
+        val resources = new Resources(base_info.sessions_structure, base_info.check_errors.base)
         resources.session_dependencies(session_info, progress = progress).theory_graph
       }
-    // remove HOL.Quickcheck*, HOL.Record, HOL.Nitpick and HOL.Nunchaku
+    var anc_theories = 
+      if (session == "Pure") {
+        List[String]()
+      } else {
+        val base_info = Sessions.base_info(options, "Pure", progress, dirs)
+        val session_info =
+          base_info.sessions_structure.get(anc) match {
+            case Some(info) => info
+            case None => error("Bad session " + quote(anc))
+          }
+        val resources = new Resources(base_info.sessions_structure, base_info.check_errors.base)
+        resources.session_dependencies(session_info, progress = progress).theories.map(x => x.theory)
+      }
+    // remove HOL.Record, HOL.Nitpick and HOL.Nunchaku
     for ((k,e) <- theory_graph.iterator) {
-      if (k.theory.startsWith("HOL.Quickcheck") || 
-          Set[String]("HOL.Record","HOL.Nitpick","HOL.Nunchaku")(k.theory)) {
+      if (anc_theories.contains(k.theory) || (k.theory == "Pure" && session != "Pure")) {
+        // progress.echo("Removing "+k.theory)
+        theory_graph = theory_graph.del_node(k)
+      }
+    }
+    for ((k,e) <- theory_graph.iterator) {
+      if (Set[String]("HOL-Library.RBT_Impl","HOL-Library.RBT","HOL-Library.RBT_Mapping","HOL-Library.RBT_Set","HOL-Library.Datatype_Records")(k.theory)) {
+        // progress.echo("Removing "+k.theory)
         theory_graph = theory_graph.del_node(k)
       }
     }
@@ -57,16 +78,23 @@ object Rootfile {
   def rootfile(
     options: Options,
     session: String,
-    target_theory : String,
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
     verbose: Boolean = false,
     ): Unit = {
 
+    val full_stru = Sessions.load_structure(options, dirs = dirs)
+    val selected_sessions =
+      full_stru.selection(Sessions.Selection(sessions = List[String](session)))
+    val info = selected_sessions(session)
+    val anc = info.parent match{
+      case Some(x) => x
+      case _ => error("the session does not have any parent")
+    }
     // theory graph
-    val theory_graph = graph(options, session, progress, dirs, verbose)
+    val theory_graph = graph(options, session, anc, progress, dirs, verbose)
     // if (verbose) progress.echo("graph: " +theory_graph)
-    val theories : List[Document.Node.Name] = theory_graph.topological_order
+    val theories : List[Document.Node.Name] = theory_graph.topological_order.tail
     // if (verbose) progress.echo("Session graph top ordered: " + theories)
 
     // Generate ROOT file with one session for each theory
@@ -74,56 +102,23 @@ object Rootfile {
     if (verbose) progress.echo("Generates " + filename + " ...")
     val file = new File(filename)
     val bw = new BufferedWriter(new FileWriter(file))
-    var previous_session = "Pure"
-    breakable {
-      for (theory <- theories.tail) {
-        val theory_name = theory.toString
-        val session_name = "Dedukti_" + theory_name
-        bw.write("session " + session_name + " in \"Ex/" + theory_name + "\" = " + previous_session + " +\n")
-        bw.write("   options [export_theory, export_proofs, record_proofs = 2]\n")
-        bw.write("   sessions\n")
-        bw.write("      " + session + "\n")
-        bw.write("   theories\n")
-        bw.write("      " + theory_name + "\n\n")
+    var previous_session = anc.replace("-","_")+"_wp"
+    for (theory <- theories) {
+      val theory_name = theory.toString
+      val session_name = "Dedukti_" + theory_name.replace("-","_")
+      bw.write("session " + session_name + " in \"Ex/" + theory_name + "\" = " + previous_session + " +\n")
+      bw.write("   options [export_theory, export_proofs, record_proofs = 2]\n")
+      bw.write("   sessions\n")
+      bw.write("      \"" + session + "\"\n")
+      bw.write("   theories\n")
+      bw.write("      \"" + theory_name + "\"\n\n")
 
-        //if (!Files.exists(Paths.get("Ex/"+theory_name))) { }
-        "mkdir -p Ex/"+theory_name !
+      //if (!Files.exists(Paths.get("Ex/"+theory_name))) { }
+      "mkdir -p Ex/"+theory_name !
 
-        previous_session = session_name
-        if (theory_name == target_theory) break()
+      previous_session = session_name
       }
-    }
     bw.close()
-
-    // Generate script for checking dk files with kocheck
-    val filename2 = "kocheck.sh"
-    if (verbose) progress.echo("Generates " + filename2 + " ...")
-    val file2 = new File(filename2)
-    val bw2 = new BufferedWriter(new FileWriter(file2))
-    bw2.write("#!/bin/sh\nkocheck --eta -j ${JOBS:-7} STTfa.dk")
-    breakable {
-      for (theory <- theories) {
-        bw2.write(" " + Prelude.mod_name(theory.toString) + ".dk")
-        if (theory.toString == target_theory) break()
-      }
-    }
-    bw2.write("\n")
-    bw2.close()
-
-    // Generate script for checking dk files with dkcheck
-    val filename3 = "dkcheck.sh"
-    if (verbose) progress.echo("Generates " + filename3 + " ...")
-    val file3 = new File(filename3)
-    val bw3 = new BufferedWriter(new FileWriter(file3))
-    bw3.write("#!/bin/sh\nfor f in STTfa.dk")
-    breakable {
-      for (theory <- theories) {
-        bw3.write(" " + Prelude.mod_name(theory.toString) + ".dk")
-        if (theory.toString == target_theory) break()
-      }
-    }
-    bw3.write("\ndo\n  dk check -e --eta $f\ndone\n")
-    bw3.close()
   }
 
   // Isabelle tool wrapper and CLI handler
@@ -135,24 +130,23 @@ object Rootfile {
         var options = Options.init()
         var verbose = false
 
-        val getopts = Getopts("Usage: isabelle " + cmd_name + """ [OPTIONS] SESSION [THEORY]
+        val getopts = Getopts("Usage: isabelle " + cmd_name + """ [OPTIONS] SESSION
 
   Options are:
     -d DIR       include session directory
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
     -v           verbose mode
 
-Generate a ROOT file with a proof-exporting session named Dedukti_$theory for each $theory of SESSION (up to THEORY), and the scripts kocheck.sh and dkcheck.sh to check dk files.""",
+Generate a ROOT file with a proof-exporting session named Dedukti_$theory for each $theory of SESSION""",
         "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
         "o:" -> (arg => { options += arg }),
         "v" -> (_ => verbose = true))
 
         val more_args = getopts(args)
 
-        val (session, theory) =
+        val session =
           more_args match {
-            case List(session) => (session, "")
-            case List(session, theory) => (session, theory)
+            case List(session) => session
             case _ => getopts.usage()
           }
 
@@ -162,7 +156,7 @@ Generate a ROOT file with a proof-exporting session named Dedukti_$theory for ea
         //if (verbose) progress.echo("Started at " + Build_Log.print_date(start_date) + "\n")
 
         progress.interrupt_handler {
-          try rootfile(options, session, theory, progress, dirs, verbose)
+          try rootfile(options, session, progress, dirs, verbose)
           catch {case x: Exception =>
             progress.echo(x.getStackTrace.mkString("\n"))
             println(x)}

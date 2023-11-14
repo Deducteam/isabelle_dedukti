@@ -1,7 +1,6 @@
 #!/bin/sh
 
-set -x
-mkdir kocheck
+mkdir -p kocheck
 for f in $*
 do
     sed -e 's/#REQUIRE.*//' -e "s/${f%.dk}\.//g" $f > kocheck/$f

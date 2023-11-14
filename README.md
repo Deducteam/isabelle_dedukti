@@ -2,7 +2,7 @@
 
 ## Dependencies
 
-* [Isabelle2021-1](https://isabelle.sketis.net/website-Isabelle2021-1)
+* [Isabelle2022](https://isabelle.in.tum.de/website-Isabelle2022/dist/Isabelle2022_linux.tar.gz)
 
 * one dk file checker among:
 
@@ -19,9 +19,9 @@
 
   * **Isabelle**
 
-      - Download [Isabelle2021-1](https://isabelle.sketis.net/website-Isabelle2021-1)
+      - Download [Isabelle2022](https://isabelle.in.tum.de/website-Isabelle2022/dist/Isabelle2022_linux.tar.gz)
 
-      - Unpack and run `Isabelle2021-1/bin/isabelle jedit` at least
+      - Unpack and run `Isabelle2022/bin/isabelle jedit` at least
         once, to ensure that everything works (e.g. see Documentation
         panel with Examples).
 
@@ -34,10 +34,7 @@
             directory in `$PATH`
 
           + or: install references to the Isabelle executables in
-            another directory mentioned in `$PATH`, e.g. as follows:
-            ```bash
-            Isabelle2021-1/bin/isabelle install "$HOME/bin"
-            ```
+            another directory mentioned in `$PATH`
 
   * **isabelle_dedukti**
 
@@ -63,16 +60,10 @@
         isabelle scala_build
         ```
 
-  * **Deleting the Isabelle databases**
-
-    - If something goes wrong, you may want to try deleting the databases (which means the proof terms will be rebuilt anew) located somewhere like:
-
-    ```
-    $ISABELLE_HOME_USER/Isabelle2021-1/heaps/polyml-<something>/log/
-    ```
-
   * **Patching the Isabelle/HOL library**
 
+    A few Isabelle/HOL files need to be modified so that exported proofs are of smaller size and that no oracle are used. See the modifications in [HOL.patch](https://github.com/Deducteam/isabelle_dedukti/blob/master/HOL.patch). For now, HOL and HOL-Library are patched.
+    
     - You may want to start with changing the permission on the HOL folder:
 
     ```
@@ -91,113 +82,143 @@
     patch -uREp0 -d <path to your Isabelle distribution>/src/HOL/ < HOL.patch
     ```
 
-    - Changes:
+    - To update the patch:
+    
+    ```
+    cd path_to_unpatched_Isabelle_dir
+    diff -urNx '*~' . path_to_patched_Isabelle_dir/src/HOL > HOL.patch
+    ```
 
-        - Main, removed quickcheck and nunchaku
-        - Mirabelle removed quickcheck
-        - split quickcheck_random --> random_prep
-        - split quickcheck_exhaustive --> random_prep
-        - HOL/Tools/Quickcheck random_generator, random_fun_lift --> Random_Prep.random_fun_lift
-        - random_pred, quickcheck_random --> random_prep
-        - predicate_compile, quickcheck_exhaustive --> random_prep
-        - HOL/Tools/Predicate_Compile predicate_compile_compilations, Quickcheck_Exhaustive --> Random_Prep (many times)
-        - HOL/Tools/Predicate_Compile predicate_compile_core, quickcheck_random --> random_prep (twice), quickcheck_exhaustive --> random_prep (once)
-        - record, quickcheck_exhaustive --> random_pred
-        - Enum --> rewrite proofs, removed splits
-        - Factorial ??
-        - List --> rewrite proofs, remove subproofs
-        - Rat, Real --> remove nitpick + quickcheck setups
-        - String --> rewrite function + proof
-        - Transcendental --> rewrite proof to remove arith+
-        - MacLaurin --> rewrite proof quite a lot
-        - Bit_operations: trying to rewrite some proofs (a problem remains that a simp rule in Parity is of the shape 1 + something while it would be used as something + 1)
+  * **Deleting the Isabelle databases**
+
+    If something goes wrong, you may delete the databases (which means the proof terms will be rebuilt anew) located somewhere like:
+
+    ```
+    $ISABELLE_HOME_USER/Isabelle2022/heaps/polyml-<something>/log/
+    ```
+
+## How to make Isabelle record proofs?
+
+For building to record Isabelle proofs so that they can be translated to Dedukti or Lambdapi afterwards, users need to add the following options in their ROOT file:
+
+```
+export_theory,export_proofs,record_proofs=2
+```
+
+For instance, here is a ROOT file to build all the HOL theories up to `Main` and `Complex_Main` with proof recording:
+```
+session HOL_wp (main) = Pure +
+  description "
+    Classical Higher-order Logic.
+  "
+  options [strict_facts,export_theory,export_proofs,record_proofs=2]
+  sessions Tools HOL
+  theories
+    Main
+    Complex_Main
+  document_theories
+    Tools.Code_Generator
+```
+
+Then, to actually generate Isabelle proofs, one has to do:
+
+```
+isabelle build -b -d $directory_of_ROOT(S)_file $session_name
+```
+
+For instance, to generate the Isabelle proofs up to HOL.Groups, do:
+```
+cd examples/
+isabelle build -b -d. HOL.Groups_wp
+```
+
+Warning: as `examples/` contains an [AFP library](https://www.isa-afp.org/download/), one should first [add AFP as Isabelle components](https://www.isa-afp.org/help/) and use a version of AFP >= 2023-05-18.
+
+Remark: to visualize theory dependencies in HOL, you can look at the [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2022/dist/library/HOL/HOL/session_graph.pdf)
 
 
-## Provided commands
-
-- `isabelle dedukti_root $session`: generates a ROOT file defining a proof-exporting session Dedukti_$theory for each $theory of $session, as well as the scripts kocheck.sh and dkcheck.sh to check dk files.
-
-- `isabelle dedukti_session $session`: generates a dk or lp file for each theory of $session.
-
-- `isabelle dedukti_theory $session $theory`: generates a dk or lp file for $theory in $session
+## Commands to translate Isabelle proofs to Dedukti or Lambdapi proofs
 
 Run `isabelle $command` with no argument for more details.
 
-Remark: a theory whose name contains a "." is translated to a dk or lp file where every "." is replaced by "_" because dkcheck does not accept dots in module names.
+- `isabelle dedukti_session $session [$theory]`: generate a dk or lp file for each theory of $session (up to $theory)
 
-Remark: [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2021-1/dist/library/HOL/HOL/session_graph.pdf)
+- `isabelle dedukti_theory $session $theory`: export the specified $theory of $session to a dk or lp file with the same name except that every minus or dot is replaced by an underscore. (*Does not work at the moment*)
 
+- `isabelle dedukti_check $session`: generate the scripts `dkcheck.sh` and `kocheck.sh` to check the generated dk files with dkcheck and kocheck respectively.
 
-## Example usage
+- `isabelle dedukti_root $session`: generate a ROOT file with a proof-exporting session named Dedukti_$theory for each $theory in $session. This may be useful for debugging or if your computer does not have enough memory to run a single session with all theories. Modify those scripts by adding a `#` in the list of files if you do not want to check all files.
 
-```
-isabelle dedukti_root HOL HOL.Groups
-isabelle build -b Dedukti_HOL.Groups
-isabelle dedukti_session -v HOL HOL.Groups
-```
+## Generating basic outputs
 
+Several sessions are already available in the `examples` folder:
+- `Pure`,
+- `HOL.Groups_wp` (`HOL` until `Groups` with proofs),
+- `HOL_wp` (`HOL` with proofs), and
+- `HOL-Library_wp` (`HOL-Library` minus the theories about RBTrees, with proofs).
 
-## Checking the lp output with lambdapi
-
-```
-lambdapi check $theory.lp
-```
-
-
-## Checking the dk output with dkcheck
+For each one, you should run the following commands:
 
 ```
-dk dep *.dk > deps.mk
-make -f dkcheck.mk
+cd examples/
+isabelle build -b -d. $session_name # generates the database of proofs
+mkdir -p $session_name/dkcheck $session_name/lambdapi
+isabelle dedukti_check -d. $session_name # generates scripts for checking proofs, not necessary for Pure
+isabelle dedukti_session -d. $session_name # generates the lambdapi and dedukti proofs
 ```
 
-or (if dk dep is too slow):
+## Creating other examples
+
+To add other seesions, follow theses steps:
+
+- add the relevant components to isabelle (for example, AFP),
+- create a folder in `examples/` with the session name,
+- create the sub-folders `dkcheck/` and `lambdapi/`
+- add a ROOT file as described above,
+- add the session name in the `examples/ROOTS`,
+- run the commands of the previous section.
+
+## Checking the outputs
+
+For now, only the checking with dedukti works. To check a particular session, run:
 
 ```
-bash ./dkcheck.sh
+cd examples/$session_name/dkcheck/
+bash dkcheck.sh
 ```
 
-## Checking the dk output with kocheck
+## Performances (to update)
 
-The verification of dk files by kocheck requires to slightly modify those files because kocheck does not accept require commands and self-qualified identifiers.
-
-```
-./remove-requires.sh *.dk
-cd kocheck
-bash ../kocheck.sh
-```
-
-
-## What was tested?
-
-  * Building: HOL until Complex_Main, except Quickchecks, Record, Nunchaku and Nitpick (it seems Quickchecks is unsound and should be avoided anyway). Time: about 47 minutes.
-  * Translating/writing: same as above, both for lambdapi and dedukti. Time: about 26 minutes for lp, and the same for dk.
-  * Checking: No error was found until Transfer but memory blew up with lambdapi. Goes all the way with dkcheck or kocheck. Time: about 3 minutes with kocheck -j 7, and about 10 minutes with dkcheck.
-
+The whole `HOL_wp` session in `examples/HOL/` can be exported and checked:
+  * `isabelle build -b -d. HOL_wp`: 51m42s, 249 Mo
+  * `isabelle dedukti_session -d. HOL_wp`: 28m26s
+  * `bash kocheck.sh`: 4m14s
+  * `bash dkcheck.sh`: 13m17s
+  * `lambdapi check Complex_Main.lp`: out of memory
+  * `lambdapi check HOL_Nat.lp`: 2m04s
+  * `lambdapi check HOL_Int.lp`: 11m44s
 
 ## Known issues
 
-  * Bit_operations are slow to build because of the way they are defined compared to some simplification rules in Parity. Not fixed.
-  * Presburger is slow to build because of the examples at the end. Not fixed.
-  * In a database associated with a given theory, there might be proofs labelled from another theory. Fix: those proofs are not too many so they are just translated in this theory.
-  * Somehow, the databases for Nat and Sum_type use proofs from Product_Type while they are independent in the dependency graph. Fix: add explictly the connection in the dependency graph.
-  * Quickcheck_random fails to build (it is actually unsound). Fix: remove it from the dependency graph (together with other theories).
-
+  * In a database associated with a given theory, there might be proofs labelled from another theory. Fix: those proofs are not too many so they are just translated in this theory. This is a problem from Isabelle itself, and the reason is still unclear. One possible reason is the following: to check that a statement is really provable, Isabelle uses statements that has already be proven, possibly from other theories and sessions. Those proofs are "lifted", in the sense that are tagged as belonging to the current theory, and they are possibly rewritten. Then, those proofs are given an identifier: if they are detected as a proof that already exists, they are given the already existing identifier and are not added to the database, otherwise they receive a fresh identifier and are added to the database. At this stage, some proofs that should already exist are given a fresh identifier and are added to the database, which creates a lot of duplication of proofs and costs time and memory.
+  * Somehow, the databases for `Nat` and `Sum_type` use proofs from `Product_Type` while they are independent in the dependency graph. Fix: add explictly the connection in the dependency graph.
+  * The tool `dedukti_theory` is meant to translate of given theory of a session. This tool is not working in the current version.
+  * We tried to make the proof checking as modular as possible, in the sense that theories already checked are not checked again, and the proofs are stored in possibly different folders for classification. For the moment, we can only make this work with dkcheck, and we are investigating how to do it with kocheck and lambdapi.
 
 ## Project structure
 
-- `ast.scala` defines the AST of the exported material. It is common for dedukti and lambdapi, and is a (very) strict subset of the ASTs of these languages
-- `translate.scala` translates from Isabelle/Pure to the common dedukti/lambdapi AST
-- `writers.scala` writes out either dedukti output or lambdapi output
-- `importer.scala` wraps the previous files into an Isabelle component, defining the CLI and interacting with other components. [Jeremy]: Note it has been changed a lot. It will now create one file by session, because it is expected to be ran on a single-theory session. However, the ancestor of this session does not need to be Pure, and nothing from previous theories will be translated.
-- `generator.scala` wraps the previous files into an Isabelle component, creating a ROOT file, building, calling the translator and postprocessing the output file
-- `tools.scala` defines the `isabelle dedukti_import` and `isabelle dedukti_generate` command-line tools, which is registered via `services` in `etc/build.props`
+- `ast.scala` provides an AST common to Dedukti and Lambdapi (it is strict subset of these languages)
+- `translate.scala` translates Isabelle/Pure to the common Dedukti and Lambdapi AST
+- `writers.scala` writes out an AST to either Dedukti or Lambdapi code
+- `exporter.scala` provides the isabelle command `dedukti_theory`
+- `generator.scala` provides the Isabelle command `dedukti_session`
+- `rootfile.scala` provides the Isabelle command `dedukti_root`
+- `dkcheck.scala` provides the Isabelle command `dedukti_check`
 
+## Browsing and modifying Isabelle sources
 
-## Isabelle development and browsing of sources
-
-* Note: Without proper IDE support Isabelle sources are very hard to
-  read and write. (Emacs or vi are not a proper IDE.)
+Without proper IDE support Isabelle sources may be very hard to read
+and write.
 
 * Isabelle/ML: use Isabelle/jEdit and open ML files (with their proper
   `.thy` file opened as well), but for Isabelle/Pure a special
