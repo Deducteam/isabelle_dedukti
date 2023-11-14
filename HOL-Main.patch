@@ -1,6 +1,6 @@
-diff -urNx '*~' ./Enum.thy /cygdrive/c/Isabelle2022/src/HOL/Enum.thy
---- ./Enum.thy	2023-05-30 11:50:42.024180400 +0900
-+++ /cygdrive/c/Isabelle2022/src/HOL/Enum.thy	2023-06-01 11:16:35.187000700 +0900
+diff -urNx '*~' ./Enum.thy ../../src/HOL/Enum.thy
+--- ./Enum.thy	2023-09-11 19:30:48.000000000 +0200
++++ ../../src/HOL/Enum.thy	2023-11-13 17:29:49.827014000 +0100
 @@ -929,15 +929,47 @@
  definition "x mod y = (case y of a\<^sub>1 \<Rightarrow> x | _ \<Rightarrow> a\<^sub>1)"
  definition "abs = (\<lambda>x. case x of a\<^sub>3 \<Rightarrow> a\<^sub>2 | _ \<Rightarrow> x)"
@@ -187,3 +187,73 @@ diff -urNx '*~' ./Enum.thy /cygdrive/c/Isabelle2022/src/HOL/Enum.thy
 +        Inf_finite_5_def Sup_finite_5_def
 +
  end
+ 
+ 
+diff -urNx '*~' ./Quickcheck_Random.thy ../../src/HOL/Quickcheck_Random.thy
+--- ./Quickcheck_Random.thy	2023-09-11 19:30:48.000000000 +0200
++++ ../../src/HOL/Quickcheck_Random.thy	2023-11-14 15:24:09.350321700 +0100
+@@ -229,7 +229,7 @@
+        (Code_Numeral.Suc i,
+         random j \<circ>\<rightarrow> (%x. random_aux_set i j \<circ>\<rightarrow> (%s. Pair (valtermify_insert x s))))])"
+ 
+-lemma [code]:
++lemma (*[code]:*)
+   "random_aux_set i j =
+     collapse (Random.select_weight [(1, Pair valterm_emptyset),
+       (i, random j \<circ>\<rightarrow> (%x. random_aux_set (i - 1) j \<circ>\<rightarrow> (%s. Pair (valtermify_insert x s))))])"
+diff -urNx '*~' ./String.thy ../../src/HOL/String.thy
+--- ./String.thy	2023-09-11 19:30:48.000000000 +0200
++++ ../../src/HOL/String.thy	2023-11-14 14:56:50.941606400 +0100
+@@ -40,11 +40,21 @@
+ 
+ lemma (in comm_semiring_1) of_nat_of_char:
+   \<open>of_nat (of_char c) = of_char c\<close>
+-  by (cases c) simp
++  apply (cases c)
++  by (simp add: distrib_left mult.assoc[symmetric] split del: split_of_bool)
++(* this is more explicit:
++ by (simp only: of_char_Char String.of_char_Char
++ horner_sum_simps Groups_List.horner_sum_simps of_nat_add of_nat_mult of_nat_of_bool of_nat_numeral of_nat_0)
++*)
+ 
+ lemma (in comm_ring_1) of_int_of_char:
+   \<open>of_int (of_char c) = of_char c\<close>
+-  by (cases c) simp
++  apply (cases c)
++  by (simp add: distrib_left mult.assoc[symmetric] split del: split_of_bool)
++(*
++  by (simp only: of_char_Char String.of_char_Char
++ horner_sum_simps Groups_List.horner_sum_simps of_int_add of_int_mult of_int_of_bool of_int_numeral of_int_0)
++*)
+ 
+ lemma nat_of_char [simp]:
+   \<open>nat (of_char c) = of_char c\<close>
+@@ -698,9 +708,9 @@
+ 
+ lemma [code]:
+   \<open>Literal' b0 b1 b2 b3 b4 b5 b6 s = String.literal_of_asciis
+-    [foldr (\<lambda>b k. of_bool b + k * 2) [b0, b1, b2, b3, b4, b5, b6] 0] + s\<close>
++    [foldr (\<lambda>b k. of_bool b + 2 * k) [b0, b1, b2, b3, b4, b5, b6] 0] + s\<close>
+ proof -
+-  have \<open>foldr (\<lambda>b k. of_bool b + k * 2) [b0, b1, b2, b3, b4, b5, b6] 0 = of_char (Char b0 b1 b2 b3 b4 b5 b6 False)\<close>
++  have \<open>foldr (\<lambda>b k. of_bool b + 2 * k) [b0, b1, b2, b3, b4, b5, b6] 0 = of_char (Char b0 b1 b2 b3 b4 b5 b6 False)\<close>
+     by simp
+   moreover have \<open>Literal' b0 b1 b2 b3 b4 b5 b6 s = String.literal_of_asciis
+     [of_char (Char b0 b1 b2 b3 b4 b5 b6 False)] + s\<close>
+diff -urNx '*~' ./Tools/Quickcheck/random_generators.ML ../../src/HOL/Tools/Quickcheck/random_generators.ML
+--- ./Tools/Quickcheck/random_generators.ML	2023-09-11 19:30:48.000000000 +0200
++++ ../../src/HOL/Tools/Quickcheck/random_generators.ML	2023-11-14 15:28:17.132105400 +0100
+@@ -480,11 +480,11 @@
+ (** setup **)
+ 
+ val active = Attrib.setup_config_bool \<^binding>\<open>quickcheck_random_active\<close> (K false);
+-
++(*
+ val _ =
+   Theory.setup
+    (Quickcheck_Common.datatype_interpretation \<^plugin>\<open>quickcheck_random\<close>
+       (\<^sort>\<open>random\<close>, instantiate_random_datatype) #>
+     Context.theory_map (Quickcheck.add_tester ("random", (active, test_goals))));
+-
++*)
+ end;
