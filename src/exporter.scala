@@ -55,24 +55,15 @@ object Exporter {
 
     // to mark the theory the proof belongs
     val entry_names = ses_cont.entry_names()
-    val proofs = mutable.SortedMap[Long,Export_Theory.Proof]()
+    val proofs = mutable.SortedMap[Long,Export.Entry_Name]()
+    progress.echo( "Reading proofs of session " + session + " ...")
     for (entry_name <- entry_names) {
       if (entry_name.name.startsWith("proofs/")) {
-        Export.read_entry(db,entry_name,term_cache) match {
-          case Some(entry) => {
-            val prf_serial = entry_name.name.substring(7).toLong
-            val thy_name = entry.theory_name
-            Export_Theory.read_proof(ses_cont, Export_Theory.Thm_Id(prf_serial,thy_name),other_cache=Some(term_cache)) match {
-              case Some(prf) => proofs+=((prf_serial,prf))
-              case None =>
-            }
-          }
-          case _ =>
-        }
+        proofs +=((entry_name.name.substring(7).toLong,entry_name))
       }
     }
 
-    def theory_loop(thys : List[String]) = thys match {
+    def theory_loop(thys : List[String]) : Unit = thys match {
       case Nil =>
       case (theory_name :: thys2) =>
 
@@ -120,13 +111,23 @@ object Exporter {
           current_theory.append(com)
         }
       }
-      def translate_prf(prf_serial: Long, prf: Export_Theory.Proof) = {
-          if (verbose) progress.echo("  proof " + prf_serial)
-          Prelude.add_proof_ident(prf_serial,theory_name)
-          if (translate) {
-            val (com,decs) = Translate.stmt_decl(Prelude.ref_proof_ident(prf_serial), prf.prop, Some(prf.proof))
-            current_theory.append(com)
+      def translate_prf(prf_serial: Long, entry_name: Export.Entry_Name) = {
+        if (verbose) progress.echo("  proof " + prf_serial)
+        Prelude.add_proof_ident(prf_serial,theory_name)
+        if (translate) {
+          Export.read_entry(db,entry_name,term_cache) match {
+            case None => error("  " + entry_name + " not found!")
+            case Some(entry) => {
+              val thy_name = entry.theory_name
+              Export_Theory.read_proof(ses_cont, Export_Theory.Thm_Id(prf_serial,thy_name),other_cache=Some(term_cache)) match {
+                case None => error("  proof "+prf_serial+" not found!")
+                case Some(prf) =>
+                  val (com,decs) = Translate.stmt_decl(Prelude.ref_proof_ident(prf_serial), prf.prop, Some(prf.proof))
+                  current_theory.append(com)
+              }
+            }
           }
+        }
       }
       def prf_loop(
         thm : Export_Theory.Entity[Export_Theory.Thm],
@@ -141,9 +142,9 @@ object Exporter {
             case Nil =>
             progress.echo("  Read all theorems of "+theory_name+" and no proofs left.");
           }
-        case Some(prf_serial,prf) =>
+        case Some(prf_serial,entry_name) =>
           if (prf_serial <= thm_prf) {
-            translate_prf(prf_serial,prf)
+            translate_prf(prf_serial,entry_name)
             proofs-=(prf_serial);
             prf_loop(thm,thms,thm_prf)
           } else {
@@ -155,8 +156,8 @@ object Exporter {
               progress.echo("  Read all theorems of "+theory_name+".")
               if (thys2.isEmpty) {
                 progress.echo("  Reading remaining proofs.")
-                for ( (prf_serial,prf) <- proofs ) {
-                  translate_prf(prf_serial,prf)
+                for ( (prf_serial,entry_name) <- proofs ) {
+                  translate_prf(prf_serial,entry_name)
                 }
               }
               else
@@ -170,7 +171,6 @@ object Exporter {
         case thm :: thms => prf_loop(thm,thms,get_thm_prf(thm))
         case _ =>
       }
-
       if (translate) {
         def write_theory(
           theory_name: String,
@@ -212,6 +212,7 @@ object Exporter {
         }
         // }
       }
+      theory_loop(thys2)
     }
     theory_loop(theories)
   }
