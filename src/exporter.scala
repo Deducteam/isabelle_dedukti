@@ -99,7 +99,7 @@ object Exporter {
         if (verbose) progress.echo("  " + a.toString + " " + a.serial)
         Prelude.add_axiom_ident(a.name,theory_name)
         if (translate) {
-          val (com,decs) = Translate.stmt_decl(Prelude.ref_axiom_ident(a.name), a.the_content.prop, None)
+          val (com,decs) = Translate.stmt_decl(Prelude.add_axiom_ident(a.name,theory_name), a.the_content.prop, None)
           current_theory.append(com)
         }
       }
