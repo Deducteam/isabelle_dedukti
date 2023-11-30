@@ -55,6 +55,11 @@ jobs:
           git clone https://github.com/01mf02/kontroli-rs.git
           cd ~/kontroli-rs
           cargo install --path kocheck
+      - name: Check logic files
+        run: |
+          cd logic
+          bash dkcheck.sh
+          #lambdapi check -c STTfa.lp
       - name: Generate dk and lp outputs, check dk output for Pure
         run: |
           cd examples/
