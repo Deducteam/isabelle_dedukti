@@ -9,7 +9,7 @@ import scala.util.control.Breaks._
 
 object Exporter {
 
-  def max_serial(thm : Export_Theory.Entity[Export_Theory.Thm]) : Long = {
+  def max_serial(thm: Export_Theory.Entity[Export_Theory.Thm]): Long = {
     def sub(p:Term.Proof) : Long = p match {
       case Term.PThm(serial,_,_,_) => serial
       case Term.Appt(p,_) => sub(p)
@@ -107,6 +107,7 @@ object Exporter {
     for (theory_name <- theories) {
       prfs_of_module+=(theory_name -> mutable.SortedSet[Long]())
     }
+
     // collects commands that doesn't belong to any theory of the current session
     val session_commands = mutable.Queue[Syntax.Command]()
 
@@ -130,7 +131,7 @@ object Exporter {
     }
 
     // writing orphan proofs
-    if (translate && !session_commands.isEmpty ) {
+    if (translate && !session_commands.isEmpty) {
       write_dk("",session_commands)
       write_lp("",session_commands)
     }
@@ -185,7 +186,7 @@ object Exporter {
           current_commands.append(com)
         }
 
-        def translate_thm(thm : Export_Theory.Entity[Export_Theory.Thm]) : Unit = {
+        def translate_thm(thm : Export_Theory.Entity[Export_Theory.Thm]): Unit = {
           if (verbose) progress.echo("  " + thm.toString + " " + thm.serial)
           val (com,decs) = Translate.stmt_decl(Prelude.add_thm_ident(thm.name,theory_name), thm.the_content.prop, Some(thm.the_content.proof))
           current_commands.append(com)
@@ -203,9 +204,9 @@ object Exporter {
               // progress.echo("  Ready for thm " + prf + " > " + thm_prf)
               thms match {
                 case thm2 :: thms2 =>
-                prf_loop(prfs,thm2,thms2,max_serial(thm2))
+                  prf_loop(prfs,thm2,thms2,max_serial(thm2))
                 case Nil =>
-                prf_loop(prfs,null,null,Long.MaxValue)
+                  prf_loop(prfs,null,null,Long.MaxValue)
               }
             } else {
               if (verbose) progress.echo("  proof " + prf)
