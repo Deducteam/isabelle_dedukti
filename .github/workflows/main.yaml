@@ -58,6 +58,7 @@ jobs:
       - name: Check logic files
         run: |
           cd logic
+          eval $(opam env)
           bash dkcheck.sh
           #lambdapi check -c STTfa.lp
       - name: Generate dk and lp outputs, check dk output for Pure
