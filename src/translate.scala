@@ -6,6 +6,7 @@ package isabelle.dedukti
 import isabelle.Export_Theory.{No_Syntax, Prefix}
 import isabelle._
 
+import scala.collection.mutable
 import scala.annotation.tailrec
 
 object Prelude {
@@ -213,47 +214,55 @@ object Translate {
   def eps(tm: Syntax.Term): Syntax.Term =
     Syntax.Appl(epsT, tm)
 
-  def proof(prf: Term.Proof, bounds: Bounds): (Syntax.Term, List[Long]) =
+  def proof(
+    prf: Term.Proof,
+    bounds: Bounds,
+    deps: mutable.Set[Long]/* proofs that the prf depends */,
+    cont: Syntax.Term => Syntax.Term = (t => t)/* continuation for the term */
+  ): Syntax.Term =
     prf match {
       case Term.PBound(i) =>
-        try (Syntax.Var(var_ident(bounds.get_prf(i))), List[Long]())
+        try cont(Syntax.Var(var_ident(bounds.get_prf(i))))
         catch { case _: IndexOutOfBoundsException => isabelle.error("Loose bound variable (proof) " + i) }
       case Term.Abst(x, ty, b) => {
-        val (prf, decs) = proof(b, bounds.add_trm(x))
-        (Syntax.Abst(bound_term_argument(x, ty), prf), decs)
+        proof(b, bounds.add_trm(x), deps,
+          prf => cont(Syntax.Abst(bound_term_argument(x, ty), prf))
+        )
       }
       case Term.AbsP(x, prf, b) => {
-        val (prfp, decs) = proof(b, bounds.add_prf(x))
-        (Syntax.Abst(bound_proof_argument(x, prf, bounds), prfp), decs)
+        proof(b, bounds.add_prf(x), deps,
+          prfp => cont(Syntax.Abst(bound_proof_argument(x, prf, bounds), prfp))
+        )
       }
       case Term.Appt(a, b) => {
-        val (prf, decs) = proof(a, bounds)
-        (Syntax.Appl(prf, term(b, bounds)), decs)
+        proof(a, bounds, deps,
+          prf => cont(Syntax.Appl(prf, term(b, bounds)))
+        )
       }
       case Term.AppP(a, b) => {
-        val (prf, decs) = proof(a, bounds)
-        val (prfp, decsp) = proof(b, bounds)
-        (Syntax.Appl(prf, prfp), decs++decsp)
+        val prf = proof(a, bounds, deps)
+        proof(b, bounds, deps,
+          prfp => cont(Syntax.Appl(prf, prfp))
+        )
       }
       case axm: Term.PAxm =>
         val id = ref_axiom_ident(axm.name)
         val impl = try implArgsMap(id) catch { case _ : Throwable => Nil }
-        (Syntax.appls(Syntax.Symb(id), axm.types.map(typ), impl), List[Long]())
+        cont(Syntax.appls(Syntax.Symb(id), axm.types.map(typ), impl))
       case thm: Term.PThm =>
-        var decs = List[Long]()
         val head = if (thm.name.nonEmpty) ref_thm_ident(thm.name) else {
           namesMap get (full_name("proof_"+thm.serial.toString, "")) match {
             case None => {
               // println("proof "+thm.serial+" is badly identified from theory "+thm.theory_name+thm.types.foldLeft(""){case (s,ty) => s+" "+ty.toString})
               add_proof_ident(thm.serial,current_module)
-              decs = List[Long](thm.serial)
+              deps+=(thm.serial)
             }
             case Some(s) => 
           }
           ref_proof_ident(thm.serial)
         }
         val impl = try implArgsMap(head) catch { case _ : Throwable => Nil }
-        (Syntax.appls(Syntax.Symb(head), thm.types.map(typ), impl), decs)
+        cont(Syntax.appls(Syntax.Symb(head), thm.types.map(typ), impl))
       case _ => error("Bad proof term encountered:\n" + prf)
     }
 
@@ -646,17 +655,17 @@ object Translate {
     implArgsMap  += s -> List.fill(prop.typargs.length)(false) // Only those are applied immediately
     global_types += s -> contracted_ty
 
-    var decs = List[Long]()
+    var deps = mutable.Set[Long]()
     try prf_opt match {
       case None => {
         val (new_args, final_ty) = (Nil, contracted_ty) // fetch_head_args_type(contracted_ty)
-        (Syntax.Declaration(s, new_args, final_ty), decs)
+        (Syntax.Declaration(s, new_args, final_ty), deps.toList)
       }
       case Some(prf) => {
-        val (translated_rhs, decs) = proof(prf, Bounds())
+        val translated_rhs = proof(prf, Bounds(), deps)
         val full_prf : Syntax.Term = args.foldRight(translated_rhs)(Syntax.Abst.apply)
         val (new_args, contracted, final_ty) = fetch_head_args(eta_expand(eta_contract(full_prf)), contracted_ty)
-        (Syntax.Theorem(s, new_args, final_ty, contracted), decs)
+        (Syntax.Theorem(s, new_args, final_ty, contracted), deps.toList)
       }
     }
     catch { case e : Throwable => e.printStackTrace

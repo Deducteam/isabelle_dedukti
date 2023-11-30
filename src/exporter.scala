@@ -89,7 +89,7 @@ object Exporter {
     val ses_cont = Export.open_session_context(store, session_background)
     val db = store.open_database(session)
 
-    // turns proof index into list of commands
+    // turns proof index into a command
     def prf_command(prf: Long, theory_name: String): Syntax.Command = {
       Export_Theory.read_proof(ses_cont, Export_Theory.Thm_Id(prf,theory_name),other_cache=Some(term_cache)) match {
         case Some(proof) =>
