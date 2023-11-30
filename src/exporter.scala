@@ -9,17 +9,18 @@ import scala.util.control.Breaks._
 
 object Exporter {
 
-  def get_thm_prf(thm : Export_Theory.Entity[Export_Theory.Thm]) = {
+  def max_serial(thm : Export_Theory.Entity[Export_Theory.Thm]) : Long = {
     def sub(p:Term.Proof) : Long = p match {
-      case Term.PThm(thm_prf,_,_,_) => thm_prf
-      case Term.Appt(p,t) => sub(p)
+      case Term.PThm(serial,_,_,_) => serial
+      case Term.Appt(p,_) => sub(p)
       case Term.AppP(p,q) => Math.max(sub(p), sub(q))
-      case Term.Abst(x, ty, b) => sub(b)
-      case Term.AbsP(x, hyp, b) => sub(b)
+      case Term.Abst(_,_,b) => sub(b)
+      case Term.AbsP(_,_,b) => sub(b)
       case _ => 0
     }
     sub(thm.the_content.proof)
   }
+
   def read_entry_names_of_theory(db: SQL.Database, session_name: String, theory_name: String): List[Export.Entry_Name] = {
     val select =
       Export.private_data.Base.table.select(List(Export.private_data.Base.theory_name, Export.private_data.Base.name), sql = Export.private_data.where_equal(session_name,theory_name))
@@ -202,7 +203,7 @@ object Exporter {
               // progress.echo("  Ready for thm " + prf + " > " + thm_prf)
               thms match {
                 case thm2 :: thms2 =>
-                prf_loop(prfs,thm2,thms2,get_thm_prf(thm2))
+                prf_loop(prfs,thm2,thms2,max_serial(thm2))
                 case Nil =>
                 prf_loop(prfs,null,null,Long.MaxValue)
               }
@@ -217,7 +218,7 @@ object Exporter {
         if (verbose) progress.echo("reading proofs")
         val prfs = prfs_of_module(theory_name).toList
         theory.thms match {
-          case thm :: thms => prf_loop(prfs,thm,thms,get_thm_prf(thm))
+          case thm :: thms => prf_loop(prfs,thm,thms,max_serial(thm))
           case _ => prf_loop(prfs,null,null,Long.MaxValue)
         }
 
