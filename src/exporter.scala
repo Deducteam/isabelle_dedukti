@@ -53,8 +53,8 @@ object Exporter {
     ): Unit = {
       using(new Part_Writer(filename_lp(theory_name))) { part_writer =>
         val writer = new LP_Writer(use_notations, part_writer)
-        writer.comment("Lambdapi translation of " + theory_name)
-        progress.echo("Write theory " + theory_name + " in Lambdapi...")
+        writer.comment("Lambdapi translation of " + session + "." + theory_name)
+        progress.echo("Write theory \"" + theory_name + "\" in Lambdapi...")
         if (!eta_expand) writer.eta_equality()
         for (dep <- Prelude.deps_of(theory_name)) { writer.require(dep) }
         for (command <- commands) {
@@ -71,8 +71,8 @@ object Exporter {
     ): Unit = {
       using(new Part_Writer(filename_dk(theory_name))) { part_writer =>
         val writer = new DK_Writer(part_writer)
-        writer.comment("Dedukti translation of " + theory_name)
-        progress.echo("Write theory " + theory_name + " in Dedukti...")
+        writer.comment("Dedukti translation of " + session + "." + theory_name)
+        progress.echo("Write theory \"" + theory_name + "\" in Dedukti...")
         for (dep <- Prelude.deps_of(theory_name)) { writer.require(dep) }
         for (command <- commands) {
           command match {
