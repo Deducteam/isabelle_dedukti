@@ -1,5 +1,5 @@
-session HOL_Main_wp = HOL_Quickcheck_Random_wp +
+session HOL_Quickcheck_Random_wp = HOL_Pre_Quickcheck_Random +
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
   sessions HOL
   theories
-    HOL.Main
+    HOL.Quickcheck_Random
