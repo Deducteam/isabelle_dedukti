@@ -87,7 +87,6 @@ object Exporter {
     val store = build_results.store
     val session_background = Document_Build.session_background(options, session, dirs = dirs)
     val ses_cont = Export.open_session_context(store, session_background)
-    val db = store.open_database(session)
 
     // turns proof index into list of commands
     def prf_command(prf: Long, theory_name: String): Syntax.Command = {
@@ -166,11 +165,7 @@ object Exporter {
         }
       } else {
         progress.echo("Translate proofs for " + theory_name + " ...")
-
-        val provider = ses_cont.theory(theory_name, other_cache=Some(term_cache))
-        val theory = Export_Theory.read_theory(provider)
         val current_commands = mutable.Queue[Syntax.Command]()
-
         for (a <- theory.classes) {
           if (verbose) progress.echo("  " + a.toString + a.serial)
           current_commands.append(Translate.class_decl(theory_name, a.name))
@@ -183,7 +178,6 @@ object Exporter {
           if (verbose) progress.echo("  " + a.toString + " " + a.serial)
           current_commands.append(Translate.const_decl(theory_name, a.name, a.the_content.typargs, a.the_content.typ, a.the_content.abbrev, a.the_content.syntax))
         }
-
         for (a <- theory.axioms) {
           if (verbose) progress.echo("  " + a.toString + " " + a.serial)
           val (com,decs) = Translate.stmt_decl(Prelude.add_axiom_ident(a.name,theory_name), a.the_content.prop, None)
