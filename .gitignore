@@ -1,4 +1,6 @@
 *~
+\#*
+.\#*
 
 lib/classes/dedukti.jar
 
@@ -6,14 +8,22 @@ lib/classes/dedukti.jar
 .metals
 .idea
 
+examples/**/_CoqProject
+examples/**/dkcheck
 examples/**/*.dk
 examples/**/*.lp
 examples/**/*.v
-examples/**/lambdapi.pkg
-examples/**/_CoqProject
+
+logic/STTfa.v
 
 *.dko
 *.lpo
 
-dkcheck.sh
-kocheck.sh
+Makefile.coq
+Makefile.coq.conf
+*.glob
+*.vo
+*.vok
+*.vos
+.*.aux
+.*.d

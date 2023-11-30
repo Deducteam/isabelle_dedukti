@@ -14,11 +14,11 @@ builtin "all" ≔ STTfa.all;
 // Pure
 
 builtin "" ≔ Pure.itself;
-builtin "Isabelle.dummy" ≔ Pure.dummy;
+builtin "dummy" ≔ Pure.dummy;
 builtin "@eq" ≔ Pure.eq;
 builtin "" ≔ Pure.prop_const;
-builtin "type" ≔ Pure.type;
-builtin "Isabelle.dummy_pattern" ≔ Pure.dummy_pattern;
+builtin "el" ≔ Pure.type;
+builtin "dummy_pattern" ≔ Pure.dummy_pattern;
 //Appt
 //AppP
 //Abst
@@ -37,12 +37,17 @@ builtin "@eq_refl Prop" ≔ Pure.prop_def;
 builtin "@eq_refl" ≔ Pure.reflexive;
 builtin "@eq_sym" ≔ Pure.symmetric;
 builtin "@eq_trans" ≔ Pure.transitive;
-//equal_intr
-//equal_elim
-//abstract_rule
-builtin "Isabelle.combination" ≔ Pure.combination;
-
+builtin "equal_intr" ≔ Pure.equal_intr;
+builtin "equal_elim" ≔ Pure.equal_elim;
+builtin "abstract_rule" ≔ Pure.abstract_rule;
+builtin "combination" ≔ Pure.combination;
 builtin "Pure.prop_def_thm" ≔ Pure.prop_def_thm; // unused
+
+/****************************************************************************/
+// Tools_Code_generator
+
+builtin "holds" ≔ Tools_Code_Generator.holds;
+builtin "holds_def_raw" ≔ Tools_Code_Generator.holds_def_raw;
 
 /****************************************************************************/
 // HOL_HOL
@@ -52,10 +57,10 @@ builtin "Pure.prop_def_thm" ≔ Pure.prop_def_thm; // unused
 //equal
 builtin "Prop" ≔ HOL_HOL.bool;
 //type_class_const
-builtin "Isabelle.Trueprop" ≔ HOL_HOL.Trueprop;
+builtin "Trueprop" ≔ HOL_HOL.Trueprop;
 builtin "imp" ≔ HOL_HOL.implies; // undefined in Isabelle
 builtin "@eq" ≔ HOL_HOL.eq_const;
-//The
+builtin "The" ≔ HOL_HOL.The;
 builtin "True" ≔ HOL_HOL.True;
 builtin "@all" ≔ HOL_HOL.All;
 builtin "@ex" ≔ HOL_HOL.Ex;
@@ -63,12 +68,12 @@ builtin "False" ≔ HOL_HOL.False;
 builtin "not" ≔ HOL_HOL.Not;
 builtin "and" ≔ HOL_HOL.conj;
 builtin "or" ≔ HOL_HOL.disj;
-//Uniq
-//Ex1
-//If
-//Let
-builtin "Isabelle.undefined" ≔ HOL_HOL.undefined;
-//default_class_default
+builtin "Uniq" ≔ HOL_HOL.Uniq;
+builtin "Ex1" ≔ HOL_HOL.Ex1;
+builtin "If" ≔ HOL_HOL.If;
+builtin "Let" ≔ HOL_HOL.Let;
+builtin "undefined" ≔ HOL_HOL.undefined;
+builtin "default_class_default" ≔ HOL_HOL.default_class_default;
 //default_class
 builtin "imp" ≔ HOL_HOL.simp_implies;
 builtin "all" ≔ HOL_HOL.induct_forall;
@@ -77,44 +82,44 @@ builtin "@eq" ≔ HOL_HOL.induct_equal;
 builtin "and" ≔ HOL_HOL.induct_conj;
 builtin "True" ≔ HOL_HOL.induct_true;
 builtin "False" ≔ HOL_HOL.induct_false;
-//NO_MATCH
-//ASSUMPTION
-//class_equal
+builtin "NO_MATCH" ≔ HOL_HOL.NO_MATCH;
+builtin "ASSUMPTION" ≔ HOL_HOL.ASSUMPTION;
+builtin "class_equal" ≔ HOL_HOL.class_equal;
 //equal_class_equal
 //equal_itself_inst_equal_itself
 //fun_arity
 //itself_arity
 //arity_type_bool
-//True_def_raw
-//All_def_raw
-//Ex_def_raw
-//False_def_raw
-//not_def_raw
-//and_def_raw
-//or_def_raw
-//Uniq_def_raw
-//Ex1_def_raw
+builtin "True_def_raw" ≔ HOL_HOL.True_def_raw;
+builtin "All_def_raw" ≔ HOL_HOL.All_def_raw;
+builtin "Ex_def_raw" ≔ HOL_HOL.Ex_def_raw;
+builtin "False_def_raw" ≔ HOL_HOL.False_def_raw;
+builtin "not_def_raw" ≔ HOL_HOL.not_def_raw;
+builtin "and_def_raw" ≔ HOL_HOL.and_def_raw;
+builtin "or_def_raw" ≔ HOL_HOL.or_def_raw;
+builtin "Uniq_def_raw" ≔ HOL_HOL.Uniq_def_raw;
+builtin "Ex1_def_raw" ≔ HOL_HOL.Ex1_def_raw;
 //refl
 //subst
 //ext
 //the_eq_trivial
-//impI
-//mp
-//True_or_False
-//If_def_raw
-//Let_def_raw
+builtin "impI" ≔ HOL_HOL.impI;
+builtin "mp" ≔ HOL_HOL.mp;
+builtin "True_or_False" ≔ HOL_HOL.True_or_False;
+builtin "If_def_raw" ≔ HOL_HOL.If_def_raw;
+builtin "Let_def_raw" ≔ HOL_HOL.Let_def_raw;
 //default_class_def
 //eq_reflection
-//simp_implies_def_raw
-//induct_forall_def_raw
-//induct_implies_def_raw
-//induct_equal_def_raw
-//induct_conj_def_raw
-//induct_true_def_raw
-//induct_false_def_raw
-//NO_MATCH_def_raw
-//ASSUMPTION_def_raw
-//class_equal_def
+builtin "simp_implies_def_raw" ≔ HOL_HOL.simp_implies_def_raw;
+builtin "induct_forall_def_raw" ≔ HOL_HOL.induct_forall_def_raw;
+builtin "induct_implies_def_raw" ≔ HOL_HOL.induct_implies_def_raw;
+builtin "induct_equal_def_raw" ≔ HOL_HOL.induct_equal_def_raw;
+builtin "induct_conj_def_raw" ≔ HOL_HOL.induct_conj_def_raw;
+builtin "induct_true_def_raw" ≔ HOL_HOL.induct_true_def_raw;
+builtin "induct_false_def_raw" ≔ HOL_HOL.induct_false_def_raw;
+builtin "NO_MATCH_def_raw" ≔ HOL_HOL.NO_MATCH_def_raw;
+builtin "ASSUMPTION_def_raw" ≔ HOL_HOL.ASSUMPTION_def_raw;
+builtin "class_equal_def" ≔ HOL_HOL.class_equal_def;
 //equal_class_def
 //equal_itself_inst_equal_itself_def
 //equal_itself_def_raw

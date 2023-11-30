@@ -103,16 +103,15 @@ object Dkcheck {
     // bw2.close()
 
     // Generate script for checking dk files with dkcheck
-    val filename3 = session+"/dkcheck/dkcheck.sh"
-    if (verbose) progress.echo("Generates " + filename3 + " ...")
-    val file3 = new File(filename3)
-    val bw3 = new BufferedWriter(new FileWriter(file3))
-    bw3.write("#!/bin/sh\nfor f in")
+    val filename1 = session+"/dkcheck/dkcheck.sh"
+    if (verbose) progress.echo("Generates " + filename1 + " ...")
+    val bw1 = new BufferedWriter(new FileWriter(new File(filename1)))
+    bw1.write("#!/bin/sh\nfor f in")
     for (theory <- theories) {
-      bw3.write(" " + Prelude.mod_name(theory.toString) + ".dk")
+      bw1.write(" " + Prelude.mod_name(theory.toString) + ".dk")
     }
-    bw3.write("\ndo\n  dk check -e --eta $f ") 
-    bw3.write("-I ../../"+anc+"/dkcheck/ ")
+    bw1.write("\ndo\n  dk check -e --eta $f -I ../../../logic") 
+    bw1.write(" -I ../../"+anc+"/dkcheck")
     while (anc != "Pure"){
       val full_stru = Sessions.load_structure(options, dirs = dirs)
       val selected_sessions =
@@ -122,10 +121,34 @@ object Dkcheck {
         case Some(x) => x
         case _ => error("the session does not have any parent")
       }
-      bw3.write("-I ../../"+anc+"/dkcheck/ ")
+      bw1.write(" -I ../../"+anc+"/dkcheck")
     }
-    bw3.write("|| exit 1\ndone\n")
-    bw3.close()
+    bw1.write(" || exit 1\ndone\n")
+    bw1.close()
+
+    // Generate _CoqProject
+    val filename2 = session+"/dkcheck/_CoqProject"
+    if (verbose) progress.echo("Generates " + filename2 + " ...")
+    val bw2 = new BufferedWriter(new FileWriter(new File(filename2)))
+    bw2.write("-Q ../../../coq IsaCoq\n")
+    bw2.write("-Q ../../../logic DkLogic\n")
+    bw2.write("-Q ../../"+anc+"/dkcheck "+anc+"\n")
+    while (anc != "Pure"){
+      val full_stru = Sessions.load_structure(options, dirs = dirs)
+      val selected_sessions =
+        full_stru.selection(Sessions.Selection(sessions = List[String](anc)))
+      val info = selected_sessions(anc)
+      anc = info.parent match{
+        case Some(x) => x
+        case _ => error("the session does not have any parent")
+      }
+      bw2.write("-Q ../../"+anc+"/dkcheck "+anc+"\n")
+    }
+    bw2.write("-Q . "+session+"\n")
+    for (theory <- theories) {
+      bw2.write(Prelude.mod_name(theory.toString) + ".v\n")
+    }
+    bw2.close()
   }
 
   // Isabelle tool wrapper and CLI handler

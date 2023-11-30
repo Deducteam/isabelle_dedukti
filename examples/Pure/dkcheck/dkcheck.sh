@@ -1,5 +1,5 @@
 #!/bin/sh
-for f in STTfa.dk Pure.dk
+for f in Pure.dk
 do
-  dk check -e --eta $f || exit 1
+  dk check -e --eta $f -I ../../../logic || exit 1
 done

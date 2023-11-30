@@ -1,46 +1,39 @@
-ISABELLE ?= isabelle
+.SUFFIXES:
 
-THY_NAME ?= HOL.Groups #Complex_Main
+DK_FILES := $(wildcard *.dk)
+V_FILES := $(DK_FILES:%.dk=%.v)
 
-THY_FILE := $(shell echo $(THY_NAME) | sed -e 's/\./_/g')
+.PHONY: default
+default: vo
 
-SCALA_SRC := $(wildcard src/*.scala)
+.PHONY: v
+v: $(V_FILES)
 
-default: dko lpo
+LAMBDAPI ?= lambdapi
 
-dko: $(THY_FILE).dko
+%.v: %.dk
+	$(LAMBDAPI) export -o stt_coq --encoding $(ISADK_DIR)/encoding.lp --erasing $(ISADK_DIR)/erasing.lp --requiring Isabelle.v --no-implicits $*.dk | sed -e 's/^Require Import Isabelle./From IsaCoq Require Import Isabelle./' -e 's/^Require STTfa./From DkLogic Require STTfa./' -e 's/^Require Pure./From Pure Require Pure./' -e 's/^Require /From HOL_wp Require /' > $*.v
 
-lpo: $(THY_FILE).lpo
+.PHONY: clean-v
+clean-v:
+	-rm -f $(V_FILES)
 
-component:
-	$(ISABELLE) components -u .
+Makefile.coq: _CoqProject
+	coq_makefile -f _CoqProject -o Makefile.coq
 
-scala:
-	$(ISABELLE) scala_build
+MAKE_COQ := $(MAKE) -f Makefile.coq
 
-force_root ROOT dkcheck.sh kocheck.sh: $(SCALA_SRC)
-	$(ISABELLE) dedukti_root HOL $(THY_NAME)
+.PHONY: vo
+vo: Makefile.coq $(V_FILES)
+	$(MAKE_COQ)
 
-build: ROOT
-	$(ISABELLE) build -b Dedukti_$(THY_NAME)
+.PHONY: clean-vo
+clean-vo:
+	-rm -f *.vo *.vok *.vos *.glob
 
-$(THY_FILE).lp: $(SCALA_SRC)
-	$(ISABELLE) dedukti_session -l -v HOL $(THY_NAME)
+.PHONY: clean
+clean: clean-v clean-vo
+	-rm -f Makefile.coq Makefile.coq.conf
 
-$(THY_FILE).lpo: STTfa.lp $(THY_FILE).lp
-	lambdapi check $(THY_FILE).lp
-
-$(THY_FILE).dk: $(SCALA_SRC)
-	$(ISABELLE) dedukti_session -v HOL $(THY_NAME)
-
-deps.mk: $(THY_FILE).dk
-	dk dep *.dk > deps.mk
-
-$(THY_FILE).dko: STTfa.dk $(THY_FILE).dk #deps.mk
-	#make -f dedukti.mk
-	bash ./dkcheck.sh
-
-clean:
-	-rm -f ROOT dkcheck.sh kocheck.sh deps.mk
-	-rm -f Pure.dk Tools*.dk HOL*.dk *.dko
-	-rm -f Pure.lp Tools*.lp HOL*.lp *.lpo
+%.vo: Makefile.coq %.v
+	$(MAKE_COQ) $*.vo
