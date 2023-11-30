@@ -58,7 +58,7 @@ jobs:
       - name: Generate dk and lp outputs, check dk output for Pure
         run: |
           cd examples/
-          mkdir Pure/dkcheck Pure/lambdapi
+          mkdir -p Pure/dkcheck Pure/lambdapi
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle build -b -d. Pure
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_session -d. Pure
           cd Pure/dkcheck/
@@ -75,7 +75,7 @@ jobs:
       - name: Generate dk and lp outputs, check dk output for HOL.Groups
         run: |
           cd examples/
-          mkdir HOL.Groups_wp/dkcheck HOL.Groups_wp/lambdapi
+          mkdir -p HOL.Groups_wp/dkcheck HOL.Groups_wp/lambdapi
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle build -b -d. HOL.Groups_wp
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_session -d. HOL.Groups_wp
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_check -d. HOL.Groups_wp
