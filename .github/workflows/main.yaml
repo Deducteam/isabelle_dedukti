@@ -58,7 +58,7 @@ jobs:
       - name: Generate dk and lp outputs, check dk output for Pure
         run: |
           cd examples/
-	  mkdir Pure/dkcheck Pure/lambdapi
+          mkdir Pure/dkcheck Pure/lambdapi
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle build -b -d. Pure
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_session -d. Pure
           cd Pure/dkcheck/
