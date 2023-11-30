@@ -2,6 +2,7 @@
 
 DK_FILES := $(wildcard *.dk)
 V_FILES := $(DK_FILES:%.dk=%.v)
+VO_FILES := $(DK_FILES:%.dk=%.vo)
 
 .PHONY: default
 default: vo
@@ -18,14 +19,15 @@ LAMBDAPI ?= lambdapi
 clean-v:
 	-rm -f $(V_FILES)
 
-Makefile.coq: _CoqProject
-	coq_makefile -f _CoqProject -o Makefile.coq
+#Makefile.coq: _CoqProject
+#	coq_makefile -f _CoqProject -o Makefile.coq
 
-MAKE_COQ := $(MAKE) -f Makefile.coq
+#MAKE_COQ := $(MAKE) -f Makefile.coq
 
 .PHONY: vo
-vo: Makefile.coq $(V_FILES)
-	$(MAKE_COQ)
+#vo: Makefile.coq $(V_FILES)
+#	$(MAKE_COQ)
+vo: $(VO_FILES)
 
 .PHONY: clean-vo
 clean-vo:
@@ -33,7 +35,15 @@ clean-vo:
 
 .PHONY: clean
 clean: clean-v clean-vo
-	-rm -f Makefile.coq Makefile.coq.conf
+#	-rm -f Makefile.coq Makefile.coq.conf
 
-%.vo: Makefile.coq %.v
-	$(MAKE_COQ) $*.vo
+#%.vo: Makefile.coq %.v
+#	$(MAKE_COQ) $*.vo
+
+%.vo: %.v
+	coqc `awk '/^-Q /{printf" %s",$0}' _CoqProject` $<
+
+include .depend
+
+.depend:
+	$(ISADK_DIR)/coqdep.sh $(DK_FILES)

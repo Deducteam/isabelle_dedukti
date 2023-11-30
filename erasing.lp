@@ -18,7 +18,7 @@ builtin "dummy" ≔ Pure.dummy;
 builtin "@eq" ≔ Pure.eq;
 builtin "" ≔ Pure.prop_const;
 builtin "el" ≔ Pure.type;
-builtin "dummy_pattern" ≔ Pure.dummy_pattern;
+builtin "el" ≔ Pure.dummy_pattern;
 //Appt
 //AppP
 //Abst
@@ -72,7 +72,7 @@ builtin "Uniq" ≔ HOL_HOL.Uniq;
 builtin "Ex1" ≔ HOL_HOL.Ex1;
 builtin "If" ≔ HOL_HOL.If;
 builtin "Let" ≔ HOL_HOL.Let;
-builtin "undefined" ≔ HOL_HOL.undefined;
+builtin "el" ≔ HOL_HOL.undefined;
 builtin "default_class_default" ≔ HOL_HOL.default_class_default;
 //default_class
 builtin "imp" ≔ HOL_HOL.simp_implies;

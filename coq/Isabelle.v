@@ -64,10 +64,10 @@ Proof.  intros a b f g x y fg xy. rewrite fg, xy. reflexivity. Qed.
 (* Tools_Code_Generator. *)
 (****************************************************************************)
 
-Definition holds : Prop := True.
+Definition holds : Prop := @eq (Prop -> Prop) (fun x_ : Prop => x_) (fun x_ : Prop => x_).
 
 Lemma holds_def_raw : @eq Prop holds (@eq (Prop -> Prop) (fun x_ : Prop => x_) (fun x_ : Prop => x_)).
-Proof. apply prop_ext. reflexivity. intros _. exact I. Qed.
+Proof. reflexivity. Qed.
 
 (****************************************************************************)
 (* HOL_HOL. *)
