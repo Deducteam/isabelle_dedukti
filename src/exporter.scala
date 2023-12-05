@@ -107,33 +107,37 @@ object Exporter {
       prfs_of_module+=(theory_name -> mutable.SortedSet[Long]())
     }
 
-    // collects commands that doesn't belong to any theory of the current session
-    val session_commands = mutable.Queue[Syntax.Command]()
+    {
+      // current module is the special one for the session
+      val session_module = session
+      Prelude.set_theory_session(session_module,session)
+      Prelude.set_current_module(session_module)
+      // collects commands that doesn't belong to any theory of the current session
+      val session_commands = mutable.Queue[Syntax.Command]()
 
-    // current module is the special one for the session
-    Prelude.set_theory_session(session,session)
-    Prelude.set_current_module(session)
-    for (entry_name <- ses_cont.entry_names()) {
-      if (entry_name.name.startsWith("proofs/")) {
-        val prf = entry_name.name.substring(7).toLong
-        val theory_name = entry_name.theory
-        // if (verbose) progress.echo("  proof " + prf + " from " + entry_name.theory)
-        if (prfs_of_module.keySet.contains(theory_name)) {
-          Prelude.add_proof_ident(prf,theory_name)
-          prfs_of_module(theory_name)+=(prf)
-        } else {// the proof is attributed to a theory of a parent session
-          Prelude.add_proof_ident(prf,"")
-          if (verbose) progress.echo("  proof " + prf)
-          session_commands+=(prf_command(prf,theory_name))
+      for (entry_name <- ses_cont.entry_names()) {
+        if (entry_name.name.startsWith("proofs/")) {
+          val prf = entry_name.name.substring(7).toLong
+          val theory_name = entry_name.theory
+          // if (verbose) progress.echo("  proof " + prf + " from " + entry_name.theory)
+          if (prfs_of_module.keySet.contains(theory_name)) {
+            Prelude.add_proof_ident(prf,theory_name)
+            prfs_of_module(theory_name)+=(prf)
+          } else {// the proof is attributed to a theory of a parent session
+            Prelude.add_proof_ident(prf,session_module)
+            if (verbose) progress.echo("  proof " + prf)
+            session_commands+=(prf_command(prf,theory_name))
+          }
         }
       }
-    }
 
-    // writing orphan proofs
-    if (translate && !session_commands.isEmpty) {
-      write_dk("",session_commands)
-      write_lp("",session_commands)
-    }
+      // writing orphan proofs
+      if (translate && !session_commands.isEmpty) {
+        write_dk(session_module,session_commands)
+        write_lp(session_module,session_commands)
+      }
+
+    }// release session_commands etc.
 
     // writing theories
     for (theory_name <- theories) {
