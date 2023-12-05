@@ -13,7 +13,6 @@ sources = \
   src/rootfile.scala \
   src/dkcheck.scala
 services = \
-  isabelle.dedukti.ExporterTool \
   isabelle.dedukti.RootfileTool \
   isabelle.dedukti.GeneratorTool \
   isabelle.dedukti.DkcheckTool
