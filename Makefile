@@ -13,7 +13,7 @@ v: $(V_FILES)
 LAMBDAPI ?= lambdapi
 
 %.v: %.dk
-	$(LAMBDAPI) export -o stt_coq --encoding $(ISADK_DIR)/encoding.lp --erasing $(ISADK_DIR)/erasing.lp --requiring Isabelle.v --no-implicits $*.dk | sed -e 's/^Require Import Isabelle./From IsaCoq Require Import Isabelle./' -e 's/^Require STTfa./From DkLogic Require STTfa./' -e 's/^Require Pure./From Pure Require Pure./' -e 's/^Require /From HOL_wp Require /' > $*.v
+	$(LAMBDAPI) export -o stt_coq --encoding $(ISADK_DIR)/encoding.lp --erasing $(ISADK_DIR)/erasing.lp --renaming $(ISADK_DIR)/renaming.lp --requiring Isabelle.v --no-implicits $*.dk | sed -e 's/^Require Import Isabelle./From IsaCoq Require Import Isabelle./' -e 's/^Require STTfa./From DkLogic Require STTfa./' -e 's/^Require Pure./From Pure Require Pure./' -e 's/^Require /From HOL_wp Require /' > $*.v
 
 .PHONY: clean-v
 clean-v:

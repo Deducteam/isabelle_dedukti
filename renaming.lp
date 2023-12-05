@@ -2,3 +2,4 @@
 // to Coq expressions (on the left)
 
 builtin "by_" ≔ by;
+builtin "exists_" ≔ exists;
