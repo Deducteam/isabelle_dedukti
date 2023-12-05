@@ -189,6 +189,18 @@ diff -urNx '*~' ./Enum.thy ../../src/HOL/Enum.thy
  end
  
  
+diff -urNx '*~' ./Main.thy ../../src/HOL/Main.thy
+--- ./Main.thy	2023-09-12 02:30:48.000000000 +0900
++++ ../../src/HOL/Main.thy	2023-12-05 14:47:34.871456600 +0900
+@@ -8,7 +8,7 @@
+ theory Main
+   imports
+     Predicate_Compile
+-    Quickcheck_Narrowing
++(*    Quickcheck_Narrowing*)
+     Mirabelle
+     Extraction
+     Nunchaku
 diff -urNx '*~' ./Quickcheck_Random.thy ../../src/HOL/Quickcheck_Random.thy
 --- ./Quickcheck_Random.thy	2023-09-12 02:30:48.000000000 +0900
 +++ ../../src/HOL/Quickcheck_Random.thy	2023-11-14 23:24:09.350321700 +0900
