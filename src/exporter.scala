@@ -34,7 +34,8 @@ object Exporter {
   def exporter(
     options: Options,
     session: String,
-    theories: List[String],
+    parent: Option[String],
+    theory_graph: Document.Node.Name.Graph[Unit],
     translate: Boolean,
     term_cache: Term.Cache = Term.Cache.make(),
     progress: Progress = new Progress(),
@@ -45,18 +46,19 @@ object Exporter {
   ): Unit = {
     val notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation] = collection.mutable.Map()
     Translate.global_eta_expand = eta_expand
-    def filename_lp(theory_name: String) = Path.explode (session + "/lambdapi/" + Prelude.mod_name(theory_name) + ".lp")
-    def filename_dk(theory_name: String) = Path.explode (session + "/dkcheck/" + Prelude.mod_name(theory_name) + ".dk")
+    def filename_lp(module: String) = Path.explode (session + "/lambdapi/" + Prelude.mod_name(module) + ".lp")
+    def filename_dk(module: String) = Path.explode (session + "/dkcheck/" + Prelude.mod_name(module) + ".dk")
     def write_lp(
-      theory_name: String,
-      commands: mutable.Queue[Syntax.Command]
+      module: String,
+      commands: mutable.Queue[Syntax.Command],
+      deps: List[String]
     ): Unit = {
-      using(new Part_Writer(filename_lp(theory_name))) { part_writer =>
+      using(new Part_Writer(filename_lp(module))) { part_writer =>
         val writer = new LP_Writer(use_notations, part_writer)
-        writer.comment("Lambdapi translation of " + session + "." + theory_name)
-        progress.echo("Write theory \"" + theory_name + "\" in Lambdapi...")
+        writer.comment("Lambdapi translation of " + session + "." + module)
+        progress.echo("Write theory \"" + module + "\" in Lambdapi...")
         if (!eta_expand) writer.eta_equality()
-        for (dep <- Prelude.deps_of(theory_name)) { writer.require(dep) }
+        for (dep <- deps) { writer.require(dep) }
         for (command <- commands) {
           command match {
             case Syntax.Definition(_,_,_,_,_) =>
@@ -66,14 +68,15 @@ object Exporter {
       }
     }
     def write_dk(
-      theory_name: String,
-      commands: mutable.Queue[Syntax.Command]
+      module: String,
+      commands: mutable.Queue[Syntax.Command],
+      deps: List[String]
     ): Unit = {
-      using(new Part_Writer(filename_dk(theory_name))) { part_writer =>
+      using(new Part_Writer(filename_dk(module))) { part_writer =>
         val writer = new DK_Writer(part_writer)
-        writer.comment("Dedukti translation of " + session + "." + theory_name)
-        progress.echo("Write theory \"" + theory_name + "\" in Dedukti...")
-        for (dep <- Prelude.deps_of(theory_name)) { writer.require(dep) }
+        writer.comment("Dedukti translation of " + session + "." + module)
+        progress.echo("Write theory \"" + module + "\" in Dedukti...")
+        for (dep <- deps) { writer.require(dep) }
         for (command <- commands) {
           command match {
             case Syntax.Definition(_,_,_,_,_) =>
@@ -101,17 +104,24 @@ object Exporter {
 
     progress.echo((if (translate) "Translating" else "Reading") + " session " + session + " ...")
 
+    val thys = theory_graph.topological_order
+    val theory_names = thys.map(node_name => node_name.toString)
+
+    if (translate) {
+      write_dk(session, mutable.Queue(), theory_names)
+      write_lp(session, mutable.Queue(), theory_names)
+    }
     // remember to which module each proof should belong
     val prfs_of_module = mutable.Map[String/* module name */, mutable.SortedSet[Long]]()
-    for (theory_name <- theories) {
+    for (theory_name <- theory_names) {
       prfs_of_module+=(theory_name -> mutable.SortedSet[Long]())
     }
 
+    // parent_session_module is the special one for the proofs belonging to the theories of the parent session, but not generated in the parent session
+    val parent_session_module = session + "_Parent"
+    Prelude.set_theory_session(parent_session_module,session)
+    Prelude.set_current_module(parent_session_module)
     {
-      // current module is the special one for the session
-      val session_module = session
-      Prelude.set_theory_session(session_module,session)
-      Prelude.set_current_module(session_module)
       // collects commands that doesn't belong to any theory of the current session
       val session_commands = mutable.Queue[Syntax.Command]()
 
@@ -124,7 +134,7 @@ object Exporter {
             Prelude.add_proof_ident(prf,theory_name)
             prfs_of_module(theory_name)+=(prf)
           } else {// the proof is attributed to a theory of a parent session
-            Prelude.add_proof_ident(prf,session_module)
+            Prelude.add_proof_ident(prf,parent_session_module)
             if (verbose) progress.echo("  proof " + prf)
             session_commands+=(prf_command(prf,theory_name))
           }
@@ -132,16 +142,18 @@ object Exporter {
       }
 
       // writing orphan proofs
-      if (translate && !session_commands.isEmpty) {
-        write_dk(session_module,session_commands)
-        write_lp(session_module,session_commands)
+      if (translate) parent match {
+        case Some(anc) =>
+          write_dk(parent_session_module,session_commands,List(anc))
+          write_lp(parent_session_module,session_commands,List(anc))
+        case _ =>
       }
 
     }// release session_commands etc.
 
     // writing theories
-    for (theory_name <- theories) {
-
+    for (thy <- thys) {
+      val theory_name = thy.toString
       Prelude.set_current_module(theory_name)
       val provider = ses_cont.theory(theory_name, other_cache=Some(term_cache))
       val theory = Export_Theory.read_theory(provider)
@@ -223,12 +235,13 @@ object Exporter {
           case thm :: thms => prf_loop(prfs,thm,thms,max_serial(thm))
           case _ => prf_loop(prfs,null,null,Long.MaxValue)
         }
-
-        write_dk(theory_name,current_commands)
-        write_lp(theory_name,current_commands)
+        def deps = parent_session_module :: theory_graph.imm_succs(thy).toList.map(node_name => node_name.toString)
+        write_dk(theory_name,current_commands,deps)
+        write_lp(theory_name,current_commands,deps)
       }
     }
   }
+/*
   // Isabelle tool wrapper and CLI handler
   val cmd_name = "dedukti_theory"
   val isabelle_tool: Isabelle_Tool =
@@ -284,4 +297,5 @@ Export the specified THEORY of SESSION to a Dedukti or Lambdapi file with the sa
         }
       }
     )
+*/
 }

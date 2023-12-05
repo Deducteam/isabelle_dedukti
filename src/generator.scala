@@ -37,23 +37,25 @@ object Generator {
     val selected_sessions =
       full_stru.selection(Sessions.Selection(sessions = List[String](session)))
     val info = selected_sessions(session)
-    if (session != "Pure") {
-      //getting parent session
-      val anc = info.parent match{
-        case Some(x) => x
-        case _ => error("the session does not have any parent")
+    val parent = info.parent
+    val theory_graph =
+      parent match {
+        case None =>
+          if (session == "Pure") {
+            (Document.Node.Name.make_graph(List(((Document.Node.Name("Pure", theory = Thy_Header.PURE), ()),List[Document.Node.Name]()))))
+          } else {
+            error("the session does not have any parent")
+          }
+        case Some(anc) => {
+          progress.echo("Reading parent session " + anc)
+          generator(options, anc, target_theory, false, progress, dirs, use_notations, eta_expand, verbose)
+          // getting theories of session
+          Rootfile.graph(options, session, anc, progress, dirs, verbose)
+        }
       }
-      progress.echo("Reading parent session " + anc)
-      generator(options, anc, target_theory, false, progress, dirs, use_notations, eta_expand, verbose)
-      // getting theories of session
-      val theory_graph = Rootfile.graph(options, session, anc, progress, dirs, verbose)    // if (verbose) { progress.echo("graph: " + theory_graph) 
-      theories = theory_graph.topological_order.map(x => x.toString)
-    } else {
-      theories = List[String]("Pure")
-    }
     // Generate a dk or lp file for each theory
     val term_cache = Term.Cache.make()
-    Exporter.exporter(options, session, theories, translate,
+    Exporter.exporter(options, session, parent, theory_graph, translate,
       term_cache = term_cache,
       progress = progress,
       dirs = dirs,

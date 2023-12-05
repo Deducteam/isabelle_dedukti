@@ -40,21 +40,6 @@ object Prelude {
     }
   }
 
-  // map module -> set of modules it depends on
-  var depsOf: Map[String, Set[String]] = Map()
-
-  def deps_of(m: String): Set[String] = {
-    depsOf get m match {
-      case None => Set()
-      case Some(set) => set
-    }
-  }
-
-  def add_dep(m: String) = {
-    if (m != current_module)
-      depsOf += (current_module -> (deps_of(current_module) + m))
-  }
-
   // currently translated module
   var current_module: String = "STTfa"
   var theory_session: Map[String, String] = Map("STTfa" -> "Pure")
@@ -94,7 +79,7 @@ object Prelude {
   def get_name(id: String, kind: String ): String = {
     namesMap get (full_name(id, kind)) match {
       case None => error ("id '"+id+"' not found")
-      case Some(s) => { add_dep(module_of(s)); s }
+      case Some(s) => s
     }
   }
 
