@@ -217,34 +217,27 @@ object Translate {
   def proof(
     prf: Term.Proof,
     bounds: Bounds,
-    deps: mutable.Set[Long]/* proofs that the prf depends */,
-    cont: Syntax.Term => Syntax.Term = (t => t)/* continuation for the term */
+    cont: Syntax.Term => Syntax.Term = (t => t)/* continuation */
   ): Syntax.Term =
     prf match {
       case Term.PBound(i) =>
         try cont(Syntax.Var(var_ident(bounds.get_prf(i))))
         catch { case _: IndexOutOfBoundsException => isabelle.error("Loose bound variable (proof) " + i) }
-      case Term.Abst(x, ty, b) => {
-        proof(b, bounds.add_trm(x), deps,
-          prf => cont(Syntax.Abst(bound_term_argument(x, ty), prf))
+      case Term.Abst(x, ty, b) =>
+        proof(b, bounds.add_trm(x), prfb =>
+          cont(Syntax.Abst(bound_term_argument(x, ty), prfb))
         )
-      }
-      case Term.AbsP(x, prf, b) => {
-        proof(b, bounds.add_prf(x), deps,
-          prfp => cont(Syntax.Abst(bound_proof_argument(x, prf, bounds), prfp))
+      case Term.AbsP(x, prf, b) =>
+        proof(b, bounds.add_prf(x), prfb =>
+          cont(Syntax.Abst(bound_proof_argument(x, prf, bounds), prfb))
         )
-      }
-      case Term.Appt(a, b) => {
-        proof(a, bounds, deps,
-          prf => cont(Syntax.Appl(prf, term(b, bounds)))
+      case Term.Appt(a, b) =>
+        proof(a, bounds, prfa =>
+          cont(Syntax.Appl(prfa, term(b, bounds)))
         )
-      }
-      case Term.AppP(a, b) => {
-        val prf = proof(a, bounds, deps)
-        proof(b, bounds, deps,
-          prfp => cont(Syntax.Appl(prf, prfp))
-        )
-      }
+      case Term.AppP(a, b) =>
+        val prfa = proof(a, bounds)
+        proof(b, bounds, prfb => cont(Syntax.Appl(prfa, prfb)))
       case axm: Term.PAxm =>
         val id = ref_axiom_ident(axm.name)
         val impl = try implArgsMap(id) catch { case _ : Throwable => Nil }
@@ -255,11 +248,10 @@ object Translate {
             case None => {
               // println("proof "+thm.serial+" is badly identified from theory "+thm.theory_name+thm.types.foldLeft(""){case (s,ty) => s+" "+ty.toString})
               add_proof_ident(thm.serial,current_module)
-              deps+=(thm.serial)
             }
             case Some(s) => 
+              ref_proof_ident(thm.serial)
           }
-          ref_proof_ident(thm.serial)
         }
         val impl = try implArgsMap(head) catch { case _ : Throwable => Nil }
         cont(Syntax.appls(Syntax.Symb(head), thm.types.map(typ), impl))
@@ -644,7 +636,7 @@ object Translate {
 
   /* theorems and proof terms */
 
-  def stmt_decl(s: String, prop: Export_Theory.Prop, prf_opt: Option[Term.Proof]): (Syntax.Command, List[Long]) = {
+  def stmt_decl(s: String, prop: Export_Theory.Prop, prf_opt: Option[Term.Proof]): Syntax.Command = {
     val args =
       prop.typargs.map(_._1).map(bound_type_argument(_)) :::
       prop.args.map(arg => bound_term_argument(arg._1, arg._2))
@@ -655,17 +647,16 @@ object Translate {
     implArgsMap  += s -> List.fill(prop.typargs.length)(false) // Only those are applied immediately
     global_types += s -> contracted_ty
 
-    var deps = mutable.Set[Long]()
     try prf_opt match {
       case None => {
         val (new_args, final_ty) = (Nil, contracted_ty) // fetch_head_args_type(contracted_ty)
-        (Syntax.Declaration(s, new_args, final_ty), deps.toList)
+        Syntax.Declaration(s, new_args, final_ty)
       }
       case Some(prf) => {
-        val translated_rhs = proof(prf, Bounds(), deps)
+        val translated_rhs = proof(prf, Bounds())
         val full_prf : Syntax.Term = args.foldRight(translated_rhs)(Syntax.Abst.apply)
         val (new_args, contracted, final_ty) = fetch_head_args(eta_expand(eta_contract(full_prf)), contracted_ty)
-        (Syntax.Theorem(s, new_args, final_ty, contracted), deps.toList)
+        Syntax.Theorem(s, new_args, final_ty, contracted)
       }
     }
     catch { case e : Throwable => e.printStackTrace

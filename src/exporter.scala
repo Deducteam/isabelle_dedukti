@@ -93,8 +93,7 @@ object Exporter {
     def prf_command(prf: Long, theory_name: String): Syntax.Command = {
       Export_Theory.read_proof(ses_cont, Export_Theory.Thm_Id(prf,theory_name),other_cache=Some(term_cache)) match {
         case Some(proof) =>
-          val (com,decs) = Translate.stmt_decl(Prelude.ref_proof_ident(prf), proof.prop, Some(proof.proof))
-          com
+          Translate.stmt_decl(Prelude.ref_proof_ident(prf), proof.prop, Some(proof.proof))
         case None =>
           error("proof "+prf+" not found!")
       }
@@ -112,8 +111,8 @@ object Exporter {
     val session_commands = mutable.Queue[Syntax.Command]()
 
     // current module is the special one for the session
-    Prelude.set_theory_session("",session)
-    Prelude.set_current_module("")
+    Prelude.set_theory_session(session,session)
+    Prelude.set_current_module(session)
     for (entry_name <- ses_cont.entry_names()) {
       if (entry_name.name.startsWith("proofs/")) {
         val prf = entry_name.name.substring(7).toLong
@@ -182,14 +181,12 @@ object Exporter {
         }
         for (a <- theory.axioms) {
           if (verbose) progress.echo("  " + a.toString + " " + a.serial)
-          val (com,decs) = Translate.stmt_decl(Prelude.add_axiom_ident(a.name,theory_name), a.the_content.prop, None)
-          current_commands.append(com)
+          current_commands.append(Translate.stmt_decl(Prelude.add_axiom_ident(a.name,theory_name), a.the_content.prop, None))
         }
 
         def translate_thm(thm : Export_Theory.Entity[Export_Theory.Thm]): Unit = {
           if (verbose) progress.echo("  " + thm.toString + " " + thm.serial)
-          val (com,decs) = Translate.stmt_decl(Prelude.add_thm_ident(thm.name,theory_name), thm.the_content.prop, Some(thm.the_content.proof))
-          current_commands.append(com)
+          current_commands.append(Translate.stmt_decl(Prelude.add_thm_ident(thm.name,theory_name), thm.the_content.prop, Some(thm.the_content.proof)))
         }
 
         def prf_loop(
