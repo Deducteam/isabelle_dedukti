@@ -48,4 +48,4 @@ clean: clean-v clean-vo
 include deps.mk
 
 deps.mk:
-	$(ISADK_DIR)/coqdep.sh $(SESSION) $(V_FILES) > $@
+	$(ISADK_DIR)/coqdeps.sh > $@
