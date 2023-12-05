@@ -27,3 +27,5 @@ Makefile.coq.conf
 *.vos
 .*.aux
 .*.d
+
+deps.mk

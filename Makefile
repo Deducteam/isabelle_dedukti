@@ -35,15 +35,17 @@ clean-vo:
 
 .PHONY: clean
 clean: clean-v clean-vo
+	-rm -f deps.mk
 #	-rm -f Makefile.coq Makefile.coq.conf
 
 #%.vo: Makefile.coq %.v
 #	$(MAKE_COQ) $*.vo
 
 %.vo: %.v
-	coqc `awk '/^-Q /{printf" %s",$0}' _CoqProject` $<
+	@echo coqc `awk '/^-Q /{printf" %s",$$0}' _CoqProject` $<
+	@coqc `awk '/^-Q /{printf" %s",$$0}' _CoqProject` $<
 
-include .depend
+include deps.mk
 
-.depend:
-	$(ISADK_DIR)/coqdep.sh $(DK_FILES)
+deps.mk:
+	$(ISADK_DIR)/coqdep.sh $(SESSION) $(V_FILES) > $@
