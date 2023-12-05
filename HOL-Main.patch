@@ -1,6 +1,6 @@
 diff -urNx '*~' ./Enum.thy ../../src/HOL/Enum.thy
---- ./Enum.thy	2023-09-11 19:30:48.000000000 +0200
-+++ ../../src/HOL/Enum.thy	2023-11-13 17:29:49.827014000 +0100
+--- ./Enum.thy	2023-09-12 02:30:48.000000000 +0900
++++ ../../src/HOL/Enum.thy	2023-11-14 01:29:49.827014000 +0900
 @@ -929,15 +929,47 @@
  definition "x mod y = (case y of a\<^sub>1 \<Rightarrow> x | _ \<Rightarrow> a\<^sub>1)"
  definition "abs = (\<lambda>x. case x of a\<^sub>3 \<Rightarrow> a\<^sub>2 | _ \<Rightarrow> x)"
@@ -190,8 +190,8 @@ diff -urNx '*~' ./Enum.thy ../../src/HOL/Enum.thy
  
  
 diff -urNx '*~' ./Quickcheck_Random.thy ../../src/HOL/Quickcheck_Random.thy
---- ./Quickcheck_Random.thy	2023-09-11 19:30:48.000000000 +0200
-+++ ../../src/HOL/Quickcheck_Random.thy	2023-11-14 15:24:09.350321700 +0100
+--- ./Quickcheck_Random.thy	2023-09-12 02:30:48.000000000 +0900
++++ ../../src/HOL/Quickcheck_Random.thy	2023-11-14 23:24:09.350321700 +0900
 @@ -229,7 +229,7 @@
         (Code_Numeral.Suc i,
          random j \<circ>\<rightarrow> (%x. random_aux_set i j \<circ>\<rightarrow> (%s. Pair (valtermify_insert x s))))])"
@@ -202,8 +202,8 @@ diff -urNx '*~' ./Quickcheck_Random.thy ../../src/HOL/Quickcheck_Random.thy
      collapse (Random.select_weight [(1, Pair valterm_emptyset),
        (i, random j \<circ>\<rightarrow> (%x. random_aux_set (i - 1) j \<circ>\<rightarrow> (%s. Pair (valtermify_insert x s))))])"
 diff -urNx '*~' ./String.thy ../../src/HOL/String.thy
---- ./String.thy	2023-09-11 19:30:48.000000000 +0200
-+++ ../../src/HOL/String.thy	2023-11-14 14:56:50.941606400 +0100
+--- ./String.thy	2023-09-12 02:30:48.000000000 +0900
++++ ../../src/HOL/String.thy	2023-11-14 22:56:50.941606400 +0900
 @@ -40,11 +40,21 @@
  
  lemma (in comm_semiring_1) of_nat_of_char:
@@ -240,20 +240,38 @@ diff -urNx '*~' ./String.thy ../../src/HOL/String.thy
      by simp
    moreover have \<open>Literal' b0 b1 b2 b3 b4 b5 b6 s = String.literal_of_asciis
      [of_char (Char b0 b1 b2 b3 b4 b5 b6 False)] + s\<close>
+diff -urNx '*~' ./Tools/Quickcheck/exhaustive_generators.ML ../../src/HOL/Tools/Quickcheck/exhaustive_generators.ML
+--- ./Tools/Quickcheck/exhaustive_generators.ML	2023-09-12 02:30:48.000000000 +0900
++++ ../../src/HOL/Tools/Quickcheck/exhaustive_generators.ML	2023-12-05 14:15:45.920628300 +0900
+@@ -546,7 +546,7 @@
+         instantiate_bounded_forall_datatype)))
+ 
+ val active = Attrib.setup_config_bool \<^binding>\<open>quickcheck_exhaustive_active\<close> (K true)
+-
++(*
+ val _ =
+   Theory.setup
+    (Quickcheck_Common.datatype_interpretation \<^plugin>\<open>quickcheck_full_exhaustive\<close>
+@@ -554,5 +554,5 @@
+     #> Context.theory_map (Quickcheck.add_tester ("exhaustive", (active, test_goals)))
+     #> Context.theory_map (Quickcheck.add_batch_generator ("exhaustive", compile_generator_exprs))
+     #> Context.theory_map (Quickcheck.add_batch_validator ("exhaustive", compile_validator_exprs)))
+-
++*)
+ end
 diff -urNx '*~' ./Tools/Quickcheck/random_generators.ML ../../src/HOL/Tools/Quickcheck/random_generators.ML
---- ./Tools/Quickcheck/random_generators.ML	2023-09-11 19:30:48.000000000 +0200
-+++ ../../src/HOL/Tools/Quickcheck/random_generators.ML	2023-11-14 15:28:17.132105400 +0100
-@@ -480,11 +480,11 @@
- (** setup **)
+--- ./Tools/Quickcheck/random_generators.ML	2023-09-12 02:30:48.000000000 +0900
++++ ../../src/HOL/Tools/Quickcheck/random_generators.ML	2023-11-30 17:13:13.090725100 +0900
+@@ -481,10 +481,12 @@
  
  val active = Attrib.setup_config_bool \<^binding>\<open>quickcheck_random_active\<close> (K false);
--
+ 
 +(*
  val _ =
    Theory.setup
     (Quickcheck_Common.datatype_interpretation \<^plugin>\<open>quickcheck_random\<close>
        (\<^sort>\<open>random\<close>, instantiate_random_datatype) #>
      Context.theory_map (Quickcheck.add_tester ("random", (active, test_goals))));
--
 +*)
+ 
  end;

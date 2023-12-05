@@ -5,4 +5,5 @@ HOL_Pre_Enum
 HOL_Enum_wp
 HOL_Pre_Quickcheck_Random
 HOL_Quickcheck_Random_wp
+HOL_Quickcheck_Exhaustive_wp
 HOL_Main_wp
