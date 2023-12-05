@@ -235,7 +235,8 @@ object Exporter {
           case thm :: thms => prf_loop(prfs,thm,thms,max_serial(thm))
           case _ => prf_loop(prfs,null,null,Long.MaxValue)
         }
-        def deps = parent_session_module :: theory_graph.imm_preds(thy).toList.map(node_name => node_name.toString)
+        val deps_rest = theory_graph.imm_preds(thy).toList.map(node_name => node_name.toString)
+        val deps = if (parent == None) deps_rest else parent_session_module :: deps_rest
         write_dk(theory_name,current_commands,deps)
         write_lp(theory_name,current_commands,deps)
       }
