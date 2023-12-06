@@ -534,12 +534,13 @@ class DK_Writer(writer: Writer) extends Abstract_Writer("", writer) {
           space()
           block { arg(a, block = false, notations) }
         }
-        colon(); term(ty)
+        colon(); term(ty); dot(); nl()
       case Syntax.DefableDecl(id, ty, _, _) =>
         write("def ")
         sym_ident(id)
-        colon(); term(ty)
+        colon(); term(ty); dot(); nl()
       case Syntax.Definition(id, args, ty, tm, _) =>
+/* only for lambdapi??
         write("def ")
         sym_ident(id)
         for (a <- args) {
@@ -547,7 +548,8 @@ class DK_Writer(writer: Writer) extends Abstract_Writer("", writer) {
           block { arg(a, block = false, notations) }
         }
         for (ty <- ty) { colon(); term(ty) }
-        dfn(); term(tm)
+        dfn(); term(tm); dot(); nl()
+*/
       case Syntax.Theorem(id, args, ty, prf) =>
         write("thm ")
         sym_ident(id)
@@ -556,14 +558,12 @@ class DK_Writer(writer: Writer) extends Abstract_Writer("", writer) {
           block { arg(a, block = false, notations) }
         }
         colon(); term(ty)
-        dfn(); term(prf)
+        dfn(); term(prf); dot(); nl()
       case Syntax.Rewrite(vars, lhs, rhs) =>
         if (vars.nonEmpty) write("[" + vars.mkString(sep = ", ") + "] ")
         term(lhs)
-        ar_rew(); term(rhs)
+        ar_rew(); term(rhs); dot(); nl()
     }
-    dot()
-    nl()
   }
 
   def require(module: String): Unit = {
