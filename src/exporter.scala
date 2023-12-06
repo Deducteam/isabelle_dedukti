@@ -141,106 +141,108 @@ object Exporter {
     }// release session_commands etc.
 
     // the session module, importing all the theories of the session
-    val session_writer = new DK_Writer(new_dk_part_writer(session,session_module(session)))
+    using(new_dk_part_writer(session,session_module(session))) { part_writer =>
+      val session_writer = new DK_Writer(part_writer)
 
-    // reading theories
-    for (thy <- thys) {
-      val theory_name = thy.toString
-      session_writer.require(theory_name)
-      val provider = ses_cont.theory(theory_name, other_cache=Some(term_cache))
-      val theory = Export_Theory.read_theory(provider)
+      // reading theories
+      for (thy <- thys) {
+        val theory_name = thy.toString
+        session_writer.require(theory_name)
+        val provider = ses_cont.theory(theory_name, other_cache=Some(term_cache))
+        val theory = Export_Theory.read_theory(provider)
 
-      if (!translate) {
-        progress.echo("Reading theory " + theory_name + " ...")
-        for (a <- theory.classes) {
-          if (verbose) progress.echo("  " + a.toString + a.serial)
-          Prelude.add_class_ident(a.name,theory_name)
-        }
-        for (a <- theory.types) {
-          if (verbose) progress.echo("  " + a.toString + a.serial)
-          Prelude.add_type_ident(a.name,theory_name)
-        }
-        for (a <- theory.consts) {
-          if (verbose) progress.echo("  " + a.toString + " " + a.serial)
-          Prelude.add_const_ident(a.name,theory_name)
-        }
-        for (a <- theory.axioms) {
-          if (verbose) progress.echo("  " + a.toString + " " + a.serial)
-          Prelude.add_axiom_ident(a.name,theory_name)
-        }
-        for (a <- theory.thms) {
-          if (verbose) progress.echo("  " + a.toString + " " + a.serial)
-          Prelude.add_thm_ident(a.name,theory_name)
-        }
-      } else using(new_dk_part_writer(session,theory_name)) { part_writer =>
-        val writer = new DK_Writer(part_writer)
-        progress.echo("Writing theory \"" + theory_name + "\" in Dedukti...")
-        writer.comment("Translation of " + session + "." + theory_name)
-        // writing module dependencies
-        if (parent != None) writer.require(parent_session_module)
-        for (node_name <- theory_graph.imm_preds(thy)) {
-          writer.require(node_name.toString)
-        }
-        Prelude.set_current_module(theory_name)
-        for (a <- theory.classes) {
-          if (verbose) progress.echo("  " + a.toString + a.serial)
-          val cmd = Translate.class_decl(theory_name, a.name)
-          writer.command(cmd,notations)
-        }
-        for (a <- theory.types) {
-          if (verbose) progress.echo("  " + a.toString + a.serial)
-          val cmd = Translate.type_decl(theory_name, a.name, a.the_content.args, a.the_content.abbrev, a.the_content.syntax)
-          writer.command(cmd,notations)
-        }
-        for (a <- theory.consts) {
-          if (verbose) progress.echo("  " + a.toString + " " + a.serial)
-          val cmd = Translate.const_decl(theory_name, a.name, a.the_content.typargs, a.the_content.typ, a.the_content.abbrev, a.the_content.syntax)
-          writer.command(cmd,notations)
-        }
-        for (a <- theory.axioms) {
-          if (verbose) progress.echo("  " + a.toString + " " + a.serial)
-          val cmd = Translate.stmt_decl(Prelude.add_axiom_ident(a.name,theory_name), a.the_content.prop, None)
-          writer.command(cmd, notations)
-        }
+        if (!translate) {
+          progress.echo("Reading theory " + theory_name + " ...")
+          for (a <- theory.classes) {
+            if (verbose) progress.echo("  " + a.toString + a.serial)
+            Prelude.add_class_ident(a.name,theory_name)
+          }
+          for (a <- theory.types) {
+            if (verbose) progress.echo("  " + a.toString + a.serial)
+            Prelude.add_type_ident(a.name,theory_name)
+          }
+          for (a <- theory.consts) {
+            if (verbose) progress.echo("  " + a.toString + " " + a.serial)
+            Prelude.add_const_ident(a.name,theory_name)
+          }
+          for (a <- theory.axioms) {
+            if (verbose) progress.echo("  " + a.toString + " " + a.serial)
+            Prelude.add_axiom_ident(a.name,theory_name)
+          }
+          for (a <- theory.thms) {
+            if (verbose) progress.echo("  " + a.toString + " " + a.serial)
+            Prelude.add_thm_ident(a.name,theory_name)
+          }
+        } else using(new_dk_part_writer(session,theory_name)) { part_writer =>
+          val writer = new DK_Writer(part_writer)
+          progress.echo("Writing theory \"" + theory_name + "\" in Dedukti...")
+          writer.comment("Translation of " + session + "." + theory_name)
+          // writing module dependencies
+          if (parent != None) writer.require(parent_session_module)
+          for (node_name <- theory_graph.imm_preds(thy)) {
+            writer.require(node_name.toString)
+          }
+          Prelude.set_current_module(theory_name)
+          for (a <- theory.classes) {
+            if (verbose) progress.echo("  " + a.toString + a.serial)
+            val cmd = Translate.class_decl(theory_name, a.name)
+            writer.command(cmd,notations)
+          }
+          for (a <- theory.types) {
+            if (verbose) progress.echo("  " + a.toString + a.serial)
+            val cmd = Translate.type_decl(theory_name, a.name, a.the_content.args, a.the_content.abbrev, a.the_content.syntax)
+            writer.command(cmd,notations)
+          }
+          for (a <- theory.consts) {
+            if (verbose) progress.echo("  " + a.toString + " " + a.serial)
+            val cmd = Translate.const_decl(theory_name, a.name, a.the_content.typargs, a.the_content.typ, a.the_content.abbrev, a.the_content.syntax)
+            writer.command(cmd,notations)
+          }
+          for (a <- theory.axioms) {
+            if (verbose) progress.echo("  " + a.toString + " " + a.serial)
+            val cmd = Translate.stmt_decl(Prelude.add_axiom_ident(a.name,theory_name), a.the_content.prop, None)
+            writer.command(cmd, notations)
+          }
 
-        def translate_thm(thm : Export_Theory.Entity[Export_Theory.Thm]): Unit = {
-          if (verbose) progress.echo("  " + thm.toString + " " + thm.serial)
-          val cmd = Translate.stmt_decl(Prelude.add_thm_ident(thm.name,theory_name), thm.the_content.prop, Some(thm.the_content.proof))
-          writer.command(cmd, notations)
-        }
+          def translate_thm(thm : Export_Theory.Entity[Export_Theory.Thm]): Unit = {
+            if (verbose) progress.echo("  " + thm.toString + " " + thm.serial)
+            val cmd = Translate.stmt_decl(Prelude.add_thm_ident(thm.name,theory_name), thm.the_content.prop, Some(thm.the_content.proof))
+            writer.command(cmd, notations)
+          }
 
-        def prf_loop(
-          prfs : List[Long],
-          thm : Export_Theory.Entity[Export_Theory.Thm],
-          thms : List[Export_Theory.Entity[Export_Theory.Thm]],
-          thm_prf : Long
-        ) : Unit = prfs match {
-          case prf::prfs2 =>
-            if (prf > thm_prf) {
-              translate_thm(thm)
-              // progress.echo("  Ready for thm " + prf + " > " + thm_prf)
-              thms match {
-                case thm2 :: thms2 =>
-                  prf_loop(prfs,thm2,thms2,max_serial(thm2))
-                case Nil =>
-                  prf_loop(prfs,null,null,Long.MaxValue)
+          def prf_loop(
+            prfs : List[Long],
+            thm : Export_Theory.Entity[Export_Theory.Thm],
+            thms : List[Export_Theory.Entity[Export_Theory.Thm]],
+            thm_prf : Long
+          ) : Unit = prfs match {
+            case prf::prfs2 =>
+              if (prf > thm_prf) {
+                translate_thm(thm)
+                // progress.echo("  Ready for thm " + prf + " > " + thm_prf)
+                thms match {
+                  case thm2 :: thms2 =>
+                    prf_loop(prfs,thm2,thms2,max_serial(thm2))
+                  case Nil =>
+                    prf_loop(prfs,null,null,Long.MaxValue)
+                }
+              } else {
+                if (verbose) progress.echo("  proof " + prf)
+                val cmd = prf_command(prf,theory_name)
+                writer.command(cmd,notations)
+                prf_loop(prfs2,thm,thms,thm_prf)
               }
-            } else {
-              if (verbose) progress.echo("  proof " + prf)
-              val cmd = prf_command(prf,theory_name)
-              writer.command(cmd,notations)
-              prf_loop(prfs2,thm,thms,thm_prf)
-            }
-          case _ =>
-        }
-        val prfs = prfs_of_module(theory_name).toList
-        theory.thms match {
-          case thm :: thms => prf_loop(prfs,thm,thms,max_serial(thm))
-          case _ => prf_loop(prfs,null,null,Long.MaxValue)
+            case _ =>
+          }
+          val prfs = prfs_of_module(theory_name).toList
+          theory.thms match {
+            case thm :: thms => prf_loop(prfs,thm,thms,max_serial(thm))
+            case _ => prf_loop(prfs,null,null,Long.MaxValue)
+          }
         }
       }
     }
-    progress.echo("Translated all theories.")
+    progress.echo("Translated session " + session)
   }
 /*
   // Isabelle tool wrapper and CLI handler
