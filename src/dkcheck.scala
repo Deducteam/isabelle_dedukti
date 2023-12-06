@@ -107,7 +107,7 @@ object Dkcheck {
     if (verbose) progress.echo("Generates " + filename3 + " ...")
     val file3 = new File(filename3)
     val bw3 = new BufferedWriter(new FileWriter(file3))
-    bw3.write("#!/bin/sh\nfor f in")
+    bw3.write("#!/bin/sh\nfor f in "+session+"_Parent.dk")
     for (theory <- theories) {
       bw3.write(" " + Prelude.mod_name(theory.toString) + ".dk")
     }
