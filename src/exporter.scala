@@ -30,6 +30,32 @@ object Exporter {
           theory = res.string(Export.private_data.Base.theory_name),
           name = res.string(Export.private_data.Base.name))).toList)
   }
+  def filename_lp(session: String, module: String) = Path.explode (session + "/lambdapi/" + Prelude.mod_name(module) + ".lp")
+  def filename_dk(session: String, module: String) = Path.explode (session + "/dkcheck/" + Prelude.mod_name(module) + ".dk")
+  def write_lp(
+    session: String,
+    module: String,
+    commands: mutable.Queue[Syntax.Command],
+    deps: List[String],
+    eta_expand: Boolean,
+    use_notations: Boolean,
+    notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation]
+  ): Unit = {
+    using(new Part_Writer(filename_lp(session,module))) { part_writer =>
+      val writer = new LP_Writer(use_notations, part_writer)
+      writer.comment("Lambdapi translation of " + session + "." + module)
+      if (!eta_expand) writer.eta_equality()
+      for (dep <- deps) { writer.require(dep) }
+      for (command <- commands) {
+        command match {
+          case Syntax.Definition(_,_,_,_,_) =>
+          case command => writer.command(command, notations)
+        }
+      }
+    }
+  }
+  def new_dk_part_writer(session: String, module: String) =
+    new Part_Writer(filename_dk(session,module))
 
   def exporter(
     options: Options,
@@ -46,45 +72,6 @@ object Exporter {
   ): Unit = {
     val notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation] = collection.mutable.Map()
     Translate.global_eta_expand = eta_expand
-    def filename_lp(module: String) = Path.explode (session + "/lambdapi/" + Prelude.mod_name(module) + ".lp")
-    def filename_dk(module: String) = Path.explode (session + "/dkcheck/" + Prelude.mod_name(module) + ".dk")
-    def write_lp(
-      module: String,
-      commands: mutable.Queue[Syntax.Command],
-      deps: List[String]
-    ): Unit = {
-      using(new Part_Writer(filename_lp(module))) { part_writer =>
-        val writer = new LP_Writer(use_notations, part_writer)
-        writer.comment("Lambdapi translation of " + session + "." + module)
-        progress.echo("Write theory \"" + module + "\" in Lambdapi...")
-        if (!eta_expand) writer.eta_equality()
-        for (dep <- deps) { writer.require(dep) }
-        for (command <- commands) {
-          command match {
-            case Syntax.Definition(_,_,_,_,_) =>
-            case command => writer.command(command, notations)
-          }
-        }
-      }
-    }
-    def write_dk(
-      module: String,
-      commands: mutable.Queue[Syntax.Command],
-      deps: List[String]
-    ): Unit = {
-      using(new Part_Writer(filename_dk(module))) { part_writer =>
-        val writer = new DK_Writer(part_writer)
-        writer.comment("Dedukti translation of " + session + "." + module)
-        progress.echo("Write theory \"" + module + "\" in Dedukti...")
-        for (dep <- deps) { writer.require(dep) }
-        for (command <- commands) {
-          command match {
-            case Syntax.Definition(_,_,_,_,_) =>
-            case command => writer.command(command, notations)
-          }
-        }
-      }
-    }
     val build_results =
       Build.build(options, selection = Sessions.Selection.session(session),
         dirs = dirs, progress = progress)
@@ -107,10 +94,6 @@ object Exporter {
     val thys = theory_graph.topological_order
     val theory_names = thys.map(node_name => node_name.toString)
 
-    if (translate) {
-      write_dk(session, mutable.Queue(), theory_names)
-      write_lp(session, mutable.Queue(), theory_names)
-    }
     // remember to which module each proof should belong
     val prfs_of_module = mutable.Map[String/* module name */, mutable.SortedSet[Long]]()
     for (theory_name <- theory_names) {
@@ -144,22 +127,30 @@ object Exporter {
       // writing orphan proofs
       if (translate) parent match {
         case Some(anc) =>
-          write_dk(parent_session_module,session_commands,List(anc))
-          write_lp(parent_session_module,session_commands,List(anc))
+          using (new_dk_part_writer(session,parent_session_module)) { part_writer =>
+            val writer = new DK_Writer(part_writer)
+            writer.require(anc)
+            for (cmd <- session_commands ) {
+              writer.command(cmd,notations)
+            }
+          }
         case _ =>
       }
 
     }// release session_commands etc.
 
-    // writing theories
+    // the session module, importing all the theories of the session
+    val session_writer = new DK_Writer(new_dk_part_writer(session,"session_"+session))
+
+    // reading theories
     for (thy <- thys) {
       val theory_name = thy.toString
-      Prelude.set_current_module(theory_name)
+      session_writer.require(theory_name)
       val provider = ses_cont.theory(theory_name, other_cache=Some(term_cache))
       val theory = Export_Theory.read_theory(provider)
 
       if (!translate) {
-        progress.echo("Read theory " + theory_name + " ...")
+        progress.echo("Reading theory " + theory_name + " ...")
         for (a <- theory.classes) {
           if (verbose) progress.echo("  " + a.toString + a.serial)
           Prelude.add_class_ident(a.name,theory_name)
@@ -180,29 +171,42 @@ object Exporter {
           if (verbose) progress.echo("  " + a.toString + " " + a.serial)
           Prelude.add_thm_ident(a.name,theory_name)
         }
-      } else {
-        progress.echo("Translate proofs for " + theory_name + " ...")
-        val current_commands = mutable.Queue[Syntax.Command]()
+      } else using(new_dk_part_writer(session,theory_name)) { part_writer =>
+        val writer = new DK_Writer(part_writer)
+        progress.echo("Translating proofs for " + theory_name + " ...")
+        writer.comment("Translation of " + session + "." + theory_name)
+        progress.echo("Writing theory \"" + theory_name + "\" in Dedukti...")
+        // writing module dependencies
+        if (parent != None) writer.require(parent_session_module)
+        for (node_name <- theory_graph.imm_preds(thy)) {
+          writer.require(node_name.toString)
+        }
+        Prelude.set_current_module(theory_name)
         for (a <- theory.classes) {
           if (verbose) progress.echo("  " + a.toString + a.serial)
-          current_commands.append(Translate.class_decl(theory_name, a.name))
+          val cmd = Translate.class_decl(theory_name, a.name)
+          writer.command(cmd,notations)
         }
         for (a <- theory.types) {
           if (verbose) progress.echo("  " + a.toString + a.serial)
-          current_commands.append(Translate.type_decl(theory_name, a.name, a.the_content.args, a.the_content.abbrev, a.the_content.syntax))
+          val cmd = Translate.type_decl(theory_name, a.name, a.the_content.args, a.the_content.abbrev, a.the_content.syntax)
+          writer.command(cmd,notations)
         }
         for (a <- theory.consts) {
           if (verbose) progress.echo("  " + a.toString + " " + a.serial)
-          current_commands.append(Translate.const_decl(theory_name, a.name, a.the_content.typargs, a.the_content.typ, a.the_content.abbrev, a.the_content.syntax))
+          val cmd = Translate.const_decl(theory_name, a.name, a.the_content.typargs, a.the_content.typ, a.the_content.abbrev, a.the_content.syntax)
+          writer.command(cmd,notations)
         }
         for (a <- theory.axioms) {
           if (verbose) progress.echo("  " + a.toString + " " + a.serial)
-          current_commands.append(Translate.stmt_decl(Prelude.add_axiom_ident(a.name,theory_name), a.the_content.prop, None))
+          val cmd = Translate.stmt_decl(Prelude.add_axiom_ident(a.name,theory_name), a.the_content.prop, None)
+          writer.command(cmd, notations)
         }
 
         def translate_thm(thm : Export_Theory.Entity[Export_Theory.Thm]): Unit = {
           if (verbose) progress.echo("  " + thm.toString + " " + thm.serial)
-          current_commands.append(Translate.stmt_decl(Prelude.add_thm_ident(thm.name,theory_name), thm.the_content.prop, Some(thm.the_content.proof)))
+          val cmd = Translate.stmt_decl(Prelude.add_thm_ident(thm.name,theory_name), thm.the_content.prop, Some(thm.the_content.proof))
+          writer.command(cmd, notations)
         }
 
         def prf_loop(
@@ -223,24 +227,20 @@ object Exporter {
               }
             } else {
               if (verbose) progress.echo("  proof " + prf)
-              current_commands.append(prf_command(prf,theory_name))
+              val cmd = prf_command(prf,theory_name)
+              writer.command(cmd,notations)
               prf_loop(prfs2,thm,thms,thm_prf)
             }
           case _ =>
         }
-
-        if (verbose) progress.echo("reading proofs")
         val prfs = prfs_of_module(theory_name).toList
         theory.thms match {
           case thm :: thms => prf_loop(prfs,thm,thms,max_serial(thm))
           case _ => prf_loop(prfs,null,null,Long.MaxValue)
         }
-        val deps_rest = theory_graph.imm_preds(thy).toList.map(node_name => node_name.toString)
-        val deps = if (parent == None) deps_rest else parent_session_module :: deps_rest
-        write_dk(theory_name,current_commands,deps)
-        write_lp(theory_name,current_commands,deps)
       }
     }
+    progress.echo("Translated all theories.")
   }
 /*
   // Isabelle tool wrapper and CLI handler
