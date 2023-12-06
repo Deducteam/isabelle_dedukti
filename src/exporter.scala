@@ -30,6 +30,7 @@ object Exporter {
           theory = res.string(Export.private_data.Base.theory_name),
           name = res.string(Export.private_data.Base.name))).toList)
   }
+  def session_module(session: String) = "session_"+session
   def filename_lp(session: String, module: String) = Path.explode (session + "/lambdapi/" + Prelude.mod_name(module) + ".lp")
   def filename_dk(session: String, module: String) = Path.explode (session + "/dkcheck/" + Prelude.mod_name(module) + ".dk")
   def write_lp(
@@ -129,8 +130,8 @@ object Exporter {
         case Some(anc) =>
           using (new_dk_part_writer(session,parent_session_module)) { part_writer =>
             val writer = new DK_Writer(part_writer)
-            writer.require(anc)
-            for (cmd <- session_commands ) {
+            writer.require(session_module(anc))
+            for (cmd <- session_commands) {
               writer.command(cmd,notations)
             }
           }
@@ -140,7 +141,7 @@ object Exporter {
     }// release session_commands etc.
 
     // the session module, importing all the theories of the session
-    val session_writer = new DK_Writer(new_dk_part_writer(session,"session_"+session))
+    val session_writer = new DK_Writer(new_dk_part_writer(session,session_module(session)))
 
     // reading theories
     for (thy <- thys) {
@@ -173,9 +174,8 @@ object Exporter {
         }
       } else using(new_dk_part_writer(session,theory_name)) { part_writer =>
         val writer = new DK_Writer(part_writer)
-        progress.echo("Translating proofs for " + theory_name + " ...")
-        writer.comment("Translation of " + session + "." + theory_name)
         progress.echo("Writing theory \"" + theory_name + "\" in Dedukti...")
+        writer.comment("Translation of " + session + "." + theory_name)
         // writing module dependencies
         if (parent != None) writer.require(parent_session_module)
         for (node_name <- theory_graph.imm_preds(thy)) {
