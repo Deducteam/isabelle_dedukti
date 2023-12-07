@@ -1,4 +1,4 @@
-session HOL_Quickcheck_Random_wp = HOL_Pre_Quickcheck_Random +
+session HOL_Quickcheck_Random_wp = HOL_Pre_Quickcheck_Random_wp +
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
   sessions HOL
   theories
