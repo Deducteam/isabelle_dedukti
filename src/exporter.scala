@@ -32,7 +32,6 @@ object Exporter {
   }
   def session_module(session: String) = "session_"+session
   def filename_lp(session: String, module: String) = Path.explode (session + "/lambdapi/" + Prelude.mod_name(module) + ".lp")
-  def filename_dk(session: String, module: String) = Path.explode (session + "/dkcheck/" + Prelude.mod_name(module) + ".dk")
   def write_lp(
     session: String,
     module: String,
@@ -55,9 +54,6 @@ object Exporter {
       }
     }
   }
-  def new_dk_part_writer(session: String, module: String) =
-    new Part_Writer(filename_dk(session,module))
-
   def exporter(
     options: Options,
     session: String,
@@ -69,8 +65,12 @@ object Exporter {
     dirs: List[Path] = Nil,
     use_notations: Boolean = false,
     eta_expand: Boolean = false,
-    verbose: Boolean = false
+    verbose: Boolean = false,
+    outdir: String = "",
   ): Unit = {
+    def new_dk_part_writer(module: String) =
+      new Part_Writer(Path.explode (outdir + Prelude.mod_name(module) + ".dk"))
+
     val notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation] = collection.mutable.Map()
     Translate.global_eta_expand = eta_expand
     val build_results =
@@ -152,12 +152,13 @@ object Exporter {
           Prelude.add_thm_ident(a.name,theory_name)
         }
       }
+      progress.echo("Read session " + session)
     } else {
       progress.echo("Translating session " + session)
       parent match {
         case Some(anc) =>
           // writing orphan proofs
-          using (new_dk_part_writer(session,parent_session_module)) { part_writer =>
+          using (new_dk_part_writer(parent_session_module)) { part_writer =>
             val writer = new DK_Writer(part_writer)
             writer.require(session_module(anc))
             for (cmd <- session_commands) {
@@ -167,7 +168,7 @@ object Exporter {
         case _ =>
       }
       // the session module, importing all the theories of the session
-      using(new_dk_part_writer(session,session_module(session))) { part_writer =>
+      using(new_dk_part_writer(session_module(session))) { part_writer =>
         val session_writer = new DK_Writer(part_writer)
 
         // reading theories
@@ -177,7 +178,7 @@ object Exporter {
           val theory = Export_Theory.read_theory(provider)
           session_writer.require(theory_name)
 
-          using(new_dk_part_writer(session,theory_name)) { part_writer =>
+          using(new_dk_part_writer(theory_name)) { part_writer =>
             val writer = new DK_Writer(part_writer)
             progress.echo("Writing theory \"" + theory_name + "\" in Dedukti...")
             writer.comment("Translation of " + session + "." + theory_name)
@@ -246,8 +247,8 @@ object Exporter {
           }
         }
       }
+      progress.echo("Translated session " + session)
     }
-    progress.echo("Translated session " + session)
   }
 /*
   // Isabelle tool wrapper and CLI handler

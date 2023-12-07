@@ -25,6 +25,7 @@ object Generator {
     use_notations: Boolean = false,
     eta_expand: Boolean = false,
     verbose: Boolean = false,
+    outdir: String = "",
     ): Unit = {
 
     // // theory graph
@@ -61,7 +62,8 @@ object Generator {
       dirs = dirs,
       use_notations = use_notations,
       eta_expand = eta_expand,
-      verbose = verbose)
+      verbose = verbose,
+      outdir = outdir)
   }
 
   // Isabelle tool wrapper and CLI handler
@@ -70,6 +72,7 @@ object Generator {
     Isabelle_Tool(cmd_name, "generate a dk or lp file for every theory of a session", Scala_Project.here,
       { args =>
         var dirs: List[Path] = Nil
+        var outdir: String = "dkcheck/"
         var use_notations = false
         var eta_expand = false
         var options = Options.init()
@@ -79,6 +82,7 @@ object Generator {
 
   Options are:
     -d DIR       include session directory
+    -D DIR       proof output directory
     -e           remove need for eta flag
     -n           use Lambdapi notations (with option -l only)
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
@@ -86,6 +90,7 @@ object Generator {
 
 Generate a dk or lp file for every theory of SESSION (up to THEORY).""",
         "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
+        "D:" -> (arg => { outdir = arg + "/" }),
         "e" -> (_ => eta_expand = true),
         "n" -> (_ => use_notations = true),
         "o:" -> (arg => { options += arg }),
@@ -107,7 +112,7 @@ Generate a dk or lp file for every theory of SESSION (up to THEORY).""",
 
         progress.interrupt_handler {
           try {
-            generator(options, session, target_theory, true, progress, dirs, use_notations, eta_expand, verbose)
+            generator(options, session, target_theory, true, progress, dirs, use_notations, eta_expand, verbose, outdir)
           }
           catch {case x: Exception =>
             progress.echo(x.getStackTrace.mkString("\n"))
