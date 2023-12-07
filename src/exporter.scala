@@ -22,17 +22,10 @@ object Exporter {
     sub(thm.the_content.proof)
   }
 
-  def read_entry_names_of_theory(db: SQL.Database, session_name: String, theory_name: String): List[Export.Entry_Name] = {
-    val select =
-      Export.private_data.Base.table.select(List(Export.private_data.Base.theory_name, Export.private_data.Base.name), sql = Export.private_data.where_equal(session_name,theory_name))
-    db.using_statement(select)(stmt =>
-      stmt.execute_query().iterator(res =>
-        Export.Entry_Name(session = session_name,
-          theory = res.string(Export.private_data.Base.theory_name),
-          name = res.string(Export.private_data.Base.name))).toList)
-  }
   def module_of_session(session: String) = "session_"+session
+
   def filename_lp(session: String, module: String) = Path.explode (session + "/lambdapi/" + Prelude.mod_name(module) + ".lp")
+
   def write_lp(
     session: String,
     module: String,
