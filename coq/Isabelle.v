@@ -60,6 +60,21 @@ Proof. intros A B f g h. apply fun_ext. apply h. Qed.
 Lemma combination : forall _a_ : Type', forall _b_ : Type', forall f_ : _a_ -> _b_, forall g_ : _a_ -> _b_, forall x_ : _a_, forall y_ : _a_, (@eq (_a_ -> _b_) f_ g_) -> (@eq _a_ x_ y_) -> @eq _b_ (f_ x_) (g_ y_).
 Proof.  intros a b f g x y fg xy. rewrite fg, xy. reflexivity. Qed.
 
+Definition term : forall _a_ : Type', _a_ -> Prop := fun _a_ x_ => all Prop (fun A_ : Prop => A_ -> A_).
+
+Definition sort_constraint : forall _a_ : Type', ( _a_) -> Prop := fun _a_ _x => term ( _a_) _x.
+
+Definition conjunction : Prop -> Prop -> Prop := fun A_ B_ => all Prop (fun C_ : Prop => (A_ -> B_ -> C_) -> C_).
+
+Lemma term_def : forall _a_ : Type', forall x_ : _a_, @eq Prop (term _a_ x_) (all Prop (fun A_ : Prop => A_ -> A_)).
+Proof. reflexivity. Qed.
+
+Lemma sort_constraint_def : forall _a_ : Type', @eq Prop (sort_constraint _a_ (el _a_)) (term ( _a_) (el _a_)).
+Proof. reflexivity. Qed.
+
+Lemma conjunction_def : forall A_ : Prop, forall B_ : Prop, @eq Prop (conjunction A_ B_) (all Prop (fun C_ : Prop => (A_ -> B_ -> C_) -> C_)).
+Proof. reflexivity. Qed.
+
 (****************************************************************************)
 (* Tools_Code_Generator. *)
 (****************************************************************************)

@@ -19,21 +19,22 @@ builtin "@eq" ≔ Pure.eq;
 builtin "" ≔ Pure.prop_const;
 builtin "el" ≔ Pure.type;
 builtin "el" ≔ Pure.dummy_pattern;
-//Appt
-//AppP
-//Abst
-//AbsP
-//Hyp
-//Oracle
-//PClass
-//MinProof
-//term
-//sort_constraint
-//conjunction
+builtin "proof" ≔ proof; // unused
+builtin "Appt" ≔ Appt; // unused
+builtin "AppP" ≔ AppP; // unused
+builtin "Abst" ≔ Abst; // unused
+builtin "AbsP" ≔ AbsP; // unused
+builtin "Hyp" ≔ Hyp; // unused
+builtin "Oracle" ≔ Oracle; // unused
+builtin "PClass" ≔ PClass; // unused
+builtin "MinProof" ≔ MinProof; // unused
+builtin "term" ≔ Pure.term;
+builtin "sort_constraint" ≔ Pure.sort_constraint;
+builtin "conjunction" ≔ Pure.conjunction;
+builtin "term_def" ≔ Pure.term_def;
+builtin "sort_constraint_def" ≔ Pure.sort_constraint_def;
+builtin "conjunction_def" ≔ Pure.conjunction_def;
 builtin "@eq_refl Prop" ≔ Pure.prop_def;
-//term_def
-//sort_constraint_def
-//conjunction_def
 builtin "@eq_refl" ≔ Pure.reflexive;
 builtin "@eq_sym" ≔ Pure.symmetric;
 builtin "@eq_trans" ≔ Pure.transitive;
@@ -57,8 +58,8 @@ builtin "holds_def_raw" ≔ Tools_Code_Generator.holds_def_raw;
 //equal
 builtin "Prop" ≔ HOL_HOL.bool;
 //type_class_const
-builtin "Trueprop" ≔ HOL_HOL.Trueprop;
-builtin "imp" ≔ HOL_HOL.implies; // undefined in Isabelle
+builtin "Trueprop" ≔ HOL_HOL.Trueprop; // cannot be replaced by ""
+builtin "imp" ≔ HOL_HOL.implies;
 builtin "@eq" ≔ HOL_HOL.eq_const;
 builtin "The" ≔ HOL_HOL.The;
 builtin "True" ≔ HOL_HOL.True;
