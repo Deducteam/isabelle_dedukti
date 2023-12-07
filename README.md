@@ -14,7 +14,6 @@
 
     - [lambdapi](https://github.com/Deducteam/lambdapi) >= 2.2.1
 
-
 ## Prerequisites
 
   * **Isabelle**
@@ -96,7 +95,6 @@
     ```
     $ISABELLE_HOME_USER/Isabelle2022/heaps/polyml-<something>/log/
     ```
-
 ## How to make Isabelle record proofs?
 
 For building to record Isabelle proofs so that they can be translated to Dedukti or Lambdapi afterwards, users need to add the following options in their ROOT file:
@@ -126,18 +124,17 @@ Then, to actually generate Isabelle proofs, one has to do:
 isabelle build -b -d $directory_of_ROOT(S)_file $session_name
 ```
 
-For instance, to generate the Isabelle proofs up to HOL.Groups, do:
+For instance, to generate the Isabelle proofs up to `HOL.Groups`, do:
 ```
-cd examples/
-isabelle build -b -d. HOL.Groups_wp
+cd examples
+isabelle build -b -d. HOL_Groups_wp
 ```
 
 Warning: as `examples/` contains an [AFP library](https://www.isa-afp.org/download/), one should first [add AFP as Isabelle components](https://www.isa-afp.org/help/) and use a version of AFP >= 2023-05-18.
 
 Remark: to visualize theory dependencies in HOL, you can look at the [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2022/dist/library/HOL/HOL/session_graph.pdf)
 
-
-## Commands to translate Isabelle proofs to Dedukti or Lambdapi proofs
+## Commands to translate Isabelle proofs to Dedukti and Lambdapi
 
 Run `isabelle $command` with no argument for more details.
 
@@ -153,7 +150,7 @@ Run `isabelle $command` with no argument for more details.
 
 Several sessions are already available in the `examples` folder:
 - `Pure`,
-- `HOL.Groups_wp` (`HOL` until `Groups` with proofs),
+- `HOL_Groups_wp` (`HOL` until `Groups` with proofs),
 - `HOL_wp` (`HOL` with proofs), and
 - `HOL-Library_wp` (`HOL-Library` minus the theories about RBTrees, with proofs).
 
@@ -178,13 +175,30 @@ To add other seesions, follow theses steps:
 - add the session name in the `examples/ROOTS`,
 - run the commands of the previous section.
 
-## Checking the outputs
+## Checking the Dedukti output
 
 For now, only the checking with dedukti works. To check a particular session, run:
 
 ```
 cd examples/$session_name/dkcheck/
 bash dkcheck.sh
+```
+
+## Translation to Coq
+
+The generated Dedukti files can be translated to Coq by using the Coq export function of Lambdapi. Scripts and a Makefile are provided to translate the Dedukti output to Coq and check it automatically. Example:
+
+**Requirement:** set the environment variable `ISADK_DIR` to the `isabelle_dedukti` directory, and compile coq/Isabelle.v:
+
+```
+export ISADK_DIR=`pwd`
+make -C coq Isabelle.vo
+```
+
+Then, for translating to Coq a session that you already built and translated to Dedukti, and check it, do:
+```
+cd examples/session/dkcheck # choose session
+../../../vcheck.sh
 ```
 
 ## Performances (to update)

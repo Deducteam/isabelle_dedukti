@@ -70,22 +70,22 @@ jobs:
           cd Pure/dkcheck/
           eval $(opam env)
           bash dkcheck.sh
-      # - name: Generate and check lp output for HOL.Groups
+      # - name: Generate and check lp output for HOL_Groups_wp
       #   run: |
-      #     cp STTfa.dk STTfa.lp lambdapi.pkg examples/HOL.Groups
-      #     cd examples/HOL.Groups
-      #     ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle build -b -d. HOL.Groups_wp
-      #     ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_session -d. -l HOL.Groups_wp
+      #     cp STTfa.dk STTfa.lp lambdapi.pkg examples/HOL_Groups
+      #     cd examples/HOL_Groups
+      #     ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle build -b -d. HOL_Groups_wp
+      #     ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_session -d. -l HOL_Groups_wp
       #     eval $(opam env)
       #     lambdapi check HOL_Groups.lp
-      - name: Generate dk and lp outputs, check dk output for HOL.Groups
+      - name: Generate dk and lp outputs, check dk output for HOL_Groups_wp
         run: |
           cd examples/
-          mkdir -p HOL.Groups_wp/dkcheck HOL.Groups_wp/lambdapi
-          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle build -b -d. HOL.Groups_wp
-          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_session -d. HOL.Groups_wp
-          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_check -d. HOL.Groups_wp
-          cd HOL.Groups_wp/dkcheck/
+          mkdir -p HOL_Groups_wp/dkcheck HOL_Groups_wp/lambdapi
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle build -b -d. HOL_Groups_wp
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_session -d. HOL_Groups_wp
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_check -d. HOL_Groups_wp
+          cd HOL_Groups_wp/dkcheck/
           eval $(opam env)
           bash dkcheck.sh
 #          mkdir -p kocheck
