@@ -1,0 +1,5 @@
+*.dk
+*.dko
+dkcheck_*.sh
+!STTfa.dk
+!dkcheck_STTfa.sh

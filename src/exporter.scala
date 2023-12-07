@@ -4,6 +4,7 @@ package isabelle.dedukti
 
 import isabelle._
 
+import java.io._
 import scala.collection.mutable
 import scala.util.control.Breaks._
 
@@ -30,7 +31,7 @@ object Exporter {
           theory = res.string(Export.private_data.Base.theory_name),
           name = res.string(Export.private_data.Base.name))).toList)
   }
-  def session_module(session: String) = "session_"+session
+  def module_of_session(session: String) = "session_"+session
   def filename_lp(session: String, module: String) = Path.explode (session + "/lambdapi/" + Prelude.mod_name(module) + ".lp")
   def write_lp(
     session: String,
@@ -155,20 +156,28 @@ object Exporter {
       progress.echo("Read session " + session)
     } else {
       progress.echo("Translating session " + session)
+      val filename3 = outdir + "dkcheck_" + session + ".sh"
+      if (verbose) progress.echo("Generating " + filename3 + " ...")
+      val file3 = new File(filename3)
+      val bw3 = new BufferedWriter(new FileWriter(file3))
+      bw3.write("#!/bin/sh\nD=`dirname \"$0\"`\nfor f in ")
       parent match {
         case Some(anc) =>
           // writing orphan proofs
           using (new_dk_part_writer(parent_session_module)) { part_writer =>
             val writer = new DK_Writer(part_writer)
-            writer.require(session_module(anc))
+            writer.require(module_of_session(anc))
             for (cmd <- session_commands) {
               writer.command(cmd,notations)
             }
           }
+          // check the module
+          bw3.write(parent_session_module + ".dk ")
         case _ =>
       }
       // the session module, importing all the theories of the session
-      using(new_dk_part_writer(session_module(session))) { part_writer =>
+      val session_module = module_of_session(session)
+      using(new_dk_part_writer(session_module)) { part_writer =>
         val session_writer = new DK_Writer(part_writer)
 
         // reading theories
@@ -245,7 +254,11 @@ object Exporter {
               case _ => prf_loop(prfs,null,null,Long.MaxValue)
             }
           }
+          bw3.write(Prelude.mod_name(theory.toString) + ".dk ")
         }
+        bw3.write(session_module+".dk")
+        bw3.write("\ndo\n  (cd $D; dk check -e --eta $f) || exit 1\ndone\n")
+        bw3.close()
       }
       progress.echo("Translated session " + session)
     }
