@@ -1,5 +1,0 @@
-session HOL_Enum_wp = HOL_Pre_Enum_wp +
-  options [strict_facts,export_theory,export_proofs,record_proofs=2]
-  sessions HOL
-  theories
-    HOL.Enum

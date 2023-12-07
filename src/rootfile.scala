@@ -51,25 +51,11 @@ object Rootfile {
         val resources = new Resources(background)
         resources.session_dependencies(session_info, progress = progress).theories.map(x => x.theory)
       }
-    // remove HOL.Record, HOL.Nitpick and HOL.Nunchaku
+    // removing theories of the ancestor sessions.
     for ((k,e) <- theory_graph.iterator) {
       if (anc_theories.contains(k.theory) || (k.theory == "Pure" && session != "Pure")) {
         // progress.echo("Removing "+k.theory)
         theory_graph = theory_graph.del_node(k)
-      }
-    }
-    for ((k,e) <- theory_graph.iterator) {
-      if (Set[String]("HOL-Library.RBT_Impl","HOL-Library.RBT","HOL-Library.RBT_Mapping","HOL-Library.RBT_Set","HOL-Library.Datatype_Records")(k.theory)) {
-        // progress.echo("Removing "+k.theory)
-        theory_graph = theory_graph.del_node(k)
-      }
-    }
-    // add an edge from HOL.Product_Type to HOL.Nat and HOL.Sum_Type
-    for ((k,e) <- theory_graph.iterator) {
-      for ((kp,ep) <- theory_graph.iterator) {
-        if ((k.theory == "HOL.Product_Type" && (kp.theory == "HOL.Nat" || kp.theory == "HOL.Sum_Type"))) {
-          theory_graph = theory_graph.add_edge(k,kp)
-        }
       }
     }
     theory_graph

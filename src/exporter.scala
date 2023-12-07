@@ -101,7 +101,7 @@ object Exporter {
     }
 
     // parent_session_module is the special one for the proofs belonging to the theories of the parent session, but not generated in the parent session
-    val parent_session_module = session + "_Parent"
+    val parent_session_module = "parent_" + session
     Prelude.set_theory_session(parent_session_module,session)
     Prelude.set_current_module(parent_session_module)
 

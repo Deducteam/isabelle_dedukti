@@ -19,13 +19,14 @@ object Generator {
     options: Options,
     session: String,
     target_theory: String,
+    recursive: Boolean,
     translate: Boolean,
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
+    outdir: String = "",
     use_notations: Boolean = false,
     eta_expand: Boolean = false,
     verbose: Boolean = false,
-    outdir: String = "",
     ): Unit = {
 
     // // theory graph
@@ -49,7 +50,7 @@ object Generator {
           }
         case Some(anc) => {
           progress.echo("Reading parent session " + anc)
-          generator(options, anc, target_theory, false, progress, dirs, use_notations, eta_expand, verbose)
+          generator(options, anc, target_theory, recursive, recursive, progress, dirs, outdir, use_notations, eta_expand, verbose)
           // getting theories of session
           Rootfile.graph(options, session, anc, progress, dirs, verbose)
         }
@@ -72,7 +73,8 @@ object Generator {
     Isabelle_Tool(cmd_name, "generate a dk or lp file for every theory of a session", Scala_Project.here,
       { args =>
         var dirs: List[Path] = Nil
-        var outdir: String = "dkcheck/"
+        var outdir = "dkcheck/"
+        var recursive = false
         var use_notations = false
         var eta_expand = false
         var options = Options.init()
@@ -83,6 +85,7 @@ object Generator {
   Options are:
     -d DIR       include session directory
     -D DIR       proof output directory
+    -r           recursively translate ancestor sessions
     -e           remove need for eta flag
     -n           use Lambdapi notations (with option -l only)
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
@@ -91,6 +94,7 @@ object Generator {
 Generate a dk or lp file for every theory of SESSION (up to THEORY).""",
         "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
         "D:" -> (arg => { outdir = arg + "/" }),
+        "r" -> (_ => recursive = true),
         "e" -> (_ => eta_expand = true),
         "n" -> (_ => use_notations = true),
         "o:" -> (arg => { options += arg }),
@@ -112,7 +116,7 @@ Generate a dk or lp file for every theory of SESSION (up to THEORY).""",
 
         progress.interrupt_handler {
           try {
-            generator(options, session, target_theory, true, progress, dirs, use_notations, eta_expand, verbose, outdir)
+            generator(options, session, target_theory, recursive, true, progress, dirs, outdir, use_notations, eta_expand, verbose)
           }
           catch {case x: Exception =>
             progress.echo(x.getStackTrace.mkString("\n"))

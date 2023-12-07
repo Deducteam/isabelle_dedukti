@@ -1,5 +1,0 @@
-session HOL_Pre_Enum_wp = Pure +
-  options [strict_facts,export_theory,export_proofs,record_proofs=2]
-  sessions HOL
-  theories
-    HOL.Map HOL.Groups_List
