@@ -99,18 +99,19 @@
 
 ## How to make Isabelle record proofs?
 
-For building to record Isabelle proofs so that they can be translated to Dedukti or Lambdapi afterwards, users need to add the following options in their ROOT file:
+Isabelle theories are built in the unit of _sessions_.
+A file named `ROOT` contains the definitions of sessions.
+A quick way to specify a ROOT file to Isabelle is the `-d` option.
+
+To export proofs from Isabelle so that they can be translated to Dedukti or Lambdapi afterwards, users need to add the following options to the definition of the session:
 
 ```
 export_theory,export_proofs,record_proofs=2
 ```
 
-For instance, here is a ROOT file to build all the HOL theories up to `Main` and `Complex_Main` with proof recording:
+For instance, the following session builds the session HOL with proof recording:
 ```
-session HOL_wp (main) = Pure +
-  description "
-    Classical Higher-order Logic.
-  "
+session HOL_wp in HOL_wp = Pure +
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
   sessions Tools HOL
   theories
@@ -120,12 +121,16 @@ session HOL_wp (main) = Pure +
     Tools.Code_Generator
 ```
 
-Then, to actually generate Isabelle proofs, one has to do:
+Isabelle requires a dedicated directory for each session, specified by the `in HOL_wp` part above. Usually, it suffices to have an empty directory with the same name as the session.
+
+To actually export proof terms from Isabelle, assuming the `ROOT` file containing the session info is located in `$rootdir` do:
 
 ```
-isabelle build -b -d $directory_of_ROOT(S)_file $session_name
+isabelle build -b -d $rootdir $session
 ```
 
+
+<!--
 For instance, to generate the Isabelle proofs up to HOL.Groups, do:
 ```
 cd examples/
@@ -133,7 +138,7 @@ isabelle build -b -d. HOL.Groups_wp
 ```
 
 Warning: as `examples/` contains an [AFP library](https://www.isa-afp.org/download/), one should first [add AFP as Isabelle components](https://www.isa-afp.org/help/) and use a version of AFP >= 2023-05-18.
-
+-->
 Remark: to visualize theory dependencies in HOL, you can look at the [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2023/dist/library/HOL/HOL/session_graph.pdf)
 
 
@@ -141,9 +146,15 @@ Remark: to visualize theory dependencies in HOL, you can look at the [dependency
 
 Run `isabelle $command` with no argument for more details.
 
-- `isabelle dedukti_session $session [$theory]`: generate a dk or lp file for each theory of $session (up to $theory)
+- `isabelle dedukti_session $session`: generate dk or lp files for `$session` in, by default, `./dkcheck/`. The generated files include
+  - `parent_$session.dk` representing the parent session, which may contain proofs that do not belong to any theory of `$session`,
+  - a dk file for each theory of `$session`,
+  - `session_$session.dk` representing the session, and
+  - `dkcheck_$session.sh` a shell script to check all the generated dk files.
 
+<!-- AY: the conclusion is that it is not enough to have one dk for each theory
 - `isabelle dedukti_theory $session $theory`: export the specified $theory of $session to a dk or lp file with the same name except that every minus or dot is replaced by an underscore. (*Does not work at the moment*)
+-->
 
 - `isabelle dedukti_check $session`: generate the scripts `dkcheck.sh` and `kocheck.sh` to check the generated dk files with dkcheck and kocheck respectively.
 
@@ -151,31 +162,29 @@ Run `isabelle $command` with no argument for more details.
 
 ## Generating basic outputs
 
-Several sessions are already available in the `examples` folder:
-- `Pure`,
-- `HOL.Groups_wp` (`HOL` until `Groups` with proofs),
-- `HOL_wp` (`HOL` with proofs), and
+Several sessions with proof exports are already defined in `examples/ROOT`:
+- `HOL_Groups_wp` (the part of `HOL` session until `Groups`),
+- `HOL_Main_wp` (the part of `HOL` until `Main`),
+- `HOL_wp` (the whole `HOL`) and
 - `HOL-Library_wp` (`HOL-Library` minus the theories about RBTrees, with proofs).
 
 For each one, you should run the following commands:
 
 ```
 cd examples/
-isabelle build -b -d. $session_name # generates the database of proofs
-mkdir -p $session_name/dkcheck $session_name/lambdapi
-isabelle dedukti_check -d. $session_name # generates scripts for checking proofs, not necessary for Pure
-isabelle dedukti_session -d. $session_name # generates the lambdapi and dedukti proofs
+isabelle build -b -d. $session # generates the database of proofs
+isabelle dedukti_session -d. $session # generates the lambdapi and dedukti proofs
+bash ./dkcheck/dkcheck_$session.sh
 ```
 
 ## Creating other examples
 
-To add other seesions, follow theses steps:
+To add other sessions, follow theses steps:
 
 - add the relevant components to isabelle (for example, AFP),
-- create a folder in `examples/` with the session name,
-- create the sub-folders `dkcheck/` and `lambdapi/`
-- add a ROOT file as described above,
-- add the session name in the `examples/ROOTS`,
+- define the session:
+  - specify the proof export options in your ROOT file,
+  - make sure that the parent session also exports proofs. Otherwise, Isabelle generates unfinished proofs which cannot be translated to dedukti
 - run the commands of the previous section.
 
 ## Checking the outputs
@@ -183,8 +192,7 @@ To add other seesions, follow theses steps:
 For now, only the checking with dedukti works. To check a particular session, run:
 
 ```
-cd examples/$session_name/dkcheck/
-bash dkcheck.sh
+examples/dkcheck/dkcheck_$session.sh
 ```
 
 ## Performances (to update)
