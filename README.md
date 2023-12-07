@@ -86,7 +86,7 @@
     
     ```
     cd path_to_unpatched_Isabelle_dir
-    diff -urNx '*~' . path_to_patched_Isabelle_dir/src/HOL > HOL.patch
+    diff -urNx '*~' -x '*.orig' . path_to_patched_Isabelle_dir/src/HOL > HOL.patch
     ```
 
   * **Deleting the Isabelle databases**
