@@ -170,16 +170,15 @@ Remark: to visualize theory dependencies in HOL, you can look at the [dependency
 
 Remark: In a database associated with a given theory, there might be proofs labelled from another theory. Fix: those proofs are not too many so they are just translated in this theory. This is a problem from Isabelle itself, and the reason is still unclear. One possible reason is the following: to check that a statement is really provable, Isabelle uses statements that has already be proven, possibly from other theories and sessions. Those proofs are "lifted", in the sense that they are tagged as belonging to the current theory, and they are possibly rewritten. Then, those proofs are given an identifier: if they are detected as a proof that already exists, they are given the already existing identifier and are not added to the database, otherwise they receive a fresh identifier and are added to the database. At this stage, some proofs that should already exist are given a fresh identifier and are added to the database, which creates a lot of duplication of proofs and costs time and memory.
 
-## Performances (to be updated)
+## Performance
 
-The whole `HOL_wp` session in `examples/HOL/` can be exported and checked:
-  * `isabelle build -b -d. HOL_wp`: 51m42s, 249 Mo
-  * `isabelle dedukti_session -d. HOL_wp`: 28m26s
-  * `bash kocheck.sh`: 4m14s
-  * `bash dkcheck.sh`: 13m17s
-  * `lambdapi check Complex_Main.lp`: out of memory
-  * `lambdapi check HOL_Nat.lp`: 2m04s
-  * `lambdapi check HOL_Int.lp`: 11m44s
+Performance on a machine with 32 processors i9-13950HX and 64 Go RAM:
+
+| session         |  build | translation | checking |
+|:----------------|-------:|------------:|---------:|
+| HOL_Groups_wp   |    16s |          8s |       1s |
+| HOL_Pre_Enum_wp | 16m55s |       9m48s |    5m33s |
+
 
 ## Project structure
 
