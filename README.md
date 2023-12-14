@@ -174,10 +174,12 @@ Remark: In a database associated with a given theory, there might be proofs labe
 
 Performance on a machine with 32 processors i9-13950HX and 64 Go RAM:
 
-| session         |  build | translation | checking |
-|:----------------|-------:|------------:|---------:|
-| HOL_Groups_wp   |    16s |          8s |       1s |
-| HOL_Pre_Enum_wp | 16m55s |       9m48s |    5m33s |
+| session                  |  build | translation | checking |
+|:-------------------------|-------:|------------:|---------:|
+| HOL_Groups_wp            |    16s |          8s |       1s |
+| HOL_Pre_Enum_wp          | 16m55s |       9m48s |    5m33s |
+| HOL_Enum_wp              |  1m17s |         59s |      18s |
+| HOL_Quickcheck_Random_wp |  3m24s |       6m31s |    1m49s |
 
 
 ## Project structure
