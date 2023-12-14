@@ -14,7 +14,6 @@
 
     - [lambdapi](https://github.com/Deducteam/lambdapi) >= 2.2.1
 
-
 ## Prerequisites
 
   * **Isabelle**
@@ -99,9 +98,7 @@
 
 ## How to make Isabelle record proofs?
 
-Isabelle theories are built in the unit of _sessions_.
-A file named `ROOT` contains the definitions of sessions.
-A quick way to specify a ROOT file to Isabelle is the `-d` option.
+Isabelle theories are built within sessions, and sessions are defined in files named `ROOT`. A quick way to specify a `ROOT` file to Isabelle is the `-d` option.
 
 To export proofs from Isabelle so that they can be translated to Dedukti or Lambdapi afterwards, users need to add the following options to the definition of the session:
 
@@ -129,46 +126,30 @@ To actually export proof terms from Isabelle, assuming the `ROOT` file containin
 isabelle build -b -d $rootdir $session
 ```
 
+## Command to translate Isabelle proofs to Dedukti or Lambdapi
 
-<!--
-For instance, to generate the Isabelle proofs up to HOL.Groups, do:
-```
-cd examples/
-isabelle build -b -d. HOL.Groups_wp
-```
+WARNING: the Lambdapi output is temporarily deactivated for it needs to be fixed.
 
-Warning: as `examples/` contains an [AFP library](https://www.isa-afp.org/download/), one should first [add AFP as Isabelle components](https://www.isa-afp.org/help/) and use a version of AFP >= 2023-05-18.
--->
-Remark: to visualize theory dependencies in HOL, you can look at the [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2023/dist/library/HOL/HOL/session_graph.pdf)
+Command to translate a session to Dedukti: `isabelle dedukti_session -d $root_dir $session`.
 
-
-## Commands to translate Isabelle proofs to Dedukti or Lambdapi proofs
-
-Run `isabelle $command` with no argument for more details.
-
-- `isabelle dedukti_session $session`: generate dk or lp files for `$session` in, by default, `./dkcheck/`. The generated files include
-  - `parent_$session.dk` representing the parent session, which may contain proofs that do not belong to any theory of `$session`,
+By default, it generates in `./dkcheck/`:
+  - `parent_$session.dk` representing the parent session, which may contain proofs that do not belong to any theory of `$session` (see remark below),
   - a dk file for each theory of `$session`,
   - `session_$session.dk` representing the session, and
   - `dkcheck_$session.sh` a shell script to check all the generated dk files.
 
-<!-- AY: the conclusion is that it is not enough to have one dk for each theory
+Run `isabelle $command` with no argument for more details.
+
+<!--
 - `isabelle dedukti_theory $session $theory`: export the specified $theory of $session to a dk or lp file with the same name except that every minus or dot is replaced by an underscore. (*Does not work at the moment*)
 -->
-
+<!--
 - `isabelle dedukti_check $session`: generate the scripts `dkcheck.sh` and `kocheck.sh` to check the generated dk files with dkcheck and kocheck respectively.
 
 - `isabelle dedukti_root $session`: generate a ROOT file with a proof-exporting session named Dedukti_$theory for each $theory in $session. This may be useful for debugging or if your computer does not have enough memory to run a single session with all theories. Modify those scripts by adding a `#` in the list of files if you do not want to check all files.
+-->
 
-## Generating basic outputs
-
-Several sessions with proof exports are already defined in `examples/ROOT`:
-- `HOL_Groups_wp` (the part of `HOL` session until `Groups`),
-- `HOL_Main_wp` (the part of `HOL` until `Main`),
-- `HOL_wp` (the whole `HOL`) and
-- `HOL-Library_wp` (`HOL-Library` minus the theories about RBTrees, with proofs).
-
-For each one, you should run the following commands:
+Several sessions with proof exports are already defined in `examples/ROOT`. For each one, and the pre-defined session `Pure`, you should run the following commands in the order of dependencies between sessions (starting from `Pure`):
 
 ```
 cd examples/
@@ -177,25 +158,19 @@ isabelle dedukti_session -d. $session # generates the lambdapi and dedukti proof
 bash ./dkcheck/dkcheck_$session.sh
 ```
 
-## Creating other examples
-
-To add other sessions, follow theses steps:
+To translate other sessions, follow these steps:
 
 - add the relevant components to isabelle (for example, AFP),
 - define the session:
-  - specify the proof export options in your ROOT file,
-  - make sure that the parent session also exports proofs. Otherwise, Isabelle generates unfinished proofs which cannot be translated to dedukti
+  - specify the proof export options in your ROOT file;
+  - make sure that the parent session also exports proofs (otherwise, Isabelle generates unfinished proofs which cannot be translated to Dedukti);
 - run the commands of the previous section.
 
-## Checking the outputs
+Remark: to visualize theory dependencies in HOL, you can look at the [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2023/dist/library/HOL/HOL/session_graph.pdf).
 
-For now, only the checking with dedukti works. To check a particular session, run:
+Remark: In a database associated with a given theory, there might be proofs labelled from another theory. Fix: those proofs are not too many so they are just translated in this theory. This is a problem from Isabelle itself, and the reason is still unclear. One possible reason is the following: to check that a statement is really provable, Isabelle uses statements that has already be proven, possibly from other theories and sessions. Those proofs are "lifted", in the sense that they are tagged as belonging to the current theory, and they are possibly rewritten. Then, those proofs are given an identifier: if they are detected as a proof that already exists, they are given the already existing identifier and are not added to the database, otherwise they receive a fresh identifier and are added to the database. At this stage, some proofs that should already exist are given a fresh identifier and are added to the database, which creates a lot of duplication of proofs and costs time and memory.
 
-```
-examples/dkcheck/dkcheck_$session.sh
-```
-
-## Performances (to update)
+## Performances (to be updated)
 
 The whole `HOL_wp` session in `examples/HOL/` can be exported and checked:
   * `isabelle build -b -d. HOL_wp`: 51m42s, 249 Mo
@@ -205,13 +180,6 @@ The whole `HOL_wp` session in `examples/HOL/` can be exported and checked:
   * `lambdapi check Complex_Main.lp`: out of memory
   * `lambdapi check HOL_Nat.lp`: 2m04s
   * `lambdapi check HOL_Int.lp`: 11m44s
-
-## Known issues
-
-  * In a database associated with a given theory, there might be proofs labelled from another theory. Fix: those proofs are not too many so they are just translated in this theory. This is a problem from Isabelle itself, and the reason is still unclear. One possible reason is the following: to check that a statement is really provable, Isabelle uses statements that has already be proven, possibly from other theories and sessions. Those proofs are "lifted", in the sense that are tagged as belonging to the current theory, and they are possibly rewritten. Then, those proofs are given an identifier: if they are detected as a proof that already exists, they are given the already existing identifier and are not added to the database, otherwise they receive a fresh identifier and are added to the database. At this stage, some proofs that should already exist are given a fresh identifier and are added to the database, which creates a lot of duplication of proofs and costs time and memory.
-  * Somehow, the databases for `Nat` and `Sum_type` use proofs from `Product_Type` while they are independent in the dependency graph. Fix: add explictly the connection in the dependency graph.
-  * The tool `dedukti_theory` is meant to translate of given theory of a session. This tool is not working in the current version.
-  * We tried to make the proof checking as modular as possible, in the sense that theories already checked are not checked again, and the proofs are stored in possibly different folders for classification. For the moment, we can only make this work with dkcheck, and we are investigating how to do it with kocheck and lambdapi.
 
 ## Project structure
 
