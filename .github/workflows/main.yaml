@@ -39,7 +39,7 @@ jobs:
       - name: Patch Isabelle/HOL library
         run: |
           chmod -R +w ~/Isabelle${{ matrix.isabelle-version }}/src/HOL/
-          patch -up0 -d ~/Isabelle${{ matrix.isabelle-version }}/src/HOL/ < HOL-Main.patch
+          patch -up0 -d ~/Isabelle${{ matrix.isabelle-version }}/src/HOL/ < HOL.patch
       - name: Install opam
 #        if: steps.cache.outputs.cache-hit != 'true'
         uses: avsm/setup-ocaml@v2
