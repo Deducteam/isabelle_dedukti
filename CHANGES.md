@@ -3,7 +3,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## Modular export of all Isabelle/HOL standard library (November 2021, Jérémy Dubut, Akihisa Yamada and Frédéric Blanqui)
+## December 2023
+
+- Update to Isabelle 2023 and improvements (Akihisa Yamada)
+
+## November 2023
+
+Update to Isabelle 2022 (Frédéric Blanqui, Jérémy Dubut, Akihisa Yamada)
+
+## October 2022
+
+Improvements (Frédéric Blanqui, Jérémy Dubut, Akihisa Yamada)
+
+## November 2021
+
+### Modular export of all Isabelle/HOL standard library (Jérémy Dubut, Akihisa Yamada and Frédéric Blanqui)
 
 - patch Isabelle/HOL standard library
 - introduce command isabelle dedukti_generate
@@ -11,9 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - fix Dedukti and Lambapi outputs
 - make Dedukti output modular
 
-## Use Isabelle 2021-1 (November 2021, Makarius Wenzel)
+### Use Isabelle 2021-1 (Makarius Wenzel)
 
-## Code factorisation, improvement and update (November 2021, Yann Leray)
+### Code factorisation, improvement and update (Yann Leray)
 
 - Update translator to 2021-03 lambdapi syntax
 - Escaping :ddd identifiers
@@ -35,14 +49,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Only write optional arguments if no other argument follows
 - Update to Isabelle-2021-1-RC1 by Makarius Wenzel
 
-## Improvements (March-June 2021, Makarius Wenzel)
+## March-June 2021
 
-## Use Isabelle 2020 (April 2020, Makarius Wenzel)
+Improvements (Makarius Wenzel)
 
-## Improvements (February-March 2020, Makarius Wenzel)
+## April 2020
 
-## Add Lambdapi output (October 2019, Michael Färber)
+Use Isabelle 2020 (Makarius Wenzel)
 
-## Improvements (July-November 2019, Makarius Wenzel)
+## February-March 2020
 
-## First version (June 2019, Makarius Wenzel)
+Improvements (Makarius Wenzel)
+
+## October 2019
+
+Add Lambdapi output (Michael Färber)
+
+## July-November 2019
+
+Improvements (Makarius Wenzel)
+
+## June 2019
+
+First version (Makarius Wenzel)

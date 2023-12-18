@@ -1,0 +1,490 @@
+diff -urNx '*~' -x '*.orig' ./Enum.thy ../../src/HOL/Enum.thy
+--- ./Enum.thy	2023-09-12 02:30:48.000000000 +0900
++++ ../../src/HOL/Enum.thy	2023-11-14 01:29:49.827014000 +0900
+@@ -929,15 +929,47 @@
+ definition "x mod y = (case y of a\<^sub>1 \<Rightarrow> x | _ \<Rightarrow> a\<^sub>1)"
+ definition "abs = (\<lambda>x. case x of a\<^sub>3 \<Rightarrow> a\<^sub>2 | _ \<Rightarrow> x)"
+ definition "sgn = (\<lambda>x :: finite_3. x)"
++
++lemmas [simp] = times_finite_3_def plus_finite_3_def uminus_finite_3_def minus_finite_3_def
++  inverse_finite_3_def divide_finite_3_def sgn_finite_3_def abs_finite_3_def modulo_finite_3_def
+ instance
+-  by standard
+-    (subproofs
+-      \<open>simp_all add: plus_finite_3_def uminus_finite_3_def minus_finite_3_def
+-        times_finite_3_def
+-        inverse_finite_3_def divide_finite_3_def modulo_finite_3_def
+-        abs_finite_3_def sgn_finite_3_def
+-        less_finite_3_def
+-        split: finite_3.splits\<close>)
++    apply standard
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a by (cases a; simp)
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a by (cases a; simp)
++  subgoal for a by (cases a; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  subgoal by simp
++  subgoal for a by (cases a; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal by simp
++  subgoal for a by (cases a; simp)
++  subgoal for a by (cases a; simp)
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a by (cases a; simp)
++  subgoal for a by (cases a; simp)
++  subgoal for a by (cases a; simp)
++  subgoal by simp
++  subgoal by simp
++  subgoal by simp
++  subgoal by simp
++  subgoal by simp
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a by (cases a; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  done
++
++lemmas [simp del] = times_finite_3_def plus_finite_3_def uminus_finite_3_def minus_finite_3_def
++  inverse_finite_3_def divide_finite_3_def sgn_finite_3_def abs_finite_3_def modulo_finite_3_def
++
+ end
+ 
+ lemma two_finite_3 [simp]:
+@@ -953,17 +985,30 @@
+ definition [simp]: "unit_factor = (id :: finite_3 \<Rightarrow> _)"
+ definition [simp]: "euclidean_size x = (case x of a\<^sub>1 \<Rightarrow> 0 | _ \<Rightarrow> 1)"
+ definition [simp]: "division_segment (x :: finite_3) = 1"
++
++lemmas [simp] = divide_finite_3_def times_finite_3_def
++      dvd_finite_3_unfold inverse_finite_3_def plus_finite_3_def
+ instance
+-proof
+-  fix x :: finite_3
+-  assume "x \<noteq> 0"
+-  then show "is_unit (unit_factor x)"
+-    by (cases x) (simp_all add: dvd_finite_3_unfold)
+-qed
+-  (subproofs
+-    \<open>auto simp add: divide_finite_3_def times_finite_3_def
++   apply intro_classes
++  subgoal by simp
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a by (cases a; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  subgoal by simp
++  subgoal for a by (cases a; simp)
++  subgoal for a by (cases a; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a by (cases a; simp)
++  subgoal by simp
++  done
++
++lemmas [simp del] = divide_finite_3_def times_finite_3_def
+       dvd_finite_3_unfold inverse_finite_3_def plus_finite_3_def
+-      split: finite_3.splits\<close>)
++
+ end
+ 
+ hide_const (open) a\<^sub>1 a\<^sub>2 a\<^sub>3
+@@ -1034,11 +1079,33 @@
+   | (a\<^sub>3, _) \<Rightarrow> a\<^sub>3 | (_, a\<^sub>3) \<Rightarrow> a\<^sub>3
+   | _ \<Rightarrow> a\<^sub>1)"
+ 
++lemmas [simp] = less_finite_4_def less_eq_finite_4_def Inf_finite_4_def Sup_finite_4_def 
++        inf_finite_4_def sup_finite_4_def
++
+ instance
+-  by standard
+-    (subproofs
+-      \<open>auto simp add: less_finite_4_def less_eq_finite_4_def Inf_finite_4_def Sup_finite_4_def 
+-        inf_finite_4_def sup_finite_4_def split: finite_4.splits\<close>)
++  apply intro_classes
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a by (cases a; simp)
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  subgoal by simp
++  subgoal for a by (cases a; simp)
++  subgoal by simp
++  subgoal for a by (cases a; simp)
++  subgoal by simp
++  subgoal by simp
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  done
++
++lemmas [simp del] = less_finite_4_def less_eq_finite_4_def Inf_finite_4_def Sup_finite_4_def 
++        inf_finite_4_def sup_finite_4_def
++
+ end
+ 
+ instance finite_4 :: complete_lattice ..
+@@ -1048,11 +1115,14 @@
+ instantiation finite_4 :: complete_boolean_algebra begin
+ definition "- x = (case x of a\<^sub>1 \<Rightarrow> a\<^sub>4 | a\<^sub>2 \<Rightarrow> a\<^sub>3 | a\<^sub>3 \<Rightarrow> a\<^sub>2 | a\<^sub>4 \<Rightarrow> a\<^sub>1)"
+ definition "x - y = x \<sqinter> - (y :: finite_4)"
++lemmas [simp] =  inf_finite_4_def sup_finite_4_def uminus_finite_4_def minus_finite_4_def
+ instance
+-  by standard
+-    (subproofs
+-      \<open>simp_all add: inf_finite_4_def sup_finite_4_def uminus_finite_4_def minus_finite_4_def 
+-        split: finite_4.splits\<close>)
++  apply intro_classes
++  subgoal for a by (cases a; simp)
++  subgoal for a by (cases a; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  done
++lemmas [simp del] =  inf_finite_4_def sup_finite_4_def uminus_finite_4_def minus_finite_4_def
+ end
+ 
+ hide_const (open) a\<^sub>1 a\<^sub>2 a\<^sub>3 a\<^sub>4
+@@ -1138,11 +1208,30 @@
+    | (a\<^sub>4, _) \<Rightarrow> a\<^sub>4 | (_, a\<^sub>4) \<Rightarrow> a\<^sub>4
+    | _ \<Rightarrow> a\<^sub>1)"
+ 
++lemmas [simp] = less_eq_finite_5_def less_finite_5_def inf_finite_5_def sup_finite_5_def 
++        Inf_finite_5_def Sup_finite_5_def
+ instance
+-  by standard
+-    (subproofs
+-      \<open>auto simp add: less_eq_finite_5_def less_finite_5_def inf_finite_5_def sup_finite_5_def 
+-        Inf_finite_5_def Sup_finite_5_def split: finite_5.splits if_split_asm\<close>)
++  apply intro_classes
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a by (cases a; simp)
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b by (cases a; cases b; simp)
++  subgoal for a b c by (cases a; cases b; cases c; simp)
++  subgoal by simp
++  subgoal for a by (cases a; simp)
++  subgoal by simp
++  subgoal for a by (cases a; simp)
++  subgoal by simp
++  subgoal by simp
++  done
++lemmas [simp del] = less_eq_finite_5_def less_finite_5_def inf_finite_5_def sup_finite_5_def 
++        Inf_finite_5_def Sup_finite_5_def
++
+ end
+ 
+ 
+diff -urNx '*~' -x '*.orig' ./MacLaurin.thy ../../src/HOL/MacLaurin.thy
+--- ./MacLaurin.thy	2023-09-12 02:30:48.000000000 +0900
++++ ../../src/HOL/MacLaurin.thy	2023-12-07 15:57:09.716141800 +0900
+@@ -22,7 +22,7 @@
+ 
+ lemma eq_diff_eq': "x = y - z \<longleftrightarrow> y = x + z"
+   for x y z :: real
+-  by arith
++  by (auto elim: iffE)
+ 
+ lemma fact_diff_Suc: "n < Suc m \<Longrightarrow> fact (Suc m - n) = (Suc m - n) * fact (m - n)"
+   by (subst fact_reduce) auto
+@@ -306,6 +306,9 @@
+ lemma sin_expansion_lemma: "sin (x + real (Suc m) * pi / 2) = cos (x + real m * pi / 2)"
+   by (auto simp: cos_add sin_add add_divide_distrib distrib_right)
+ 
++lemma sin_coeff_lemma: "sin_coeff m * x ^ m  = sin (1 / 2 * real m * pi) / fact m * x ^ m"
++  by (cases "even m") (auto simp add: sin_zero_iff sin_coeff_def elim: oddE simp del: of_nat_Suc) 
++
+ lemma Maclaurin_sin_expansion2:
+   "\<exists>t. \<bar>t\<bar> \<le> \<bar>x\<bar> \<and>
+     sin x = (\<Sum>m<n. sin_coeff m * x ^ m) + (sin (t + 1/2 * real n * pi) / fact n) * x ^ n"
+@@ -313,17 +316,16 @@
+   case False
+   let ?diff = "\<lambda>n x. sin (x + 1/2 * real n * pi)"
+   have "\<exists>t. 0 < \<bar>t\<bar> \<and> \<bar>t\<bar> < \<bar>x\<bar> \<and> sin x =
+-      (\<Sum>m<n. (?diff m 0 / fact m) * x ^ m) + (?diff n t / fact n) * x ^ n"
++    (\<Sum>m<n. (?diff m 0 / fact m) * x ^ m) + (?diff n t / fact n) * x ^ n"
+   proof (rule Maclaurin_all_lt)
+     show "\<forall>m x. ((\<lambda>t. sin (t + 1/2 * real m * pi)) has_real_derivative
+-           sin (x + 1/2 * real (Suc m) * pi)) (at x)"
++       sin (x + 1/2 * real (Suc m) * pi)) (at x)"
+       by (rule allI derivative_eq_intros | use sin_expansion_lemma in force)+
+   qed (use False in auto)
+   then show ?thesis
+     apply (rule ex_forward, simp)
+     apply (rule sum.cong[OF refl])
+-    apply (auto simp: sin_coeff_def sin_zero_iff elim: oddE simp del: of_nat_Suc)
+-    done
++    by (simp add: sin_coeff_lemma)
+ qed auto
+ 
+ lemma Maclaurin_sin_expansion:
+@@ -348,8 +350,7 @@
+   then show ?thesis
+     apply (rule ex_forward, simp)
+     apply (rule sum.cong[OF refl])
+-    apply (auto simp: sin_coeff_def sin_zero_iff elim: oddE simp del: of_nat_Suc)
+-    done
++    by (simp add: sin_coeff_lemma)
+ qed
+ 
+ lemma Maclaurin_sin_expansion4:
+@@ -369,8 +370,7 @@
+   then show ?thesis
+     apply (rule ex_forward, simp)
+     apply (rule sum.cong[OF refl])
+-    apply (auto simp: sin_coeff_def sin_zero_iff elim: oddE simp del: of_nat_Suc)
+-    done
++    by (simp add: sin_coeff_lemma)
+ qed
+ 
+ 
+@@ -382,6 +382,16 @@
+ lemma cos_expansion_lemma: "cos (x + real (Suc m) * pi / 2) = - sin (x + real m * pi / 2)"
+   by (auto simp: cos_add sin_add distrib_right add_divide_distrib)
+ 
++lemma cos_coeff_lemma: "cos_coeff m * x ^ m  = cos (1 / 2 * real m * pi) / fact m * x ^ m"
++proof(cases "odd m")
++  case t: True
++    then show ?thesis by (simp add: cos_coeff_def cos_zero_iff)
++ next
++  case False
++    then show ?thesis using False 
++      by (auto simp add: cos_coeff_def elim: oddE simp del: of_nat_Suc) 
++qed
++
+ lemma Maclaurin_cos_expansion:
+   "\<exists>t::real. \<bar>t\<bar> \<le> \<bar>x\<bar> \<and>
+     cos x = (\<Sum>m<n. cos_coeff m * x ^ m) + (cos(t + 1/2 * real n * pi) / fact n) * x ^ n"
+@@ -399,8 +409,7 @@
+   then show ?thesis
+     apply (rule ex_forward, simp)
+     apply (rule sum.cong[OF refl])
+-    apply (auto simp: cos_coeff_def cos_zero_iff elim: evenE simp del: of_nat_Suc)
+-    done
++    by (simp add: cos_coeff_lemma)
+ qed auto
+ 
+ lemma Maclaurin_cos_expansion2:
+@@ -419,8 +428,7 @@
+   then show ?thesis
+     apply (rule ex_forward, simp)
+     apply (rule sum.cong[OF refl])
+-    apply (auto simp: cos_coeff_def cos_zero_iff elim: evenE)
+-    done
++    by (simp add: cos_coeff_lemma)
+ qed
+ 
+ lemma Maclaurin_minus_cos_expansion:
+@@ -439,8 +447,7 @@
+   then show ?thesis
+     apply (rule ex_forward, simp)
+     apply (rule sum.cong[OF refl])
+-    apply (auto simp: cos_coeff_def cos_zero_iff elim: evenE)
+-    done
++    by (simp add: cos_coeff_lemma)
+ qed
+ 
+ 
+diff -urNx '*~' -x '*.orig' ./Quickcheck_Narrowing.thy ../../src/HOL/Quickcheck_Narrowing.thy
+--- ./Quickcheck_Narrowing.thy	2023-09-12 02:30:48.000000000 +0900
++++ ../../src/HOL/Quickcheck_Narrowing.thy	2023-12-07 15:12:05.918558000 +0900
+@@ -196,8 +196,10 @@
+ 
+ external_file \<open>~~/src/HOL/Tools/Quickcheck/Narrowing_Engine.hs\<close>
+ external_file \<open>~~/src/HOL/Tools/Quickcheck/PNF_Narrowing_Engine.hs\<close>
++
+ ML_file \<open>Tools/Quickcheck/narrowing_generators.ML\<close>
+ 
++
+ definition narrowing_dummy_partial_term_of :: "('a :: partial_term_of) itself => narrowing_term => term"
+ where
+   "narrowing_dummy_partial_term_of = partial_term_of"
+@@ -206,6 +208,7 @@
+ where
+   "narrowing_dummy_narrowing = narrowing"
+ 
++(*
+ lemma [code]:
+   "ensure_testable f =
+     (let
+@@ -213,9 +216,11 @@
+       y = narrowing_dummy_partial_term_of :: bool itself => narrowing_term => term;
+       z = (conv :: _ => _ => unit)  in f)"
+ unfolding Let_def ensure_testable_def ..
++*)
+ 
+ subsection \<open>Narrowing for sets\<close>
+ 
++(*
+ instantiation set :: (narrowing) narrowing
+ begin
+ 
+@@ -225,6 +230,7 @@
+ 
+ end
+   
++*)
+ subsection \<open>Narrowing for integers\<close>
+ 
+ 
+@@ -264,6 +270,7 @@
+ 
+ end
+ 
++(*
+ declare [[code drop: "partial_term_of :: int itself \<Rightarrow> _"]]
+ 
+ lemma [code]:
+@@ -274,6 +281,7 @@
+      then Code_Evaluation.term_of (- (int_of_integer i) div 2)
+      else Code_Evaluation.term_of ((int_of_integer i + 1) div 2))"
+   by (rule partial_term_of_anything)+
++*)
+ 
+ instantiation integer :: narrowing
+ begin
+@@ -286,6 +294,7 @@
+ 
+ end
+ 
++(*
+ declare [[code drop: "partial_term_of :: integer itself \<Rightarrow> _"]]  
+ 
+ lemma [code]:
+@@ -296,6 +305,7 @@
+      then Code_Evaluation.term_of (- i div 2)
+      else Code_Evaluation.term_of ((i + 1) div 2))"
+   by (rule partial_term_of_anything)+
++*)
+ 
+ code_printing constant "Code_Evaluation.term_of :: integer \<Rightarrow> term" \<rightharpoonup> (Haskell_Quickcheck) 
+   "(let { t = Typerep.Typerep \"Code'_Numeral.integer\" [];
+diff -urNx '*~' -x '*.orig' ./Quickcheck_Random.thy ../../src/HOL/Quickcheck_Random.thy
+--- ./Quickcheck_Random.thy	2023-09-12 02:30:48.000000000 +0900
++++ ../../src/HOL/Quickcheck_Random.thy	2023-11-14 23:24:09.350321700 +0900
+@@ -229,7 +229,7 @@
+        (Code_Numeral.Suc i,
+         random j \<circ>\<rightarrow> (%x. random_aux_set i j \<circ>\<rightarrow> (%s. Pair (valtermify_insert x s))))])"
+ 
+-lemma [code]:
++lemma (*[code]:*)
+   "random_aux_set i j =
+     collapse (Random.select_weight [(1, Pair valterm_emptyset),
+       (i, random j \<circ>\<rightarrow> (%x. random_aux_set (i - 1) j \<circ>\<rightarrow> (%s. Pair (valtermify_insert x s))))])"
+diff -urNx '*~' -x '*.orig' ./String.thy ../../src/HOL/String.thy
+--- ./String.thy	2023-09-12 02:30:48.000000000 +0900
++++ ../../src/HOL/String.thy	2023-11-14 22:56:50.941606400 +0900
+@@ -40,11 +40,21 @@
+ 
+ lemma (in comm_semiring_1) of_nat_of_char:
+   \<open>of_nat (of_char c) = of_char c\<close>
+-  by (cases c) simp
++  apply (cases c)
++  by (simp add: distrib_left mult.assoc[symmetric] split del: split_of_bool)
++(* this is more explicit:
++ by (simp only: of_char_Char String.of_char_Char
++ horner_sum_simps Groups_List.horner_sum_simps of_nat_add of_nat_mult of_nat_of_bool of_nat_numeral of_nat_0)
++*)
+ 
+ lemma (in comm_ring_1) of_int_of_char:
+   \<open>of_int (of_char c) = of_char c\<close>
+-  by (cases c) simp
++  apply (cases c)
++  by (simp add: distrib_left mult.assoc[symmetric] split del: split_of_bool)
++(*
++  by (simp only: of_char_Char String.of_char_Char
++ horner_sum_simps Groups_List.horner_sum_simps of_int_add of_int_mult of_int_of_bool of_int_numeral of_int_0)
++*)
+ 
+ lemma nat_of_char [simp]:
+   \<open>nat (of_char c) = of_char c\<close>
+@@ -698,9 +708,9 @@
+ 
+ lemma [code]:
+   \<open>Literal' b0 b1 b2 b3 b4 b5 b6 s = String.literal_of_asciis
+-    [foldr (\<lambda>b k. of_bool b + k * 2) [b0, b1, b2, b3, b4, b5, b6] 0] + s\<close>
++    [foldr (\<lambda>b k. of_bool b + 2 * k) [b0, b1, b2, b3, b4, b5, b6] 0] + s\<close>
+ proof -
+-  have \<open>foldr (\<lambda>b k. of_bool b + k * 2) [b0, b1, b2, b3, b4, b5, b6] 0 = of_char (Char b0 b1 b2 b3 b4 b5 b6 False)\<close>
++  have \<open>foldr (\<lambda>b k. of_bool b + 2 * k) [b0, b1, b2, b3, b4, b5, b6] 0 = of_char (Char b0 b1 b2 b3 b4 b5 b6 False)\<close>
+     by simp
+   moreover have \<open>Literal' b0 b1 b2 b3 b4 b5 b6 s = String.literal_of_asciis
+     [of_char (Char b0 b1 b2 b3 b4 b5 b6 False)] + s\<close>
+diff -urNx '*~' -x '*.orig' ./Tools/Quickcheck/exhaustive_generators.ML ../../src/HOL/Tools/Quickcheck/exhaustive_generators.ML
+--- ./Tools/Quickcheck/exhaustive_generators.ML	2023-09-12 02:30:48.000000000 +0900
++++ ../../src/HOL/Tools/Quickcheck/exhaustive_generators.ML	2023-12-05 14:15:45.920628300 +0900
+@@ -546,7 +546,7 @@
+         instantiate_bounded_forall_datatype)))
+ 
+ val active = Attrib.setup_config_bool \<^binding>\<open>quickcheck_exhaustive_active\<close> (K true)
+-
++(*
+ val _ =
+   Theory.setup
+    (Quickcheck_Common.datatype_interpretation \<^plugin>\<open>quickcheck_full_exhaustive\<close>
+@@ -554,5 +554,5 @@
+     #> Context.theory_map (Quickcheck.add_tester ("exhaustive", (active, test_goals)))
+     #> Context.theory_map (Quickcheck.add_batch_generator ("exhaustive", compile_generator_exprs))
+     #> Context.theory_map (Quickcheck.add_batch_validator ("exhaustive", compile_validator_exprs)))
+-
++*)
+ end
+diff -urNx '*~' -x '*.orig' ./Tools/Quickcheck/narrowing_generators.ML ../../src/HOL/Tools/Quickcheck/narrowing_generators.ML
+--- ./Tools/Quickcheck/narrowing_generators.ML	2023-09-12 02:30:48.000000000 +0900
++++ ../../src/HOL/Tools/Quickcheck/narrowing_generators.ML	2023-12-07 15:21:55.316631600 +0900
+@@ -543,8 +543,10 @@
+   Theory.setup
+    (Code.datatype_interpretation ensure_partial_term_of
+     #> Code.datatype_interpretation ensure_partial_term_of_code
++(*
+     #> Quickcheck_Common.datatype_interpretation \<^plugin>\<open>quickcheck_narrowing\<close>
+       (\<^sort>\<open>narrowing\<close>, instantiate_narrowing_datatype)
++*)
+     #> Context.theory_map (Quickcheck.add_tester ("narrowing", (active, test_goals))))
+ 
+ end
+diff -urNx '*~' -x '*.orig' ./Tools/Quickcheck/random_generators.ML ../../src/HOL/Tools/Quickcheck/random_generators.ML
+--- ./Tools/Quickcheck/random_generators.ML	2023-09-12 02:30:48.000000000 +0900
++++ ../../src/HOL/Tools/Quickcheck/random_generators.ML	2023-11-30 17:13:13.090725100 +0900
+@@ -481,10 +481,12 @@
+ 
+ val active = Attrib.setup_config_bool \<^binding>\<open>quickcheck_random_active\<close> (K false);
+ 
++(*
+ val _ =
+   Theory.setup
+    (Quickcheck_Common.datatype_interpretation \<^plugin>\<open>quickcheck_random\<close>
+       (\<^sort>\<open>random\<close>, instantiate_random_datatype) #>
+     Context.theory_map (Quickcheck.add_tester ("random", (active, test_goals))));
++*)
+ 
+ end;
+diff -urNx '*~' -x '*.orig' ./Transcendental.thy ../../src/HOL/Transcendental.thy
+--- ./Transcendental.thy	2023-09-12 02:30:48.000000000 +0900
++++ ../../src/HOL/Transcendental.thy	2023-12-07 17:44:30.135911500 +0900
+@@ -3448,8 +3448,9 @@
+         using \<open>n \<le> p\<close> neq0_conv that(1) by blast
+       then have \<section>: "(- 1::real) ^ (p div 2 - Suc 0) = - ((- 1) ^ (p div 2))"
+         using \<open>even p\<close> by (auto simp add: dvd_def power_eq_if)
+-      from \<open>n \<le> p\<close> np have *: "n - Suc 0 + (p - Suc n) = p - Suc (Suc 0)" "Suc (Suc 0) \<le> p"
+-        by arith+
++      from \<open>n \<le> p\<close> np have *: "n - Suc 0 + (p - Suc n) = p - Suc (Suc 0)"
++        (* by arith somehow takes forever when exporting proofs *)
++        by (metis Nat.add_diff_assoc add.commute diff_Suc_diff_eq1 diff_diff_cancel le0 le_antisym nat_le_linear not_less_eq_eq odd_Suc_minus_one)
+       have "(p - Suc (Suc 0)) div 2 = p div 2 - Suc 0"
+         by simp
+       with \<open>n \<le> p\<close> np  \<section> * show ?thesis
