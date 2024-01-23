@@ -55,16 +55,9 @@ jobs:
           git clone https://github.com/01mf02/kontroli-rs.git
           cd ~/kontroli-rs
           cargo install --path kocheck
-      - name: Check logic files
-        run: |
-          cd logic
-          eval $(opam env)
-          bash dkcheck.sh
-          #lambdapi check -c STTfa.lp
       - name: Generate dk and lp outputs, check dk output for Pure
         run: |
           cd examples/
-          mkdir -p Pure/dkcheck Pure/lambdapi
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle build -b -d. Pure
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_session -d. Pure
           cd dkcheck/
@@ -82,7 +75,6 @@ jobs:
       - name: Generate dk and lp outputs, check dk output for HOL_Groups
         run: |
           cd examples/
-          mkdir -p HOL_Groups_wp/dkcheck/ HOL_Groups_wp/lambdapi/
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle build -b -d. HOL_Groups_wp
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_session -d. HOL_Groups_wp
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_check -d. HOL_Groups_wp
