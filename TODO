@@ -1,3 +1,7 @@
+- fix dedukti_session on Pure
+
+- fix lambdapi output (do not use implicit arguments anymore because we do not know anymore what are the implicit arguments from one session to the other)
+
 - Pure is not accessible from a given session. So dedukti_session will read Pure session. TODO: do the same for dedukti_theory.
 
 - dedukti_session repeatedly reads the session for every theory. TODO: share the info.

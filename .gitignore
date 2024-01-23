@@ -1,19 +1,9 @@
 *~
+\#*
+.\#*
 
 lib/classes/dedukti.jar
 
-.vscode/**
-.metals/**
-.idea/**
-
-examples/**/*.dk
-examples/**/*.lp
-examples/**/*.v
-examples/**/lambdapi.pkg
-examples/**/_CoqProject
-
-*.dko
-*.lpo
-
-dkcheck.sh
-kocheck.sh
+.vscode
+.metals
+.idea

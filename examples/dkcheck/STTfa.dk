@@ -6,7 +6,7 @@ def El : Set -> Type.
 
 prop : Set.
 imp : El prop -> El prop -> El prop.
-all : a:Set -> (El a -> El prop) -> El prop.
+all : a:STTfa.Set -> (STTfa.El a -> STTfa.El STTfa.prop) -> STTfa.El STTfa.prop.
 
 def Prf : El prop -> Type.
 [a, b] Prf (imp a b) --> Prf a -> Prf b.

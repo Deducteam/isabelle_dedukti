@@ -95,7 +95,6 @@
     ```
     $ISABELLE_HOME_USER/Isabelle2023/heaps/polyml-<something>/log/
     ```
-
 ## How to make Isabelle record proofs?
 
 Isabelle theories are built within sessions, and sessions are defined in files named `ROOT`. A quick way to specify a `ROOT` file to Isabelle is the `-d` option.
@@ -126,7 +125,7 @@ To actually export proof terms from Isabelle, assuming the `ROOT` file containin
 isabelle build -b -d $rootdir $session
 ```
 
-## Command to translate Isabelle proofs to Dedukti or Lambdapi
+## Commands to translate Isabelle proofs to Dedukti and Lambdapi
 
 WARNING: the Lambdapi output is temporarily deactivated for it needs to be fixed.
 
@@ -170,7 +169,17 @@ Remark: to visualize theory dependencies in HOL, you can look at the [dependency
 
 Remark: In a database associated with a given theory, there might be proofs labelled from another theory. Fix: those proofs are not too many so they are just translated in this theory. This is a problem from Isabelle itself, and the reason is still unclear. One possible reason is the following: to check that a statement is really provable, Isabelle uses statements that has already be proven, possibly from other theories and sessions. Those proofs are "lifted", in the sense that they are tagged as belonging to the current theory, and they are possibly rewritten. Then, those proofs are given an identifier: if they are detected as a proof that already exists, they are given the already existing identifier and are not added to the database, otherwise they receive a fresh identifier and are added to the database. At this stage, some proofs that should already exist are given a fresh identifier and are added to the database, which creates a lot of duplication of proofs and costs time and memory.
 
-## Performance
+## Translation to Coq
+
+The generated Dedukti files can be translated to Coq by using the Coq export function of Lambdapi. Example:
+
+```
+cd examples/dkcheck
+make v
+make vo
+```
+
+## Performances (to update)
 
 Performance on a machine with 32 processors i9-13950HX and 64 Go RAM:
 
