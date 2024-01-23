@@ -171,19 +171,12 @@ Remark: In a database associated with a given theory, there might be proofs labe
 
 ## Translation to Coq
 
-The generated Dedukti files can be translated to Coq by using the Coq export function of Lambdapi. Scripts and a Makefile are provided to translate the Dedukti output to Coq and check it automatically. Example:
-
-**Requirement:** set the environment variable `ISADK_DIR` to the `isabelle_dedukti` directory, and compile coq/Isabelle.v:
+The generated Dedukti files can be translated to Coq by using the Coq export function of Lambdapi. Example:
 
 ```
-export ISADK_DIR=`pwd`
-make -C coq Isabelle.vo
-```
-
-Then, for translating to Coq a session that you already built and translated to Dedukti, and check it, do:
-```
-cd examples/session/dkcheck # choose session
-../../../vcheck.sh
+cd examples/dkcheck
+make v
+make vo
 ```
 
 ## Performances (to update)
