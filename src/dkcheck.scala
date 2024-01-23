@@ -109,7 +109,7 @@ object Dkcheck {
     val bw3 = new BufferedWriter(new FileWriter(file3))
     bw3.write("#!/bin/sh\nfor f in "+session+"_Parent.dk")
     for (theory <- theories) {
-      bw1.write(" " + Prelude.mod_name(theory.toString) + ".dk")
+      bw3.write(" " + Prelude.mod_name(theory.toString) + ".dk")
     }
     bw3.write(" session_"+session+".dk")
     bw3.write("\ndo\n  dk check -e --eta $f ") 
@@ -123,10 +123,10 @@ object Dkcheck {
         case Some(x) => x
         case _ => error("the session does not have any parent")
       }
-      bw1.write(" -I ../../"+anc+"/dkcheck")
+      bw3.write(" -I ../../"+anc+"/dkcheck")
     }
-    bw1.write(" || exit 1\ndone\n")
-    bw1.close()
+    bw3.write(" || exit 1\ndone\n")
+    bw3.close()
 
     // Generate _CoqProject
     val filename2 = session+"/dkcheck/_CoqProject"
