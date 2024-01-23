@@ -29,47 +29,33 @@ object Rootfile {
       if (session == "Pure") {
         (Document.Node.Name.make_graph(List(((Document.Node.Name("Pure", theory = Thy_Header.PURE), ()),List[Document.Node.Name]()))))
       } else {
-        val base_info = Sessions.base_info(options, anc, progress, dirs)
+        val background = Sessions.background(options, anc, progress, dirs)
         val session_info =
-          base_info.sessions_structure.get(session) match {
+          background.sessions_structure.get(session) match {
             case Some(info) => info
             case None => error("Bad session " + quote(session))
           }
-        val resources = new Resources(base_info.sessions_structure, base_info.check_errors.base)
+        val resources = new Resources(background)
         resources.session_dependencies(session_info, progress = progress).theory_graph
       }
     var anc_theories = 
       if (session == "Pure") {
         List[String]()
       } else {
-        val base_info = Sessions.base_info(options, "Pure", progress, dirs)
+        val background = Sessions.background(options, "Pure", progress, dirs)
         val session_info =
-          base_info.sessions_structure.get(anc) match {
+          background.sessions_structure.get(anc) match {
             case Some(info) => info
             case None => error("Bad session " + quote(anc))
           }
-        val resources = new Resources(base_info.sessions_structure, base_info.check_errors.base)
+        val resources = new Resources(background)
         resources.session_dependencies(session_info, progress = progress).theories.map(x => x.theory)
       }
-    // remove HOL.Record, HOL.Nitpick and HOL.Nunchaku
+    // removing theories of the ancestor sessions.
     for ((k,e) <- theory_graph.iterator) {
       if (anc_theories.contains(k.theory) || (k.theory == "Pure" && session != "Pure")) {
         // progress.echo("Removing "+k.theory)
         theory_graph = theory_graph.del_node(k)
-      }
-    }
-    for ((k,e) <- theory_graph.iterator) {
-      if (Set[String]("HOL-Library.RBT_Impl","HOL-Library.RBT","HOL-Library.RBT_Mapping","HOL-Library.RBT_Set","HOL-Library.Datatype_Records")(k.theory)) {
-        // progress.echo("Removing "+k.theory)
-        theory_graph = theory_graph.del_node(k)
-      }
-    }
-    // add an edge from HOL.Product_Type to HOL.Nat and HOL.Sum_Type
-    for ((k,e) <- theory_graph.iterator) {
-      for ((kp,ep) <- theory_graph.iterator) {
-        if ((k.theory == "HOL.Product_Type" && (kp.theory == "HOL.Nat" || kp.theory == "HOL.Sum_Type"))) {
-          theory_graph = theory_graph.add_edge(k,kp)
-        }
       }
     }
     theory_graph

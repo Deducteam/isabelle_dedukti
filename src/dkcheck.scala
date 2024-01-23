@@ -103,15 +103,17 @@ object Dkcheck {
     // bw2.close()
 
     // Generate script for checking dk files with dkcheck
-    val filename1 = session+"/dkcheck/dkcheck.sh"
-    if (verbose) progress.echo("Generates " + filename1 + " ...")
-    val bw1 = new BufferedWriter(new FileWriter(new File(filename1)))
-    bw1.write("#!/bin/sh\nfor f in")
+    val filename3 = session+"/dkcheck/dkcheck.sh"
+    if (verbose) progress.echo("Generates " + filename3 + " ...")
+    val file3 = new File(filename3)
+    val bw3 = new BufferedWriter(new FileWriter(file3))
+    bw3.write("#!/bin/sh\nfor f in "+session+"_Parent.dk")
     for (theory <- theories) {
       bw1.write(" " + Prelude.mod_name(theory.toString) + ".dk")
     }
-    bw1.write("\ndo\n  dk check -e --eta $f -I ../../../logic") 
-    bw1.write(" -I ../../"+anc+"/dkcheck")
+    bw3.write(" session_"+session+".dk")
+    bw3.write("\ndo\n  dk check -e --eta $f ") 
+    bw3.write("-I ../../"+anc+"/dkcheck/ ")
     while (anc != "Pure"){
       val full_stru = Sessions.load_structure(options, dirs = dirs)
       val selected_sessions =
