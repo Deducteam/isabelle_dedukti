@@ -9,6 +9,23 @@ VO_FILES := $(V_FILES:%.v=%.vo)
 .PHONY: default
 default: vo
 
+.PHONY: clean-dk
+clean-dk:
+	find . -maxdepth 1 -name '*.dk' -a ! -name STTfa.dk -delete
+	find . -maxdepth 1 -name '*.sh' -a ! -name dkcheck_STTfa.sh -delete
+
+.PHONY: clean-dko
+clean-dko:
+	find . -maxdepth 1 -name '*.dko' -delete
+
+.PHONY: clean-lp
+clean-lp:
+	find . -maxdepth 1 -name '*.lp' -a ! -name STTfa.lp -delete
+
+.PHONY: clean-lpo
+clean-lpo:
+	find . -maxdepth 1 -name '*.lpo' -delete
+
 .PHONY: v
 v: $(V_FILES)
 
@@ -21,10 +38,13 @@ LAMBDAPI ?= lambdapi
 
 .PHONY: clean-v
 clean-v:
-	-rm -f $(V_FILES)
+	find . -maxdepth 1 -name '*.v' -a ! -name Isabelle.v -delete
+
+_CoqProject: $(V_FILES)
+	touch $@
 
 coq.mk: _CoqProject
-	coq_makefile -f _CoqProject -o coq.mk
+	coq_makefile -f $< -o $@
 
 MAKE_COQ := $(MAKE) -f coq.mk
 
@@ -35,13 +55,15 @@ vo: coq.mk $(V_FILES)
 
 .PHONY: clean-vo
 clean-vo:
-	$(MAKE_COQ) clean
-	#-rm -f *.vo *.vok *.vos *.glob
+	find . -maxdepth 1 -name '*.vo*' -delete
+	find . -maxdepth 1 -name '*.glob' -delete
+	find . -maxdepth 1 -name '.*.aux' -delete
+	rm -f .lia.cache .nia.cache
 
-.PHONY: clean
-clean: clean-v clean-vo
+.PHONY: clean-all
+clean-all: clean-dk clean-dko clean-lp clean-lpo clean-v clean-vo
+	-rm -f coq.mk coq.mk.conf
 #	-rm -f deps.mk
-#	-rm -f coq.mk coq.mk.conf
 
 #%.vo: coq.mk %.v
 #	$(MAKE_COQ) $*.vo

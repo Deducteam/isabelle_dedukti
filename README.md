@@ -176,24 +176,26 @@ The generated Dedukti files can be translated to Coq by using the Coq export fun
 ```
 cd examples/dkcheck
 make v
+make coq.mk
 make vo
 ```
 
-## Performances (to update)
+## Performances
 
 Performance on a machine with 32 processors i9-13950HX and 64 Go RAM:
 
-| session                     |  build | translation | checking |
-|:----------------------------|-------:|------------:|---------:|
-| HOL_Groups_wp               |    16s |          8s |       1s |
-| HOL_Pre_Enum_wp             | 16m56s |       9m48s |    5m31s |
-| HOL_Enum_wp                 |  1m18s |          1m |      18s |
-| HOL_Quickcheck_Random_wp    |  3m26s |       6m32s |    1m50s |
-| HOL_Quickcheck_Narrowing_wp |    33s |         43s |      11s |
-| HOL_Main                    |    57s |        2m6s |      50s |
-| HOL_Pre_Transcendental_wp   |  2m29s |       2m24s |     1m2s |
-| HOL_Transcendental_wp       |  1m35s |       2m23s |      35s |
-| HOL_wp                      |  4m19s |       4m51s |    1m54s |
+| session                     |   build |  to dk | checking | to coq |      checking |
+|:----------------------------|--------:|-------:|---------:|-------:|--------------:|
+| Pure                        |         |     3s |          |     0s |            1s |
+| HOL_Groups_wp               |    16s? |    10s |      1s? |     0s |           18s |
+| HOL_Pre_Enum_wp             | 16m56s? | 11m12s |   5m31s? |  1m58s | out of memory |
+| HOL_Enum_wp                 |  1m18s? |    1m? |     18s? |        |               |
+| HOL_Quickcheck_Random_wp    |  3m26s? | 6m32s? |   1m50s? |        |               |
+| HOL_Quickcheck_Narrowing_wp |    33s? |   43s? |     11s? |        |               |
+| HOL_Main                    |    57s? |  2m6s? |     50s? |        |               |
+| HOL_Pre_Transcendental_wp   |  2m29s? | 2m24s? |    1m2s? |        |               |
+| HOL_Transcendental_wp       |  1m35s? | 2m23s? |     35s? |        |               |
+| HOL_wp                      |  4m19s? | 4m51s? |   1m54s? |        |               |
 
 
 ## Project structure
