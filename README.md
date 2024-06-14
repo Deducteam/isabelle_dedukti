@@ -155,7 +155,9 @@ Several sessions with proof exports are already defined in `examples/ROOT`. For 
 cd examples/
 isabelle build -b -d. $session # generates the database of proofs
 isabelle dedukti_session -d. $session # generates the lambdapi and dedukti proofs
-bash ./dkcheck/dkcheck_$session.sh
+bash dkcheck/dkcheck_STTfa.sh
+bash dkcheck/dkcheck_$parent_session.sh # for every parent session
+bash dkcheck/dkcheck_$session.sh
 ```
 
 To translate other sessions, follow these steps:
