@@ -95,7 +95,6 @@
     ```
     $ISABELLE_HOME_USER/Isabelle2023/heaps/polyml-<something>/log/
     ```
-
 ## How to make Isabelle record proofs?
 
 Isabelle theories are built within sessions, and sessions are defined in files named `ROOT`. A quick way to specify a `ROOT` file to Isabelle is the `-d` option.
@@ -126,7 +125,7 @@ To actually export proof terms from Isabelle, assuming the `ROOT` file containin
 isabelle build -b -d $rootdir $session
 ```
 
-## Command to translate Isabelle proofs to Dedukti or Lambdapi
+## Commands to translate Isabelle proofs to Dedukti and Lambdapi
 
 WARNING: the Lambdapi output is temporarily deactivated for it needs to be fixed.
 
@@ -172,21 +171,33 @@ Remark: to visualize theory dependencies in HOL, you can look at the [dependency
 
 Remark: In a database associated with a given theory, there might be proofs labelled from another theory. Fix: those proofs are not too many so they are just translated in this theory. This is a problem from Isabelle itself, and the reason is still unclear. One possible reason is the following: to check that a statement is really provable, Isabelle uses statements that has already be proven, possibly from other theories and sessions. Those proofs are "lifted", in the sense that they are tagged as belonging to the current theory, and they are possibly rewritten. Then, those proofs are given an identifier: if they are detected as a proof that already exists, they are given the already existing identifier and are not added to the database, otherwise they receive a fresh identifier and are added to the database. At this stage, some proofs that should already exist are given a fresh identifier and are added to the database, which creates a lot of duplication of proofs and costs time and memory.
 
-## Performance
+## Translation to Coq
+
+The generated Dedukti files can be translated to Coq by using the Coq export function of Lambdapi. Example:
+
+```
+cd examples/dkcheck
+make v
+make coq.mk
+make vo
+```
+
+## Performances
 
 Performance on a machine with 32 processors i9-13950HX and 64 Go RAM:
 
-| session                     |  build | translation | checking |
-|:----------------------------|-------:|------------:|---------:|
-| HOL_Groups_wp               |    16s |          8s |       1s |
-| HOL_Pre_Enum_wp             | 16m56s |       9m48s |    5m31s |
-| HOL_Enum_wp                 |  1m18s |          1m |      18s |
-| HOL_Quickcheck_Random_wp    |  3m26s |       6m32s |    1m50s |
-| HOL_Quickcheck_Narrowing_wp |    33s |         43s |      11s |
-| HOL_Main                    |    57s |        2m6s |      50s |
-| HOL_Pre_Transcendental_wp   |  2m29s |       2m24s |     1m2s |
-| HOL_Transcendental_wp       |  1m35s |       2m23s |      35s |
-| HOL_wp                      |  4m19s |       4m51s |    1m54s |
+| session                     |   build |  to dk | checking | to coq |      checking |
+|:----------------------------|--------:|-------:|---------:|-------:|--------------:|
+| Pure                        |         |     3s |          |     0s |            1s |
+| HOL_Groups_wp               |    16s? |    10s |      1s? |     0s |           18s |
+| HOL_Pre_Enum_wp             | 16m56s? | 11m12s |   5m31s? |  1m58s | out of memory |
+| HOL_Enum_wp                 |  1m18s? |    1m? |     18s? |        |               |
+| HOL_Quickcheck_Random_wp    |  3m26s? | 6m32s? |   1m50s? |        |               |
+| HOL_Quickcheck_Narrowing_wp |    33s? |   43s? |     11s? |        |               |
+| HOL_Main                    |    57s? |  2m6s? |     50s? |        |               |
+| HOL_Pre_Transcendental_wp   |  2m29s? | 2m24s? |    1m2s? |        |               |
+| HOL_Transcendental_wp       |  1m35s? | 2m23s? |     35s? |        |               |
+| HOL_wp                      |  4m19s? | 4m51s? |   1m54s? |        |               |
 
 
 ## Project structure
