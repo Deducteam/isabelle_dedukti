@@ -88,5 +88,4 @@ object Syntax {
                           tm: Term, not: Option[Notation] = None) extends Command
   case class Theorem(id: Ident, args: List[BoundArg], ty: Typ, prf: Term) extends Command
   case class Rewrite(vars: List[Ident], lhs: Term, rhs: Term) extends Command
-
 }
