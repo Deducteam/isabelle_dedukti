@@ -15,32 +15,32 @@ import scala.io.Source
 
 object Dkcheck {
 
-  def format(
-    writer : BufferedWriter,
-    ancestors : List[String],
-  ): Unit = {
-    writer.write("for f in")
-    for (anc <- ancestors) {
-      writer.write(" "+anc+"*.dk")
-    }
-    writer.write("\ndo\n")
-    writer.write("\tcp $f $f.bak\n")
-    writer.write("\tsed -e 's/#REQUIRE .*\\./(;&;)/' -e \"s/${f%.dk}\\./(;&;)/g\" $f.bak > $f\n")
-    writer.write("done\n")
-  }
+  // def format(
+  //   writer : BufferedWriter,
+  //   ancestors : List[String],
+  // ): Unit = {
+  //   writer.write("for f in")
+  //   for (anc <- ancestors) {
+  //     writer.write(" "+anc+"*.dk")
+  //   }
+  //   writer.write("\ndo\n")
+  //   writer.write("\tcp $f $f.bak\n")
+  //   writer.write("\tsed -e 's/#REQUIRE .*\\./(;&;)/' -e \"s/${f%.dk}\\./(;&;)/g\" $f.bak > $f\n")
+  //   writer.write("done\n")
+  // }
   
-  def deformat(
-    writer : BufferedWriter,
-    ancestors : List[String],
-  ): Unit = {
-    writer.write("for f in")
-    for (anc <- ancestors) {
-      writer.write(" "+anc+"*.dk")
-    }
-    writer.write("\ndo\n")
-    writer.write("\tmv $f.bak $f\n")
-    writer.write("done\n")
-  }
+  // def deformat(
+  //   writer : BufferedWriter,
+  //   ancestors : List[String],
+  // ): Unit = {
+  //   writer.write("for f in")
+  //   for (anc <- ancestors) {
+  //     writer.write(" "+anc+"*.dk")
+  //   }
+  //   writer.write("\ndo\n")
+  //   writer.write("\tmv $f.bak $f\n")
+  //   writer.write("done\n")
+  // }
 
   def dkcheck(
     options: Options,

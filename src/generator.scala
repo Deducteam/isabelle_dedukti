@@ -49,7 +49,7 @@ object Generator {
             error("the session does not have any parent")
           }
         case Some(anc) => {
-          progress.echo("Reading parent session " + anc)
+          progress.echo("Read (parent) session "+anc+" ...")
           generator(options, anc, target_theory, recursive, recursive, progress, dirs, outdir, use_notations, eta_expand, verbose)
           // getting theories of session
           Rootfile.graph(options, session, anc, progress, dirs, verbose)

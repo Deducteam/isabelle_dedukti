@@ -60,7 +60,7 @@ object Prelude {
         val cut = id.split("[.]", 2)
         val (prefix, radical) = if (cut.length == 1) ("", cut(0)) else (cut(0), cut(1))
         // because Dedukti does not accept names with dots
-        var translated_id = radical.replace(".", "_")
+        var translated_id = radical.replace(".", "!")
         if (kind == "var") translated_id += "_"
         if (namesSet(translated_id)) translated_id += "_" + kind
         if (namesSet(translated_id)) translated_id = prefix + "_" + translated_id
@@ -379,7 +379,7 @@ object Translate {
 
   // Apply a list of arguments, given as lambda arguments
   def appls_args(tm: Syntax.Term, args: List[Syntax.BoundArg]): Syntax.Term = {
-    val pure_args = args.map { case Syntax.BoundArg(Some(name), _, _) => Syntax.Var(name) }
+    val pure_args = args.map { case Syntax.BoundArg(Some(name), _, _) => Syntax.Var(name) case _ => error("oops") }
     val impl_list = args.map { case Syntax.BoundArg(_, _, impl) => impl }
     Syntax.appls(tm, pure_args, impl_list)
   }
@@ -408,14 +408,14 @@ object Translate {
       case Syntax.Symb(id) =>
         val named_args = name_args(global_types(id), spine_args, ctxt, name_ref)
         val applied1 = expanded_args.foldLeft(head) { case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
-        val applied = named_args.foldLeft(applied1) { case (tm, Syntax.BoundArg(Some(name), _, impl)) => Syntax.Appl(tm, Syntax.Var(name), impl) }
+        val applied = named_args.foldLeft(applied1) { case (tm, Syntax.BoundArg(Some(name), _, impl)) => Syntax.Appl(tm, Syntax.Var(name), impl) case _ => error("oops") }
         val abstracted = named_args.foldRight(applied)(Syntax.Abst.apply)
         abstracted
 
       case Syntax.Var(id) =>
         val named_args = name_args(ctxt(id), spine_args, ctxt, name_ref)
         val applied1 = expanded_args.foldLeft(head) { case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
-        val applied = named_args.foldLeft(applied1) { case (tm, Syntax.BoundArg(Some(name), _, impl)) => Syntax.Appl(tm, Syntax.Var(name), impl) }
+        val applied = named_args.foldLeft(applied1) { case (tm, Syntax.BoundArg(Some(name), _, impl)) => Syntax.Appl(tm, Syntax.Var(name), impl) case _ => error("oops") }
         val abstracted = named_args.foldRight(applied)(Syntax.Abst.apply)
         abstracted
 
@@ -527,6 +527,7 @@ object Translate {
     case Export_Theory.Infix(Export_Theory.Assoc.NO_ASSOC,    op, priority) => Some(Syntax.Infix (notations_get(op), priority))
     case Export_Theory.Infix(Export_Theory.Assoc.LEFT_ASSOC,  op, priority) => Some(Syntax.InfixL(notations_get(op), priority))
     case Export_Theory.Infix(Export_Theory.Assoc.RIGHT_ASSOC, op, priority) => Some(Syntax.InfixR(notations_get(op), priority))
+    case _ => error("oops")
   }
 
   var implArgsMap: Map[String, List[Boolean]] = Map()
@@ -618,10 +619,49 @@ object Translate {
     }
   }
 
+  /* turn an equality into a definition */
+
+  def dfn_of_eq_decl(id:Syntax.Ident, args: List[Syntax.BoundArg], ty:Syntax.Typ, not:Option[Syntax.Notation] = None) : List[Syntax.Command] = {
+    def aux (args:List[Syntax.BoundArg], ty:Syntax.Typ) : List[Syntax.Command] = {
+      ty match {
+        case Syntax.Prod(arg,t) => aux(arg::args, t)
+        case Syntax.Appl(_,t,_) =>
+          val (h, tbs) = Syntax.destruct_appls(t)
+          h match {
+            case Syntax.Symb(id) =>
+              //println(id)
+              if (id == "eq") {
+                tbs match {
+                  case List((a,_),(lhs,_),(rhs,_)) =>
+                    val (h, _) = Syntax.destruct_appls(lhs)
+                    h match {
+                      case Syntax.Symb(id) =>
+                        List(Syntax.Definition(id,args.reverse,Some(eta(a)),rhs,not))
+                      case _ => Nil
+                    }
+                  case _ => Nil
+                }
+              } else Nil
+            case _ => Nil
+          }
+        case _ => Nil
+      }
+    }
+    if (id.endsWith("_def") || id.endsWith("_def_raw")) {
+      //println(id)
+      aux(args.reverse,ty) /*match {
+        case Nil => {
+          println("ko")
+          Nil
+        }
+        case l => l
+      }*/
+    } else Nil
+  }
 
   /* theorems and proof terms */
 
-  def stmt_decl(s: String, prop: Export_Theory.Prop, prf_opt: Option[Term.Proof]): Syntax.Command = {
+  def stmt_decl(s: String, prop: Export_Theory.Prop, prf_opt: Option[Term.Proof]): List[Syntax.Command] = {
     val args =
       prop.typargs.map(_._1).map(bound_type_argument(_)) :::
       prop.args.map(arg => bound_term_argument(arg._1, arg._2))
@@ -635,17 +675,31 @@ object Translate {
     try prf_opt match {
       case None => {
         val (new_args, final_ty) = (Nil, contracted_ty) // fetch_head_args_type(contracted_ty)
-        Syntax.Declaration(s, new_args, final_ty)
-      }
+        //dfn_of_eq_decl(s, new_args, final_ty)++
+        List(Syntax.Declaration(s, new_args, final_ty))
+        }
       case Some(prf) => {
         val translated_rhs = proof(prf, Bounds())
         val full_prf : Syntax.Term = args.foldRight(translated_rhs)(Syntax.Abst.apply)
         val (new_args, contracted, final_ty) = fetch_head_args(eta_expand(eta_contract(full_prf)), contracted_ty)
-        Syntax.Theorem(s, new_args, final_ty, contracted)
+        List(Syntax.Theorem(s, new_args, final_ty, contracted))
       }
     }
     catch { case e : Throwable => e.printStackTrace
       error("oops in " + quote(s)) }
 //    catch { case ERROR(msg) => error(msg + "\nin " + quote(s)) }
   }
+
+  def dfn_decl(s: String, prop: Export_Theory.Prop): List[Syntax.Command] = {
+    val args =
+      prop.typargs.map(_._1).map(bound_type_argument(_))
+        ::: prop.args.map(arg => bound_term_argument(arg._1, arg._2))
+    val full_ty = args.foldRight(eps(term(prop.term, Bounds())))(Syntax.Prod.apply)
+    val contracted_ty = eta_expand(eta_contract(full_ty))
+    implArgsMap  += s -> List.fill(prop.typargs.length)(false) // Only those are applied immediately
+    global_types += s -> contracted_ty
+    val (new_args, final_ty) = (Nil, contracted_ty) // fetch_head_args_type(contracted_ty)
+    dfn_of_eq_decl(s, new_args, final_ty)
+  }
+
 }
