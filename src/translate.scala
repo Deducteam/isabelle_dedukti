@@ -619,46 +619,6 @@ object Translate {
     }
   }
 
-  /* turn an equality into a definition */
-
-  def dfn_of_eq_decl(id:Syntax.Ident, args: List[Syntax.BoundArg], ty:Syntax.Typ, not:Option[Syntax.Notation] = None) : List[Syntax.Command] = {
-    def aux (args:List[Syntax.BoundArg], ty:Syntax.Typ) : List[Syntax.Command] = {
-      ty match {
-        case Syntax.Prod(arg,t) => aux(arg::args, t)
-        case Syntax.Appl(_,t,_) =>
-          val (h, tbs) = Syntax.destruct_appls(t)
-          h match {
-            case Syntax.Symb(id) =>
-              //println(id)
-              if (id == "eq") {
-                tbs match {
-                  case List((a,_),(lhs,_),(rhs,_)) =>
-                    val (h, _) = Syntax.destruct_appls(lhs)
-                    h match {
-                      case Syntax.Symb(id) =>
-                        List(Syntax.Definition(id,args.reverse,Some(eta(a)),rhs,not))
-                      case _ => Nil
-                    }
-                  case _ => Nil
-                }
-              } else Nil
-            case _ => Nil
-          }
-        case _ => Nil
-      }
-    }
-    if (id.endsWith("_def") || id.endsWith("_def_raw")) {
-      //println(id)
-      aux(args.reverse,ty) /*match {
-        case Nil => {
-          println("ko")
-          Nil
-        }
-        case l => l
-      }*/
-    } else Nil
-  }
-
   /* theorems and proof terms */
 
   def stmt_decl(s: String, prop: Export_Theory.Prop, prf_opt: Option[Term.Proof]): List[Syntax.Command] = {
@@ -688,18 +648,6 @@ object Translate {
     catch { case e : Throwable => e.printStackTrace
       error("oops in " + quote(s)) }
 //    catch { case ERROR(msg) => error(msg + "\nin " + quote(s)) }
-  }
-
-  def dfn_decl(s: String, prop: Export_Theory.Prop): List[Syntax.Command] = {
-    val args =
-      prop.typargs.map(_._1).map(bound_type_argument(_))
-        ::: prop.args.map(arg => bound_term_argument(arg._1, arg._2))
-    val full_ty = args.foldRight(eps(term(prop.term, Bounds())))(Syntax.Prod.apply)
-    val contracted_ty = eta_expand(eta_contract(full_ty))
-    implArgsMap  += s -> List.fill(prop.typargs.length)(false) // Only those are applied immediately
-    global_types += s -> contracted_ty
-    val (new_args, final_ty) = (Nil, contracted_ty) // fetch_head_args_type(contracted_ty)
-    dfn_of_eq_decl(s, new_args, final_ty)
   }
 
 }
