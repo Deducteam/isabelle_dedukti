@@ -16,7 +16,7 @@ jobs:
     steps:
     # actions/checkout must be done BEFORE avsm/setup-ocaml
       - name: Checkout isabelle_dedukti
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 #      - name: Set up cache
 #        id: cache
 #        uses: actions/cache@v3
@@ -42,7 +42,7 @@ jobs:
           patch -up0 -d ~/Isabelle${{ matrix.isabelle-version }}/src/HOL/ < HOL.patch
       - name: Install opam
 #        if: steps.cache.outputs.cache-hit != 'true'
-        uses: avsm/setup-ocaml@v2
+        uses: avsm/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml-version }}
       - name: Install dkcheck
