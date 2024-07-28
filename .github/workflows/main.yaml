@@ -66,7 +66,7 @@ jobs:
       - name: Generate dk and lp outputs, check dk output for HOL_Groups
         run: |
           cd examples/
-          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle build -b -d. -r HOL_Groups_wp
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle build -b -d. HOL_Groups_wp
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_session -d. -r HOL_Groups_wp
           cd dkcheck
           eval $(opam env)
