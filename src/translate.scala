@@ -621,7 +621,7 @@ object Translate {
 
   /* theorems and proof terms */
 
-  def stmt_decl(s: String, prop: Export_Theory.Prop, prf_opt: Option[Term.Proof]): List[Syntax.Command] = {
+  def stmt_decl(s: String, prop: Export_Theory.Prop, prf_opt: Option[Term.Proof]): Syntax.Command = {
     val args =
       prop.typargs.map(_._1).map(bound_type_argument(_)) :::
       prop.args.map(arg => bound_term_argument(arg._1, arg._2))
@@ -636,13 +636,13 @@ object Translate {
       case None => {
         val (new_args, final_ty) = (Nil, contracted_ty) // fetch_head_args_type(contracted_ty)
         //dfn_of_eq_decl(s, new_args, final_ty)++
-        List(Syntax.Declaration(s, new_args, final_ty))
+        Syntax.Declaration(s, new_args, final_ty)
         }
       case Some(prf) => {
         val translated_rhs = proof(prf, Bounds())
         val full_prf : Syntax.Term = args.foldRight(translated_rhs)(Syntax.Abst.apply)
         val (new_args, contracted, final_ty) = fetch_head_args(eta_expand(eta_contract(full_prf)), contracted_ty)
-        List(Syntax.Theorem(s, new_args, final_ty, contracted))
+        Syntax.Theorem(s, new_args, final_ty, contracted)
       }
     }
     catch { case e : Throwable => e.printStackTrace

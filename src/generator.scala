@@ -27,35 +27,30 @@ object Generator {
     use_notations: Boolean = false,
     eta_expand: Boolean = false,
     verbose: Boolean = false,
-    ): Unit = {
+  ): Unit = {
 
-    // // theory graph
-    // val theory_graph = Rootfile.graph(options, session, progress, dirs, verbose)
-    // if (verbose) { progress.echo("graph: " + theory_graph) }
+    progress.echo("Start handling session "+session)
+
     var theories = List[String]()
-    // // if (verbose) { progress.echo("topological order: " + theories) }
-
     val full_stru = Sessions.load_structure(options, dirs = dirs)
     val selected_sessions =
       full_stru.selection(Sessions.Selection(sessions = List[String](session)))
     val info = selected_sessions(session)
     val parent = info.parent
+
     val theory_graph =
       parent match {
         case None =>
           if (session == "Pure") {
-            (Document.Node.Name.make_graph(List(((Document.Node.Name("Pure", theory = Thy_Header.PURE), ()),List[Document.Node.Name]()))))
-          } else {
-            error("the session does not have any parent")
-          }
+            import Document.Node._
+            Name.make_graph(List(((Name("Pure",Thy_Header.PURE),()),List())))
+          } else error("the session has no parent")
         case Some(anc) => {
-          progress.echo("Read (parent) session "+anc+" ...")
           generator(options, anc, target_theory, recursive, recursive, progress, dirs, outdir, use_notations, eta_expand, verbose)
-          // getting theories of session
           Rootfile.graph(options, session, anc, progress, dirs, verbose)
         }
       }
-    // Generate a dk or lp file for each theory
+
     val term_cache = Term.Cache.make()
     Exporter.exporter(options, session, parent, theory_graph, translate,
       term_cache = term_cache,
@@ -65,6 +60,8 @@ object Generator {
       eta_expand = eta_expand,
       verbose = verbose,
       outdir = outdir)
+
+    progress.echo("End handling session "+session)
   }
 
   // Isabelle tool wrapper and CLI handler
