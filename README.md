@@ -177,9 +177,11 @@ The generated Dedukti files can be translated to Coq by using the Coq export fun
 
 ```
 cd examples/dkcheck
-make v
-make coq.mk
-make vo
+export SESSION=HOL_Nat_wp
+time make build
+time make dk
+time make -j32 v
+time make -j32 vo
 ```
 
 ## Performances

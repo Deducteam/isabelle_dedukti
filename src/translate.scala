@@ -43,9 +43,9 @@ object Prelude {
 
   // currently translated module
   var current_module: String = "STTfa"
-  var theory_session: Map[String, String] = Map("STTfa" -> "Pure")
+  var map_theory_session: Map[String, String] = Map("STTfa" -> "Pure")
   def set_current_module(m: String) = { current_module = m }
-  def set_theory_session(t: String, s: String) = {theory_session += t -> s}
+  def set_theory_session(t: String, s: String) = {map_theory_session += t -> s}
 
   val STTfa: String = "STTfa"
 
@@ -61,15 +61,13 @@ object Prelude {
         val cut = id.split("[.]", 2)
         val (prefix, radical) = if (cut.length == 1) ("", cut(0)) else (cut(0), cut(1))
         // because Dedukti does not accept names with dots
-        var translated_id = radical.replace(".", "!")
+        var translated_id = radical.replace(".","_")
         if (kind == "var") translated_id += "_"
         if (namesSet(translated_id)) translated_id += "_" + kind
         if (namesSet(translated_id)) translated_id = prefix + "_" + translated_id
         if (namesSet(translated_id)) error("duplicated name: " + translated_id)
         (translated_id,module0)
     }
-    //println(module + "/" + translated_id)
-    // if (translated_id == "ord_class_Least_dict") println("found it with id "+id+" and kind "+kind+" in "+module)
     namesMap += full_name(id, kind) -> translated_id
     namesSet += translated_id
     moduleOf += translated_id -> module

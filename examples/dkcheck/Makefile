@@ -1,44 +1,55 @@
-ISADK_DIR ?= ../..
-
 .SUFFIXES:
 
-DK_FILES := $(wildcard *.dk)
-V_FILES := $(DK_FILES:%.dk=%.v)
-
 .PHONY: default
-default: vo
+default:
+	@echo targets: build, dk, dko, v, dep, vo, clean-[target,all]
+	@echo variables: ISADB_DIR, ROOT_DIR, SESSION
 
-MAKE_COQ := $(MAKE) -f coq.mk
+############# generation of Coq files ##############
+
+DK_FILES := $(wildcard *.dk)
+
+.PHONY: v
+v: $(DK_FILES:%.dk=%.v)
+
+LAMBDAPI = lambdapi
+
+%.v: %.dk
+	$(LAMBDAPI) export -o stt_coq --encoding $(ISADK_DIR)/encoding.lp --erasing $(ISADK_DIR)/erasing.lp --renaming $(ISADK_DIR)/renaming.lp --requiring Isabelle.Isabelle.v --no-implicits $*.dk > $*.v
+
+.PHONY: clean-v
+clean-v: rm-v clean-vo clean-dep
+
+.PHONY: rm-v
+rm-v:
+	find . -maxdepth 1 -name '*.v' -a ! -name Isabelle.v -delete
+
+############# dependencies of Coq files ##############
+
+COQ_MAKEFILE := coq.mk
+MAKE_COQ := $(MAKE) -f $(COQ_MAKEFILE)
+VDFILE := .$(COQ_MAKEFILE).d
+
+.PHONY: dep
+dep:
+	coq_makefile -f _CoqProject -o $(COQ_MAKEFILE)
+	# compute dependencies
+	+$(MAKE_COQ) $(VDFILE)
+	# do not compute dependencies anymore
+	sed -i -e 's/^$$(VDFILE): _CoqProject $$(VFILES)/$$(VDFILE):/' $(COQ_MAKEFILE)
+
+.PHONY: clean-dep
+clean-dep:
+	-rm -f $(COQ_MAKEFILE) $(COQ_MAKEFILE).conf $(VDFILE)
+
+############# verification of Coq files ##############
 
 .PHONY: vo
-vo: coq.mk $(wildcard *.v) #$(V_FILES)
-	$(MAKE_COQ)
-
-coq.mk: _CoqProject
-	coq_makefile -f $< -o $@
-	# do not recompute dependencies each time a coq file is changed:
-	sed -i -e 's/^$$(VDFILE): _CoqProject $$(VFILES)/$$(VDFILE):/' $@
-
-_CoqProject: $(V_FILES)
-	touch $@
-
-#VO_FILES := $(V_FILES:%.v=%.vo)
-#vo: $(VO_FILES)
-
-#%.vo: coq.mk %.v
-#	$(MAKE_COQ) $*.vo
-
-#%.vo: %.v
-#	@echo coqc `awk '/^-Q /{printf" %s",$$0}' _CoqProject` $<
-#	@coqc `awk '/^-Q /{printf" %s",$$0}' _CoqProject` $<
-
-#include deps.mk
-
-#deps.mk:
-#	$(ISADK_DIR)/coqdeps.sh > $@
+vo:
+	+$(MAKE_COQ)
 
 .PHONY: clean-vo
-clean-vo: rm-vo rm-glob rm-aux rm-cache
+clean-vo: rm-vo rm-glob rm-aux rm-caches
 
 .PHONY: rm-vo
 rm-vo:
@@ -52,31 +63,35 @@ rm-glob:
 rm-aux:
 	find . -maxdepth 1 -name '.*.aux' -delete
 
-.PHONY: rm-cache
-rm-cache:
+.PHONY: rm-caches
+rm-caches:
 	rm -f .lia.cache .nia.cache
 
-.PHONY: rm-coq-mk
-rm-coq-mk:
-	-rm -f coq.mk coq.mk.conf
-#	-rm -f deps.mk
+############# generation of Isabelle proofs ##############
 
-.PHONY: v
-v: $(V_FILES)
+ISADB_DIR = ~/.isabelle/Isabelle2023/heaps/polyml-5.9_x86_64_32-linux/log
+ROOT_DIR = ..
+SESSION = HOL_Nat_wp
 
-LAMBDAPI ?= lambdapi
+.PHONY: build
+build: $(ISADB_DIR)/$(SESSION).db
 
-#SESSION := $(shell awk -f $(ISADK_DIR)/session.awk _CoqProject)
+$(ISADB_DIR)/%.db: $(ROOT_DIR)/ROOT
+	isabelle build -b -d$(ROOT_DIR) $*
 
-%.v: %.dk
-	$(LAMBDAPI) export -o stt_coq --encoding $(ISADK_DIR)/encoding.lp --erasing $(ISADK_DIR)/erasing.lp --renaming $(ISADK_DIR)/renaming.lp --requiring Isabelle.Isabelle.v --no-implicits $*.dk > $*.v
+clean-build:
+	rm -f $(ISADB_DIR)/$(SESSION).db $(ISADB_DIR)/$(SESSION).gz
 
-.PHONY: clean-v
-clean-v: rm-v clean-vo rm-coq-mk
+############# generation of Dedukti files ##############
 
-.PHONY: rm-v
-rm-v:
-	find . -maxdepth 1 -name '*.v' -a ! -name Isabelle.v -delete
+.PHONY: dk
+dk: session_$(SESSION).dk
+
+session_%.dk:
+	cd $(ROOT_DIR) && isabelle dedukti_session -d. -r $*
+
+.PHONY: clean-dk
+clean-dk: rm-dk rm-sh rm-dko clean-v
 
 .PHONY: rm-dk
 rm-dk:
@@ -86,23 +101,38 @@ rm-dk:
 rm-sh:
 	find . -maxdepth 1 -name '*.sh' -a ! -name dkcheck_STTfa.sh -delete
 
+############# verification of Dedukti files ##############
+
+.PHONY:dko
+dko: session_$(SESSION).dko
+
+session_%.dko: session_%.dk
+	bash dkcheck_session_$*.sh
+
+.PHONY: clean-dko
+clean-dko: rm-dko
+
 .PHONY: rm-dko
 rm-dko:
 	find . -maxdepth 1 -name '*.dko' -delete
+
+############# generation of Lambdapi files ##############
+
+.PHONY: clean-lp
+clean-lp: rm-lp rm-lpo
 
 .PHONY: rm-lp
 rm-lp:
 	find . -maxdepth 1 -name '*.lp' -a ! -name STTfa.lp -delete
 
+############# verification of Lambdapi files ##############
+
+.PHONY: clean-lpo
+clean-lpo: rm-lpo
+
 .PHONY: rm-lpo
 rm-lpo:
 	find . -maxdepth 1 -name '*.lpo' -delete
-
-.PHONY: clean-dk
-clean-dk: rm-dk rm-dko clean-v rm-sh
-
-.PHONY: clean-lp
-clean-lp: rm-lp rm-lpo clean-v
 
 .PHONY: clean-all
 clean-all: clean-dk clean-lp
