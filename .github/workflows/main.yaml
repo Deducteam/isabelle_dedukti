@@ -70,7 +70,7 @@ jobs:
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_session -d. -r HOL_Groups_wp
           cd dkcheck
           eval $(opam env)
-          bash dkcheck_HOL_Groups_wp.sh
+          bash dkcheck_session_HOL_Groups_wp.sh
 #          mkdir -p kocheck
 #          ../../remove-requires.sh *.dk
 #          cd kocheck
