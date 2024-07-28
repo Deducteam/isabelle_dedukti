@@ -70,7 +70,7 @@ object Generator {
     Isabelle_Tool(cmd_name, "generate a dk or lp file for every theory of a session", Scala_Project.here,
       { args =>
         var dirs: List[Path] = Nil
-        var outdir = "dkcheck/"
+        var outdir = ""
         var recursive = false
         var use_notations = false
         var eta_expand = false
