@@ -145,7 +145,7 @@ The command `isabelle dedukti_session` generates also a shell script to check th
 bash dkcheck_$session.sh
 ```
 
-Sessions must be built and translated in the order of their dependencies.
+Sessions must be built and translated in the order of their dependencies (starting from builtin session Pure).
 
 To translate other sessions, follow these steps:
 - add the relevant components to isabelle (for example, AFP),

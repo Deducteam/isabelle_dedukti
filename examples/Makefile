@@ -35,7 +35,7 @@ dep:
 	coq_makefile -f _CoqProject -o $(COQ_MAKEFILE)
 	# compute dependencies
 	+$(MAKE_COQ) $(VDFILE)
-	# do not compute dependencies anymore
+	# do not recompute dependencies
 	sed -i -e 's/^$$(VDFILE): _CoqProject $$(VFILES)/$$(VDFILE):/' $(COQ_MAKEFILE)
 
 .PHONY: clean-dep
@@ -70,7 +70,7 @@ rm-caches:
 ############# generation of Isabelle proofs ##############
 
 ISADB_DIR = ~/.isabelle/Isabelle2023/heaps/polyml-5.9_x86_64_32-linux/log
-ROOT_DIR = ..
+ROOT_DIR = .
 SESSION = HOL_Nat_wp
 
 .PHONY: build
@@ -88,7 +88,7 @@ clean-build:
 dk: session_$(SESSION).dk
 
 session_%.dk:
-	cd $(ROOT_DIR) && isabelle dedukti_session -d. -r $*
+	isabelle dedukti_session -d$(ROOT_DIR) -r $*
 
 .PHONY: clean-dk
 clean-dk: rm-dk rm-sh rm-dko clean-v
