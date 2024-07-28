@@ -285,27 +285,24 @@ object Exporter {
               val cmd = Translate.class_decl(theory_name, a.name)
               writer.command(cmd,notations)
             }
-            // map constant name -> definition
+            // build map constant name -> definition
             var map_cst_dfn:Map[String,Term] = Map()
+            // check constant abbreviations
+            for (a <- theory.consts) {
+              a.the_content.abbrev match {
+                case Some(d) =>
+                  if (verbose) progress.echo(a.name+" has abbreviation")
+                  map_cst_dfn += (a.name -> d)
+                case _ =>
+              }
+            }
+            // check axioms
             for (a <- theory.axioms) {
               is_eq_axiom(a) match {
                 case Some(n,d) =>
-                  //progress.echo("axiom: "+a.the_content.prop.toString)
-                  //progress.echo(n+" is defined by "++d.toString)
-                  /*val ds = map_cst_dfn.get(n) match {
-                    case None => List()
-                    case Some(ds) => d::ds
-                   }*/
-                  if (verbose) progress.echo(n+" defined by axiom "+a.name)
+                  if (verbose) progress.echo(n+" is defined by axiom "+a.name)
                   map_cst_dfn += (n -> d)
                 case None =>
-              }
-            }
-            // get the definition of a constant
-            def dfn(c:Entity[Const]): Option[Term] = {
-              c.the_content.abbrev match {
-                case None => map_cst_dfn.get(c.name)
-                case v => v
               }
             }
             // type of dependency graphs between constants
@@ -325,14 +322,14 @@ object Exporter {
             // add dependencies of a constant
             def add_deps_const(c:Entity[Const], g:GraphConst): GraphConst = {
               val g1 = g.default_node(c.name,())
-              dfn(c) match {
+              map_cst_dfn.get(c.name) match {
                 case Some(d) => add_deps_dfn(c.name,d,g1)
                 case _ => g1
               }
             }
             // dependency graph between constants
             val g0 : GraphConst = Graph.empty(Ordering.String)
-            val g : GraphConst = 
+            val g : GraphConst =
               theory.consts.foldRight(g0)(add_deps_const).transitive_closure
             // le(c1,c2)=true iff c1 can be declared before c2
             val const_names = g.topological_order.reverse
