@@ -157,13 +157,13 @@ object Exporter {
     val mod_name_orphans = Prelude.mod_name(session)+"_orphans"
 
     // commands for orphan proofs
-    val session_commands = mutable.Queue[Syntax.Command]()
+    val orphan_commands = mutable.Queue[Syntax.Command]()
 
-    // record proof idents and update map_theory_proofs or session_commands    
+    // record proof idents and update map_theory_proofs or orphan_commands
     Prelude.set_theory_session(mod_name_orphans,session)
     Prelude.set_current_module(mod_name_orphans)
     for (entry_name <- ses_cont.entry_names()) {
-      if (entry_name.name.startsWith("proofs/")) {
+      if (entry_name.name.startsWith(Export.PROOFS_PREFIX)) {
         val serial = entry_name.name.substring(7).toLong
         val theory_name = entry_name.theory
         if (verbose) progress.echo("  proof " + serial)
@@ -172,7 +172,7 @@ object Exporter {
           map_theory_proofs(theory_name) += (serial)
         } else {
           Prelude.add_proof_ident(serial,mod_name_orphans)
-          session_commands += (decl_proof(serial,theory_name))
+          orphan_commands += (decl_proof(serial,theory_name))
         }
       }
     }
@@ -227,7 +227,7 @@ object Exporter {
             progress.echo("Start writing "+mod_name_orphans+".dk")
             val orphan_writer = new DK_Writer(part_writer)
             orphan_writer.require("session_"+anc)
-            for (cmd <- session_commands) {
+            for (cmd <- orphan_commands) {
               orphan_writer.command(cmd,notations)
             }
             progress.echo("End writing "+mod_name_orphans+".dk")
