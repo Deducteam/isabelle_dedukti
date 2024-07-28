@@ -25,84 +25,47 @@ object Exporter {
     aux(thm.the_content.proof)
   }
 
-              // head and arguments in reverse order of a term
-            def head_revargs(t:Term,args:List[Term]): (Term,List[Term]) = {
-              t match {
-                case App(u,v) => head_revargs(u,v::args)
-                case _ => (t,args.reverse)
-              }
-            }
-            // tell if a term is a free variable
-            def is_free(t:Term): Boolean = {
-              t match {
-                case Free(_,_) => true
-                case _ => false
-              }
-            }
-            // replace free variables by De Bruijn indices
-            def debruijn(revargs:List[Term], t:Term): Term = {
-              t match {
-                case Free(n,ty) => Bound(revargs.indexOf(t))
-                case App(u,v) => App(debruijn(revargs,u),debruijn(revargs,v))
-                case Abs(n,ty,b) => Abs(n,ty,debruijn(Free(n,ty)::revargs,b))
-                case _ => t
-              }
-            }
-            // build an abstraction assuming that arg is a free variable
-            def abs(b:Term, arg:Term): Term = {
-              arg match {
-                case Free(n,ty) => Abs(n,ty,b)
-                case _ => error("oops "+arg.toString)
-              }
-            }
-            // constant name and definition from an equality
-            def is_eq(t:Term):Option[(String,Term)] = {
-              t match {
-                case App(u,r) =>
-                  u match {
-                    case App(e,l) =>
-                      e match {
-                        case Cst(n,_) =>
-                          if (n != "Pure.eq") None
-                          else {
-                            val (h,revargs) = head_revargs(l,List()) 
-                            h match {
-                              case Cst(n,_) =>
-                                if (n.contains("_class.")) None
-                                else {
-                                  if (revargs.forall(is_free)) {
-                                    val r2 = debruijn(revargs,r)
-                                    val d = revargs.foldLeft(r2)(abs)
-                                    /*println("t: "+t.toString)
-                                    println("revargs: "+revargs.toString)
-                                    println("r: "+r.toString)
-                                    println("debruijn: "+r2.toString)
-                                    println("d: "+d.toString)*/
-                                    Some(n,d)
-                                  } else None
-                                }
-                              case _ => None
-                            }
-                          }
-                        case _ => None
-                      }
-                    case _ => None
-                  }
-                case _ => None
-              }
-            }
-            // constant name and definition from an axiom
-            def is_eq_axiom(a:Entity[Axiom]):Option[(String,Term)] = {
-              if (a.name.endsWith("_def") || a.name.endsWith("_def_raw")) {
-                val t = a.the_content.prop.term
-                is_eq(t) /*match {
-                  case None =>
-                    println("could not extract definition from "+a.name)
-                    None
-                  case v => v
-                }*/
-              } else None
-            }
+  // head and arguments in reverse order of a term
+  def head_revargs(t:Term,args:List[Term]): (Term,List[Term]) = {
+    t match {
+      case App(u,v) => head_revargs(u,v::args)
+      case _ => (t,args.reverse)
+    }
+  }
+
+  // tell if a term is a free variable
+  def is_Free(t:Term): Boolean = {
+    t match {
+      case Free(_,_) => true
+      case _ => false
+    }
+  }
+
+  // tell if a type is a free variable
+  def is_TFree(t:Typ): Boolean = {
+    t match {
+      case TFree(_,_) => true
+      case _ => false
+    }
+  }
+
+  // replace free variables by De Bruijn indices
+  def debruijn(revargs:List[Term], t:Term): Term = {
+    t match {
+      case Free(n,ty) => Bound(revargs.indexOf(t))
+      case App(u,v) => App(debruijn(revargs,u),debruijn(revargs,v))
+      case Abs(n,ty,b) => Abs(n,ty,debruijn(Free(n,ty)::revargs,b))
+      case _ => t
+    }
+  }
+
+  // build an abstraction assuming that arg is a free variable
+  def abs(b:Term, arg:Term): Term = {
+    arg match {
+      case Free(n,ty) => Abs(n,ty,b)
+      case _ => error("oops "+arg.toString)
+    }
+  }
 
   def exporter(
     options: Options,
@@ -119,13 +82,55 @@ object Exporter {
     outdir: String = "",
   ): Unit = {
 
-    val notations: collection.mutable.Map[Syntax.Ident, Syntax.Notation] = collection.mutable.Map()
+    // extract constant name and definition from an equality
+    def is_eq_axiom(a:Entity[Axiom]):Option[(String,Term)] = {
+      if (a.name.endsWith("_def") || a.name.endsWith("_def_raw")) {
+        a.the_content.prop.term match {
+          case App(u,r) =>
+            u match {
+              case App(e,l) =>
+                e match {
+                  case Cst(id,_) =>
+                    if (id != "Pure.eq") {
+                      if (verbose) progress.echo("axiom "+a.name+": cannot extract definition because it is headed by "+id+" instead of Pure.eq")
+                      None
+                    } else {
+                      val (h,revargs) = head_revargs(l,List())
+                      h match {
+                        case Cst(n,tys) =>
+                          if (tys.forall(is_TFree) && revargs.forall(is_Free)) {
+                            val r2 = debruijn(revargs,r)
+                            val d = revargs.foldLeft(r2)(abs)
+                            /*println("t: "+t.toString)
+                             println("revargs: "+revargs.toString)
+                             println("r: "+r.toString)
+                             println("debruijn: "+r2.toString)
+                             println("d: "+d.toString)*/
+                            Some(n,d)
+                          } else {
+                            if (verbose) progress.echo("axiom "+a.name+": cannot extract definition because it is not applied to free variables")
+                            None
+                          }
+                        case _ => None
+                      }
+                    }
+                  case _ => None
+                }
+              case _ => None
+            }
+          case _ => None
+        }
+      } else None
+    }
+
+    val notations: mutable.Map[Syntax.Ident, Syntax.Notation] = mutable.Map()
     Translate.global_eta_expand = eta_expand
     val build_results =
       Build.build(options, selection = Sessions.Selection.session(session),
         dirs = dirs, progress = progress)
     val store = build_results.store
-    val session_background = Document_Build.session_background(options, session, dirs = dirs)
+    val session_background =
+      Document_Build.session_background(options, session, dirs = dirs)
     val ses_cont = Export.open_session_context(store, session_background)
     val thys = theory_graph.topological_order
     val theory_names = thys.map(node_name => node_name.toString)
@@ -281,24 +286,25 @@ object Exporter {
               writer.command(cmd,notations)
             }
             // map constant name -> definition
-            var dfn_map:Map[String,Term] = Map()
+            var map_cst_dfn:Map[String,Term] = Map()
             for (a <- theory.axioms) {
               is_eq_axiom(a) match {
                 case Some(n,d) =>
                   //progress.echo("axiom: "+a.the_content.prop.toString)
                   //progress.echo(n+" is defined by "++d.toString)
-                  /*val ds = dfn_map.get(n) match {
+                  /*val ds = map_cst_dfn.get(n) match {
                     case None => List()
                     case Some(ds) => d::ds
-                  }*/
-                  dfn_map += (n -> d)
+                   }*/
+                  if (verbose) progress.echo(n+" defined by axiom "+a.name)
+                  map_cst_dfn += (n -> d)
                 case None =>
               }
             }
             // get the definition of a constant
             def dfn(c:Entity[Const]): Option[Term] = {
               c.the_content.abbrev match {
-                case None => dfn_map.get(c.name)
+                case None => map_cst_dfn.get(c.name)
                 case v => v
               }
             }
@@ -341,7 +347,7 @@ object Exporter {
             writer.comment("Constants")
             for (a <- constants) {
               if (verbose) progress.echo("  "+a.toString+" "+a.serial)
-              val cmd = Translate.const_decl(theory_name, a.name, a.the_content.typargs, a.the_content.typ, dfn_map.get(a.name), a.the_content.syntax)
+              val cmd = Translate.const_decl(theory_name, a.name, a.the_content.typargs, a.the_content.typ, map_cst_dfn.get(a.name), a.the_content.syntax)
               writer.command(cmd,notations)
             }
             // write declarations related to axioms

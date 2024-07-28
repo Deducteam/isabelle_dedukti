@@ -28,6 +28,7 @@ object Prelude {
   var namesSet: Set[String] = Set()
 
   // Dedukti or Lambdapi module names cannot contain dots
+  // Dedukti module names can contain letters, digits and "_" only
   def mod_name(m: String): String = m.replace(".", "_").replace("-", "_")
 
   // module of a translated name

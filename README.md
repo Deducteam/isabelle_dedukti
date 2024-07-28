@@ -190,7 +190,7 @@ Performance on a machine with 32 processors i9-13950HX and 64 Go RAM:
 |:----------------------------|--------:|-------:|---------:|-------:|--------------:|
 | Pure                        |         |     3s |          |     0s |            1s |
 | HOL_Groups_wp               |    16s? |    10s |      1s? |     0s |           18s |
-| HOL_Pre_Enum_wp             | 16m56s? |  9m26s |   5m31s? |  1m58s | out of memory |
+| HOL_Pre_Enum_wp             | 16m56s? |  9m13s |   5m31s? |  1m58s | out of memory |
 | HOL_Enum_wp                 |  1m18s? |    1m? |     18s? |        |               |
 | HOL_Quickcheck_Random_wp    |  3m26s? | 6m32s? |   1m50s? |        |               |
 | HOL_Quickcheck_Narrowing_wp |    33s? |   43s? |     11s? |        |               |
