@@ -305,44 +305,13 @@ object Exporter {
                 case None =>
               }
             }
-            // type of dependency graphs between constants
-            type GraphConst = Graph[String,Unit]
-            // add dependencies from a constant definition
-            def add_deps_dfn(c:String, t:Term, g:GraphConst): GraphConst = {
-              def aux(t:Term, g:GraphConst): GraphConst = {
-                t match {
-                  case Cst(n,_) => g.default_node(n,()).add_edge(c,n)
-                  case App(u,v) => aux(v,aux(u,g))
-                  case Abs(_,_,u) => aux(u,g)
-                  case _ => g
-                }
-              }
-              aux(t,g)
-            }
-            // add dependencies of a constant
-            def add_deps_const(c:Entity[Const], g:GraphConst): GraphConst = {
-              val g1 = g.default_node(c.name,())
-              map_cst_dfn.get(c.name) match {
-                case Some(d) => add_deps_dfn(c.name,d,g1)
-                case _ => g1
-              }
-            }
-            // dependency graph between constants
-            val g0 : GraphConst = Graph.empty(Ordering.String)
-            val g : GraphConst =
-              theory.consts.foldRight(g0)(add_deps_const).transitive_closure
-            // le(c1,c2)=true iff c1 can be declared before c2
-            val const_names = g.topological_order.reverse
-            def le(c1:Entity[Const], c2:Entity[Const]):Boolean = {
-              if (const_names.indexOf(c1.name)
-                <= const_names.indexOf(c2.name)) true
-              else false
-            }
-            val constants = theory.consts.sortWith(le)
+            // ordering on entities
+            def le[A<:Content[A]](e1:Entity[A], e2:Entity[A]) =
+              e1.serial <= e2.serial
             // write declarations related to constants
             writer.nl()
             writer.comment("Constants")
-            for (c <- constants) {
+            for (c <- theory.consts.sortWith(le)) {
               if (verbose) progress.echo("  "+c.toString+" "+c.serial)
               val cmd = Translate.const_decl(theory_name, c.name, c.the_content.typargs, c.the_content.typ, map_cst_dfn.get(c.name), c.the_content.syntax)
               writer.command(cmd,notations)
@@ -350,7 +319,7 @@ object Exporter {
             // write declarations related to non-definitional axioms
             writer.nl()
             writer.comment("Axioms")
-            for (a <- theory.axioms) {
+            for (a <- theory.axioms.sortWith(le)) {
               if (!map_axm_eqtyp.contains(a.name)) {
                 if (verbose) progress.echo("  "+a.toString+" "+a.serial)
                 val cmd = Translate.stmt_decl(Prelude.add_axiom_ident(a.name,theory_name), a.the_content.prop, None)
@@ -360,7 +329,7 @@ object Exporter {
             // write declarations related to definitional axioms
             writer.nl()
             writer.comment("Definitional theorems")
-            for (a <- theory.axioms) {
+            for (a <- theory.axioms.sortWith(le)) {
               map_axm_eqtyp.get(a.name) match {
                 case None =>
                 case Some(eqtys,lhs) =>
