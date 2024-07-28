@@ -82,31 +82,28 @@ object Exporter {
     outdir: String = "",
   ): Unit = {
 
-    // extract constant name and definition from an equality
-    def is_eq_axiom(a:Entity[Axiom]):Option[(String,Term)] = {
+    /* from an equality [Pure.eq[eqtys] lhs rhs] where [lhs = c[tys] x1
+     * .. xn] with tys and xj variables, returns (c,dfn,eqtys,lhs)
+     * where [dfn=\x1..\xn,rhs] */
+    def is_eq_axiom(a:Entity[Axiom]):Option[(String,Term,List[Typ],Term)] = {
       if (a.name.endsWith("_def") || a.name.endsWith("_def_raw")) {
         a.the_content.prop.term match {
-          case App(u,r) =>
+          case App(u,rhs) =>
             u match {
-              case App(e,l) =>
+              case App(e,lhs) =>
                 e match {
-                  case Cst(id,_) =>
+                  case Cst(id,eqtys) =>
                     if (id != "Pure.eq") {
                       if (verbose) progress.echo("axiom "+a.name+": cannot extract definition because it is headed by "+id+" instead of Pure.eq")
                       None
                     } else {
-                      val (h,revargs) = head_revargs(l,List())
+                      val (h,revargs) = head_revargs(lhs,List())
                       h match {
                         case Cst(n,tys) =>
                           if (tys.forall(is_TFree) && revargs.forall(is_Free)) {
-                            val r2 = debruijn(revargs,r)
-                            val d = revargs.foldLeft(r2)(abs)
-                            /*println("t: "+t.toString)
-                             println("revargs: "+revargs.toString)
-                             println("r: "+r.toString)
-                             println("debruijn: "+r2.toString)
-                             println("d: "+d.toString)*/
-                            Some(n,d)
+                            val rhs2 = debruijn(revargs,rhs)
+                            val dfn = revargs.foldLeft(rhs2)(abs)
+                            Some(n,dfn,eqtys,lhs)
                           } else {
                             if (verbose) progress.echo("axiom "+a.name+": cannot extract definition because it is not applied to free variables")
                             None
@@ -285,8 +282,10 @@ object Exporter {
               val cmd = Translate.class_decl(theory_name, a.name)
               writer.command(cmd,notations)
             }
-            // build map constant name -> definition
+            // map constant name -> definition * definitional axiom
             var map_cst_dfn:Map[String,Term] = Map()
+            // names of definitional axioms
+            var map_axm_eqtyp:Map[String,(List[Typ],Term)] = Map()
             // check constant abbreviations
             for (a <- theory.consts) {
               a.the_content.abbrev match {
@@ -299,9 +298,10 @@ object Exporter {
             // check axioms
             for (a <- theory.axioms) {
               is_eq_axiom(a) match {
-                case Some(n,d) =>
+                case Some(n,d,eqtys,lhs) =>
                   if (verbose) progress.echo(n+" is defined by axiom "+a.name)
                   map_cst_dfn += (n -> d)
+                  map_axm_eqtyp += (a.name -> (eqtys,lhs))
                 case None =>
               }
             }
@@ -342,18 +342,35 @@ object Exporter {
             // write declarations related to constants
             writer.nl()
             writer.comment("Constants")
-            for (a <- constants) {
-              if (verbose) progress.echo("  "+a.toString+" "+a.serial)
-              val cmd = Translate.const_decl(theory_name, a.name, a.the_content.typargs, a.the_content.typ, map_cst_dfn.get(a.name), a.the_content.syntax)
+            for (c <- constants) {
+              if (verbose) progress.echo("  "+c.toString+" "+c.serial)
+              val cmd = Translate.const_decl(theory_name, c.name, c.the_content.typargs, c.the_content.typ, map_cst_dfn.get(c.name), c.the_content.syntax)
               writer.command(cmd,notations)
             }
-            // write declarations related to axioms
+            // write declarations related to non-definitional axioms
             writer.nl()
             writer.comment("Axioms")
             for (a <- theory.axioms) {
-              if (verbose) progress.echo("  "+a.toString+" "+a.serial)
-              val cmd = Translate.stmt_decl(Prelude.add_axiom_ident(a.name,theory_name), a.the_content.prop, None)
-              writer.command(cmd,notations)
+              if (!map_axm_eqtyp.contains(a.name)) {
+                if (verbose) progress.echo("  "+a.toString+" "+a.serial)
+                val cmd = Translate.stmt_decl(Prelude.add_axiom_ident(a.name,theory_name), a.the_content.prop, None)
+                writer.command(cmd,notations)
+              }
+            }
+            // write declarations related to definitional axioms
+            writer.nl()
+            writer.comment("Definitional theorems")
+            for (a <- theory.axioms) {
+              map_axm_eqtyp.get(a.name) match {
+                case None =>
+                case Some(eqtys,lhs) =>
+                  if (verbose) progress.echo("  "+a.toString+" "+a.serial)
+                  val p = a.the_content.prop
+                  val prf = Appt(PAxm("Pure.reflexive",eqtys),lhs)
+                  //println("proof of "+a.name+": "+prf.toString)
+                  val cmd = Translate.stmt_decl(Prelude.add_axiom_ident(a.name,theory_name), a.the_content.prop, Some(prf))
+                  writer.command(cmd,notations)
+              }
             }
             // function writing a declaration related to a theorem
             def decl_thm(thm : Entity[Thm]): Unit = {
