@@ -64,29 +64,17 @@ Proof. intros A B f g h. apply fun_ext. apply h. Qed.
 Lemma combination : forall _a_ : Type', forall _b_ : Type', forall f_ : _a_ -> _b_, forall g_ : _a_ -> _b_, forall x_ : _a_, forall y_ : _a_, (@eq (_a_ -> _b_) f_ g_) -> (@eq _a_ x_ y_) -> @eq _b_ (f_ x_) (g_ y_).
 Proof.  intros a b f g x y fg xy. rewrite fg, xy. reflexivity. Qed.
 
-Definition term : forall _a_ : Type', _a_ -> Prop := fun _a_ x_ => all Prop (fun A_ : Prop => A_ -> A_).
+Lemma conjunction_def : forall A_ : Prop, forall B_ : Prop, @eq Prop (and A_ B_) (all Prop (fun C_ : Prop => (A_ -> B_ -> C_) -> C_)).
+Proof.
+  intros p q. apply prop_ext.
+  intros [hp hq]. intros r h. apply (h hp hq).
+  intro h. apply h. intros hp hq. split. exact hp. exact hq.
+Qed.
 
-Lemma term_def : forall _a_ : Type', forall x_ : _a_, @eq Prop (term _a_ x_) (all Prop (fun A_ : Prop => A_ -> A_)).
-Proof. reflexivity. Qed.
-
-Definition sort_constraint : forall _a_ : Type', (itself _a_) -> Prop := fun _a_ _x => term ( itself _a_) _x.
+(*Definition sort_constraint : forall _a_ : Type', (itself _a_) -> Prop := fun _a_ _x => term ( itself _a_) _x.
 
 Lemma sort_constraint_def : forall _a_ : Type', @eq Prop (sort_constraint _a_ (unit _a_)) (term ( _a_) (el _a_)).
-Proof. reflexivity. Qed.
-
-Definition conjunction : Prop -> Prop -> Prop := fun A_ B_ => all Prop (fun C_ : Prop => (A_ -> B_ -> C_) -> C_).
-
-Lemma conjunction_def : forall A_ : Prop, forall B_ : Prop, @eq Prop (conjunction A_ B_) (all Prop (fun C_ : Prop => (A_ -> B_ -> C_) -> C_)).
-Proof. reflexivity. Qed.
-
-(****************************************************************************)
-(* Tools_Code_Generator. *)
-(****************************************************************************)
-
-Definition holds : Prop := @eq (Prop -> Prop) (fun x_ : Prop => x_) (fun x_ : Prop => x_).
-
-Lemma holds_def_raw : @eq Prop holds (@eq (Prop -> Prop) (fun x_ : Prop => x_) (fun x_ : Prop => x_)).
-Proof. reflexivity. Qed.
+Proof. reflexivity. Qed.*)
 
 (****************************************************************************)
 (* HOL_HOL. *)
@@ -94,7 +82,17 @@ Proof. reflexivity. Qed.
 
 Definition Trueprop : Prop -> Prop := fun P => P.
 
-Definition undefined : forall _a_ : Type', _a_ := el.
+Lemma impI : all Prop (fun P_ : Prop => all Prop (fun Q_ : Prop => ((Trueprop P_) -> Trueprop Q_) -> Trueprop (imp P_ Q_))).
+Proof. intros P Q PQ. exact PQ. Qed.
+
+Lemma mp : all Prop (fun P_ : Prop => all Prop (fun Q_ : Prop => (Trueprop (imp P_ Q_)) -> (Trueprop P_) -> Trueprop Q_)).
+Proof. intros P Q h hP. apply (h hP). Qed.
+
+Lemma True_or_False : all Prop (fun P_ : Prop => Trueprop (or (@eq Prop P_ True) (@eq Prop P_ False))).
+Proof. intro P. apply prop_degen. Qed.
+
+(****************************************************************************)
+(* alignment of connectives *)
 
 Lemma True_def_raw : @eq Prop True (@eq (Prop -> Prop) (fun x_ : Prop => x_) (fun x_ : Prop => x_)).
 Proof. apply prop_ext. reflexivity. intros _; exact I. Qed.
@@ -134,68 +132,6 @@ Proof.
   intro h. apply h. intro hp. left. exact hp. intro hq. right. exact hq.
 Qed.
 
-Definition The : forall _a_ : Type', (_a_ -> Prop) -> _a_ := @ε.
-
-Definition Uniq : forall _a_ : Type', (_a_ -> Prop) -> Prop := fun _a_ => (fun P_ : _a_ -> Prop => @all _a_ (fun x_ : _a_ => @all _a_ (fun y_ : _a_ => imp (P_ x_) (imp (P_ y_) (@eq _a_ y_ x_))))).
-
-Lemma Uniq_def_raw : forall _a_ : Type', @eq ((_a_ -> Prop) -> Prop) (Uniq _a_) (fun P_ : _a_ -> Prop => @all _a_ (fun x_ : _a_ => @all _a_ (fun y_ : _a_ => imp (P_ x_) (imp (P_ y_) (@eq _a_ y_ x_))))).
-Proof. reflexivity. Qed.
-
-Definition Ex1 : forall _a_ : Type', (_a_ -> Prop) -> Prop := fun _a_ => (fun P_ : _a_ -> Prop => @ex _a_ (fun x_ : _a_ => and (P_ x_) (@all _a_ (fun y_ : _a_ => imp (P_ y_) (@eq _a_ y_ x_))))).
-
-Lemma Ex1_def_raw : forall _a_ : Type', @eq ((_a_ -> Prop) -> Prop) (Ex1 _a_) (fun P_ : _a_ -> Prop => @ex _a_ (fun x_ : _a_ => and (P_ x_) (@all _a_ (fun y_ : _a_ => imp (P_ y_) (@eq _a_ y_ x_))))).
-Proof. reflexivity. Qed.
-
-Lemma impI : all Prop (fun P_ : Prop => all Prop (fun Q_ : Prop => ((Trueprop P_) -> Trueprop Q_) -> Trueprop (imp P_ Q_))).
-Proof. intros P Q PQ. exact PQ. Qed.
-
-Lemma mp : all Prop (fun P_ : Prop => all Prop (fun Q_ : Prop => (Trueprop (imp P_ Q_)) -> (Trueprop P_) -> Trueprop Q_)).
-Proof. intros P Q h hP. apply (h hP). Qed.
-
-Lemma True_or_False : all Prop (fun P_ : Prop => Trueprop (or (@eq Prop P_ True) (@eq Prop P_ False))).
-Proof. intro P. apply prop_degen. Qed.
-
-Definition If : forall _a_ : Type', Prop -> _a_ -> _a_ -> _a_ := fun _a_ => (fun P_ : Prop => fun x_ : _a_ => fun y_ : _a_ => The _a_ (fun z_ : _a_ => and (imp (@eq Prop P_ True) (@eq _a_ z_ x_)) (imp (@eq Prop P_ False) (@eq _a_ z_ y_)))).
-
-Lemma If_def_raw : forall _a_ : Type', @eq (Prop -> _a_ -> _a_ -> _a_) (If _a_) (fun P_ : Prop => fun x_ : _a_ => fun y_ : _a_ => The _a_ (fun z_ : _a_ => and (imp (@eq Prop P_ True) (@eq _a_ z_ x_)) (imp (@eq Prop P_ False) (@eq _a_ z_ y_)))).
-Proof. reflexivity. Qed.
-
-Definition Let : forall _a_ : Type', forall _b_ : Type', _a_ -> (_a_ -> _b_) -> _b_ := fun _a_ _b_ => (fun s_ : _a_ => fun f_ : _a_ -> _b_ => f_ s_).
-
-Lemma Let_def_raw : forall _a_ : Type', forall _b_ : Type', @eq (_a_ -> (_a_ -> _b_) -> _b_) (Let _a_ _b_) (fun s_ : _a_ => fun f_ : _a_ -> _b_ => f_ s_).
-Proof. reflexivity. Qed.
-
-Lemma simp_implies_def_raw : @eq (Prop -> Prop -> Prop) imp imp.
-Proof. reflexivity. Qed.
-
-Lemma induct_forall_def_raw : forall _a_ : Type', @eq ((_a_ -> Prop) -> Prop) (all _a_) (@all _a_).
-Proof. reflexivity. Qed.
-
-Lemma induct_implies_def_raw : @eq (Prop -> Prop -> Prop) imp imp.
-Proof. reflexivity. Qed.
-
-Lemma induct_equal_def_raw : forall _a_ : Type', @eq (_a_ -> _a_ -> Prop) (@eq _a_) (@eq _a_).
-Proof. reflexivity. Qed.
-
-Lemma induct_conj_def_raw : @eq (Prop -> Prop -> Prop) and and.
-Proof. reflexivity. Qed.
-
-Lemma induct_true_def_raw : @eq Prop True True.
-Proof. reflexivity. Qed.
-
-Lemma induct_false_def_raw : @eq Prop False False.
-Proof. reflexivity. Qed.
-
-Definition NO_MATCH : forall _a_ : Type', forall _b_ : Type', _a_ -> _b_ -> Prop := fun _a_ _b_ => (fun pat_ : _a_ => fun val_ : _b_ => True).
-
-Lemma NO_MATCH_def_raw : forall _a_ : Type', forall _b_ : Type', @eq (_a_ -> _b_ -> Prop) (NO_MATCH _a_ _b_) (fun pat_ : _a_ => fun val_ : _b_ => True).
-Proof. reflexivity. Qed.
-
-Definition ASSUMPTION : Prop -> Prop := (fun A_ : Prop => A_).
-
-Lemma ASSUMPTION_def_raw : @eq (Prop -> Prop) ASSUMPTION (fun A_ : Prop => A_).
-Proof. reflexivity. Qed.
-
 (****************************************************************************)
 (* class type (top class) *)
 
@@ -213,7 +149,7 @@ Proof. intros a _ t s P st Ps. rewrite <- st. exact Ps. Qed.
 Lemma ext : forall _a__var : Type', forall _b__var : Type', (type_class _a__var) -> (type_class _b__var) -> all (_a__var -> _b__var) (fun f__var : _a__var -> _b__var => all (_a__var -> _b__var) (fun g__var : _a__var -> _b__var => (all _a__var (fun x__var : _a__var => Trueprop (@eq _b__var (f__var x__var) (g__var x__var)))) -> Trueprop (@eq (_a__var -> _b__var) f__var g__var))).
 Proof. intros a b _ _ f g fg. apply fun_ext. apply fg. Qed.
 
-Lemma the_eq_trivial : forall _a__var : Type', (type_class _a__var) -> all _a__var (fun a__var : _a__var => Trueprop (@eq _a__var (The _a__var (fun x__var : _a__var => @eq _a__var x__var a__var)) a__var)).
+Lemma the_eq_trivial : forall _a__var : Type', (type_class _a__var) -> all _a__var (fun a__var : _a__var => Trueprop (@eq _a__var (@ε _a__var (fun x__var : _a__var => @eq _a__var x__var a__var)) a__var)).
 Proof. intros a _ x. apply ε_spec. exists x. reflexivity. Qed.
 
 Lemma fun_arity : forall _a__var : Type', forall _b__var : Type', (type_class _a__var) -> (type_class _b__var) -> type_class (_a__var -> _b__var).
@@ -247,14 +183,14 @@ Proof. reflexivity. Qed.
 
 Axiom equal_class_equal : forall _a__var : Type', _a__var -> _a__var -> Prop.
 
-Definition equal := fun _a_ : Type' => conjunction (type_class _a_) (Trueprop (class_equal _a_ (equal_class_equal _a_))).
+Definition equal := fun _a_ : Type' => and (type_class _a_) (Trueprop (class_equal _a_ (equal_class_equal _a_))).
 
-(*Definition equal (_a_ : Type') {c:equal_class _a_} := conjunction (type_class _a_) (Trueprop (class_equal _a_ (@equal_class_equal _a_ c))).*)
+(*Definition equal (_a_ : Type') {c:equal_class _a_} := and (type_class _a_) (Trueprop (class_equal _a_ (@equal_class_equal _a_ c))).*)
 
-Lemma equal_class_def : forall _a_ : Type', @eq Prop (equal _a_) (conjunction (type_class _a_) (Trueprop (class_equal _a_ (equal_class_equal _a_)))).
+Lemma equal_class_def : forall _a_ : Type', @eq Prop (equal _a_) (and (type_class _a_) (Trueprop (class_equal _a_ (equal_class_equal _a_)))).
 Proof. reflexivity. Qed.
 
-(*Lemma equal_class_def (_a_ : Type') {c:equal_class _a_} : @eq Prop (equal _a_) (conjunction (type_class _a_) (Trueprop (class_equal _a_ (@equal_class_equal _a_ c)))).
+(*Lemma equal_class_def (_a_ : Type') {c:equal_class _a_} : @eq Prop (equal _a_) (and (type_class _a_) (Trueprop (class_equal _a_ (@equal_class_equal _a_ c)))).
 Proof. reflexivity. Qed.*)
 
 (*

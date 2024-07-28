@@ -18,7 +18,7 @@ LAMBDAPI = lambdapi
 	$(LAMBDAPI) export -o stt_coq --encoding $(ISADK_DIR)/encoding.lp --erasing $(ISADK_DIR)/erasing.lp --renaming $(ISADK_DIR)/renaming.lp --requiring Isabelle.Isabelle.v --no-implicits $*.dk > $*.v
 
 .PHONY: clean-v
-clean-v: rm-v clean-vo clean-dep
+clean-v: rm-v clean-vo #clean-dep
 
 .PHONY: rm-v
 rm-v:
