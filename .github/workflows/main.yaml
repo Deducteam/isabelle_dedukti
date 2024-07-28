@@ -14,7 +14,7 @@ jobs:
         isabelle-version: [2023]
     runs-on: ubuntu-latest
     steps:
-    # actions/checkout must be done BEFORE avsm/setup-ocaml
+      # actions/checkout must be done BEFORE avsm/setup-ocaml
       - name: Checkout isabelle_dedukti
         uses: actions/checkout@v4
 #      - name: Set up cache
@@ -51,6 +51,7 @@ jobs:
         run: opam install lambdapi.${{ matrix.lambdapi-version }}
       - name: Install kocheck
         run: |
+          cd ~
           git clone https://github.com/01mf02/kontroli-rs.git
           cd ~/kontroli-rs
           cargo install --path kocheck
