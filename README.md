@@ -165,21 +165,21 @@ The generated Dedukti files can be translated to Coq by using the Coq export fun
 Performance on a machine with 32 processors i9-13950HX and 64 Go RAM
 (but multiprocessing is used in v and vo only for the moment):
 
-| SESSION                     |  build | db size |  dk | dk size |   dko |    v |    vo |
-|:----------------------------|-------:|--------:|----:|--------:|------:|-----:|------:|
-| Pure                        |     2s |       0 |  3s |     52K |    0s |   0s |    1s |
-| HOL_Groups_wp               |    16s |      7M |  8s |     14M |    1s |   0s |   17s |
-| HOL_Nat_wp                  |    51s |     19M | 33s |    111M |   12s |   2s | 2m29s |
-| HOL_Pre_Enum_wp             | 15m12s |    195M |  9m |    3.2G | 4m56s | 1m9s |       |
-| HOL_Enum_wp                 |        |         |     |         |       |      |       |
-| HOL_Quickcheck_Random_wp    |        |         |     |         |       |      |       |
-| HOL_Quickcheck_Narrowing_wp |        |         |     |         |       |      |       |
-| HOL_Main                    |        |         |     |         |       |      |       |
-| HOL_Pre_Transcendental_wp   |        |         |     |         |       |      |       |
-| HOL_Transcendental_wp       |        |         |     |         |       |      |       |
-| HOL_Complex_Main_wp         |        |         |     |         |       |      |       |
+| SESSION                     |  build | db size |   dk | dk size |   dko |    v |            vo |
+|:----------------------------|-------:|--------:|-----:|--------:|------:|-----:|--------------:|
+| Pure                        |     2s |       0 |   3s |     52K |    0s |   0s |            1s |
+| HOL_Groups_wp               |    16s |      7M |   8s |     14M |    1s |   0s |           17s |
+| HOL_Nat_wp                  |    51s |     19M |  33s |    111M |   11s |   2s |         2m29s |
+| HOL_Pre_Enum_wp             | 15m12s |    195M |   9m |    3.2G | 4m56s | 1m9s | out of memory |
+| HOL_Enum_wp                 |  1m19s |    8.6M | 1m5s |    206M |   18s |  12s |               |
+| HOL_Quickcheck_Random_wp    |        |         |      |         |       |      |               |
+| HOL_Quickcheck_Narrowing_wp |        |         |      |         |       |      |               |
+| HOL_Main                    |        |         |      |         |       |      |               |
+| HOL_Pre_Transcendental_wp   |        |         |      |         |       |      |               |
+| HOL_Transcendental_wp       |        |         |      |         |       |      |               |
+| HOL_Complex_Main_wp         |        |         |      |         |       |      |               |
 
-There is room for many important improvements. Makarius Wenzel is working on improving the export of proof terms in Isabelle. No term sharing is currently used in dk and v files.
+There is room for many important improvements. Makarius Wenzel is working on improving the export of proof terms in Isabelle. The generation of dk files is not modular. No term sharing is currently used in dk and v files.
 
 ## Project structure
 
