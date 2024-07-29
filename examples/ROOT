@@ -50,7 +50,7 @@ session HOL_Transcendental_wp in HOL_Transcendental_wp = HOL_Pre_Transcendental_
   sessions HOL
   theories HOL.Transcendental
 
-session HOL_wp in HOL_wp = HOL_Main_wp +
+session HOL_Complex_Main_wp in HOL_wp = HOL_Main_wp +
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
   sessions HOL
   theories

@@ -2,7 +2,7 @@
 
 .PHONY: default help
 default help:
-	@echo usage: make [target] [VAR=VAL] ...
+	@echo usage: make [-j JOBS] [target] [VAR=VAL] ...
 	@echo targets: build, dk, dko, v, dep, vo, session, sessions, clean-[target,all]
 	@echo variables: ISADK_DIR, ISADB_DIR, ROOT_DIR, SESSION, SESSIONS
 
