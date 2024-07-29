@@ -1,9 +1,12 @@
 .SUFFIXES:
 
-.PHONY: default
-default:
-	@echo targets: build, dk, dko, v, dep, vo, clean-[target,all]
-	@echo variables: ISADB_DIR, ROOT_DIR, SESSION
+.PHONY: default help
+default help:
+	@echo usage: make [target] [VAR=VAL] ...
+	@echo targets: build, dk, dko, v, dep, vo, session, sessions, clean-[target,all]
+	@echo variables: ISADK_DIR, ISADB_DIR, ROOT_DIR, SESSION, SESSIONS
+
+TIME = /usr/bin/time -f %e
 
 ############# generation of Coq files ##############
 
@@ -18,7 +21,7 @@ LAMBDAPI = lambdapi
 	$(LAMBDAPI) export -o stt_coq --encoding $(ISADK_DIR)/encoding.lp --erasing $(ISADK_DIR)/erasing.lp --renaming $(ISADK_DIR)/renaming.lp --requiring Isabelle.Isabelle.v --no-implicits $*.dk > $*.v
 
 .PHONY: clean-v
-clean-v: rm-v clean-vo #clean-dep
+clean-v: rm-v clean-vo clean-dep
 
 .PHONY: rm-v
 rm-v:
@@ -80,7 +83,7 @@ $(ISADB_DIR)/%.db: $(ROOT_DIR)/ROOT
 	isabelle build -b -d$(ROOT_DIR) $*
 
 clean-build:
-	rm -f $(ISADB_DIR)/$(SESSION).db $(ISADB_DIR)/$(SESSION).gz
+	rm -f $(ISADB_DIR)/$(SESSION).db
 
 ############# generation of Dedukti files ##############
 
@@ -134,5 +137,30 @@ clean-lpo: rm-lpo
 rm-lpo:
 	find . -maxdepth 1 -name '*.lpo' -delete
 
-.PHONY: clean-all
-clean-all: clean-dk clean-lp
+############# testing ##############
+
+.PHONY: session
+session:
+	@echo $(MAKE) build SESSION=$(SESSION)
+	$(TIME) $(MAKE) build > /dev/null
+	@echo $(MAKE) dk SESSION=$(SESSION)
+	$(TIME) $(MAKE) dk > /dev/null
+	@echo $(MAKE) dko SESSION=$(SESSION)
+	$(TIME) $(MAKE) dko > /dev/null
+	@echo $(MAKE) v SESSION=$(SESSION)
+	$(TIME) $(MAKE) v > /dev/null
+	@echo $(MAKE) dep SESSION=$(SESSION)
+	$(TIME) $(MAKE) dep > /dev/null
+	@echo $(MAKE) vo SESSION=$(SESSION)
+	$(TIME) $(MAKE) vo > /dev/null
+
+.PHONY: clean-session
+clean-session: clean-dk clean-lp clean-build
+
+.PHONY: sessions
+sessions:
+	for SESSION in $(SESSIONS); do $(MAKE) SESSION=$$SESSION; done
+
+.PHONY: clean-sessions
+clean-sessions:
+	for SESSION in $(SESSIONS); do $(MAKE) SESSION=$$SESSION clean-session; done

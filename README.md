@@ -158,33 +158,25 @@ Remark: to visualize theory dependencies in HOL, you can look at the [dependency
 
 ## Translation to Coq
 
-The generated Dedukti files can be translated to Coq by using the Coq export function of Lambdapi. Example:
-
-```
-cd examples
-export SESSION=HOL_Nat_wp
-time make build
-time make dk
-time make -j32 v
-time make -j32 vo
-```
+The generated Dedukti files can be translated to Coq by using the Coq export function of Lambdapi. In the directory `examples/` a `Makefile` with various targets is provided to easily build, translate and check sessions. Do `make` to learn about the available targets and variables that must or can be set.
 
 ## Performances
 
-Performance on a machine with 32 processors i9-13950HX and 64 Go RAM:
+Performance on a machine with 32 processors i9-13950HX and 64 Go RAM (but multiprocessing is used in build only):
 
-| session                     |   build |  to dk | checking | to coq |      checking |
-|:----------------------------|--------:|-------:|---------:|-------:|--------------:|
-| Pure                        |         |     3s |          |     0s |            1s |
-| HOL_Groups_wp               |    16s? |    10s |      1s? |     0s |           18s |
-| HOL_Pre_Enum_wp             | 16m56s? |  9m13s |   5m31s? |  1m58s | out of memory |
-| HOL_Enum_wp                 |  1m18s? |    1m? |     18s? |        |               |
-| HOL_Quickcheck_Random_wp    |  3m26s? | 6m32s? |   1m50s? |        |               |
-| HOL_Quickcheck_Narrowing_wp |    33s? |   43s? |     11s? |        |               |
-| HOL_Main                    |    57s? |  2m6s? |     50s? |        |               |
-| HOL_Pre_Transcendental_wp   |  2m29s? | 2m24s? |    1m2s? |        |               |
-| HOL_Transcendental_wp       |  1m35s? | 2m23s? |     35s? |        |               |
-| HOL_wp                      |  4m19s? | 4m51s? |   1m54s? |        |               |
+| session                     | build |  dk | dko |   v |            vo |
+|:----------------------------|------:|----:|----:|----:|--------------:|
+| Pure                        |    2s |  3s |  0s |  0s |            1s |
+| HOL_Groups_wp               |   16s |  9s |  1s |  1s |           18s |
+| HOL_Nat_wp                  |   51s | 33s | 12s | 11s |         2m29s |
+| HOL_Pre_Enum_wp             |       |     |     |     | out of memory |
+| HOL_Enum_wp                 |       |     |     |     |               |
+| HOL_Quickcheck_Random_wp    |       |     |     |     |               |
+| HOL_Quickcheck_Narrowing_wp |       |     |     |     |               |
+| HOL_Main                    |       |     |     |     |               |
+| HOL_Pre_Transcendental_wp   |       |     |     |     |               |
+| HOL_Transcendental_wp       |       |     |     |     |               |
+| HOL_wp                      |       |     |     |     |               |
 
 
 ## Project structure
