@@ -28,6 +28,7 @@ object Prelude {
   var namesSet: Set[String] = Set()
 
   // Dedukti or Lambdapi module names cannot contain dots
+  // Dedukti module names can contain letters, digits and "_" only
   def mod_name(m: String): String = m.replace(".", "_").replace("-", "_")
 
   // module of a translated name
@@ -42,9 +43,9 @@ object Prelude {
 
   // currently translated module
   var current_module: String = "STTfa"
-  var theory_session: Map[String, String] = Map("STTfa" -> "Pure")
+  var map_theory_session: Map[String, String] = Map("STTfa" -> "Pure")
   def set_current_module(m: String) = { current_module = m }
-  def set_theory_session(t: String, s: String) = {theory_session += t -> s}
+  def set_theory_session(t: String, s: String) = {map_theory_session += t -> s}
 
   val STTfa: String = "STTfa"
 
@@ -60,15 +61,13 @@ object Prelude {
         val cut = id.split("[.]", 2)
         val (prefix, radical) = if (cut.length == 1) ("", cut(0)) else (cut(0), cut(1))
         // because Dedukti does not accept names with dots
-        var translated_id = radical.replace(".", "_")
+        var translated_id = radical.replace(".","_")
         if (kind == "var") translated_id += "_"
         if (namesSet(translated_id)) translated_id += "_" + kind
         if (namesSet(translated_id)) translated_id = prefix + "_" + translated_id
         if (namesSet(translated_id)) error("duplicated name: " + translated_id)
         (translated_id,module0)
     }
-    //println(module + "/" + translated_id)
-    // if (translated_id == "ord_class_Least_dict") println("found it with id "+id+" and kind "+kind+" in "+module)
     namesMap += full_name(id, kind) -> translated_id
     namesSet += translated_id
     moduleOf += translated_id -> module
@@ -379,7 +378,7 @@ object Translate {
 
   // Apply a list of arguments, given as lambda arguments
   def appls_args(tm: Syntax.Term, args: List[Syntax.BoundArg]): Syntax.Term = {
-    val pure_args = args.map { case Syntax.BoundArg(Some(name), _, _) => Syntax.Var(name) }
+    val pure_args = args.map { case Syntax.BoundArg(Some(name), _, _) => Syntax.Var(name) case _ => error("oops") }
     val impl_list = args.map { case Syntax.BoundArg(_, _, impl) => impl }
     Syntax.appls(tm, pure_args, impl_list)
   }
@@ -408,14 +407,14 @@ object Translate {
       case Syntax.Symb(id) =>
         val named_args = name_args(global_types(id), spine_args, ctxt, name_ref)
         val applied1 = expanded_args.foldLeft(head) { case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
-        val applied = named_args.foldLeft(applied1) { case (tm, Syntax.BoundArg(Some(name), _, impl)) => Syntax.Appl(tm, Syntax.Var(name), impl) }
+        val applied = named_args.foldLeft(applied1) { case (tm, Syntax.BoundArg(Some(name), _, impl)) => Syntax.Appl(tm, Syntax.Var(name), impl) case _ => error("oops") }
         val abstracted = named_args.foldRight(applied)(Syntax.Abst.apply)
         abstracted
 
       case Syntax.Var(id) =>
         val named_args = name_args(ctxt(id), spine_args, ctxt, name_ref)
         val applied1 = expanded_args.foldLeft(head) { case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
-        val applied = named_args.foldLeft(applied1) { case (tm, Syntax.BoundArg(Some(name), _, impl)) => Syntax.Appl(tm, Syntax.Var(name), impl) }
+        val applied = named_args.foldLeft(applied1) { case (tm, Syntax.BoundArg(Some(name), _, impl)) => Syntax.Appl(tm, Syntax.Var(name), impl) case _ => error("oops") }
         val abstracted = named_args.foldRight(applied)(Syntax.Abst.apply)
         abstracted
 
@@ -527,6 +526,7 @@ object Translate {
     case Export_Theory.Infix(Export_Theory.Assoc.NO_ASSOC,    op, priority) => Some(Syntax.Infix (notations_get(op), priority))
     case Export_Theory.Infix(Export_Theory.Assoc.LEFT_ASSOC,  op, priority) => Some(Syntax.InfixL(notations_get(op), priority))
     case Export_Theory.Infix(Export_Theory.Assoc.RIGHT_ASSOC, op, priority) => Some(Syntax.InfixR(notations_get(op), priority))
+    case _ => error("oops")
   }
 
   var implArgsMap: Map[String, List[Boolean]] = Map()
@@ -618,7 +618,6 @@ object Translate {
     }
   }
 
-
   /* theorems and proof terms */
 
   def stmt_decl(s: String, prop: Export_Theory.Prop, prf_opt: Option[Term.Proof]): Syntax.Command = {
@@ -635,8 +634,9 @@ object Translate {
     try prf_opt match {
       case None => {
         val (new_args, final_ty) = (Nil, contracted_ty) // fetch_head_args_type(contracted_ty)
+        //dfn_of_eq_decl(s, new_args, final_ty)++
         Syntax.Declaration(s, new_args, final_ty)
-      }
+        }
       case Some(prf) => {
         val translated_rhs = proof(prf, Bounds())
         val full_prf : Syntax.Term = args.foldRight(translated_rhs)(Syntax.Abst.apply)
@@ -648,4 +648,5 @@ object Translate {
       error("oops in " + quote(s)) }
 //    catch { case ERROR(msg) => error(msg + "\nin " + quote(s)) }
   }
+
 }

@@ -4,7 +4,13 @@ session HOL_Groups_wp in HOL_Groups_wp = Pure +
   theories
     HOL.Groups
 
-session HOL_Pre_Enum_wp in HOL_Pre_Enum_wp = Pure +
+session HOL_Nat_wp in HOL_Nat_wp = HOL_Groups_wp +
+  options [strict_facts,export_theory,export_proofs,record_proofs=2]
+  sessions HOL
+  theories
+    HOL.Nat
+
+session HOL_Pre_Enum_wp in HOL_Pre_Enum_wp = HOL_Nat_wp +
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
   sessions HOL
   theories
@@ -44,7 +50,7 @@ session HOL_Transcendental_wp in HOL_Transcendental_wp = HOL_Pre_Transcendental_
   sessions HOL
   theories HOL.Transcendental
 
-session HOL_wp in HOL_wp = HOL_Main_wp +
+session HOL_Complex_Main_wp in HOL_wp = HOL_Main_wp +
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
   sessions HOL
   theories

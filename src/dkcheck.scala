@@ -15,38 +15,39 @@ import scala.io.Source
 
 object Dkcheck {
 
-  def format(
-    writer : BufferedWriter,
-    ancestors : List[String],
-  ): Unit = {
-    writer.write("for f in")
-    for (anc <- ancestors) {
-      writer.write(" "+anc+"*.dk")
-    }
-    writer.write("\ndo\n")
-    writer.write("\tcp $f $f.bak\n")
-    writer.write("\tsed -e 's/#REQUIRE .*\\./(;&;)/' -e \"s/${f%.dk}\\./(;&;)/g\" $f.bak > $f\n")
-    writer.write("done\n")
-  }
+  // def format(
+  //   writer : BufferedWriter,
+  //   ancestors : List[String],
+  // ): Unit = {
+  //   writer.write("for f in")
+  //   for (anc <- ancestors) {
+  //     writer.write(" "+anc+"*.dk")
+  //   }
+  //   writer.write("\ndo\n")
+  //   writer.write("\tcp $f $f.bak\n")
+  //   writer.write("\tsed -e 's/#REQUIRE .*\\./(;&;)/' -e \"s/${f%.dk}\\./(;&;)/g\" $f.bak > $f\n")
+  //   writer.write("done\n")
+  // }
   
-  def deformat(
-    writer : BufferedWriter,
-    ancestors : List[String],
-  ): Unit = {
-    writer.write("for f in")
-    for (anc <- ancestors) {
-      writer.write(" "+anc+"*.dk")
-    }
-    writer.write("\ndo\n")
-    writer.write("\tmv $f.bak $f\n")
-    writer.write("done\n")
-  }
+  // def deformat(
+  //   writer : BufferedWriter,
+  //   ancestors : List[String],
+  // ): Unit = {
+  //   writer.write("for f in")
+  //   for (anc <- ancestors) {
+  //     writer.write(" "+anc+"*.dk")
+  //   }
+  //   writer.write("\ndo\n")
+  //   writer.write("\tmv $f.bak $f\n")
+  //   writer.write("done\n")
+  // }
 
   def dkcheck(
     options: Options,
     session: String,
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
+    outdir: String = "",
     verbose: Boolean = false,
     ): Unit = {
 
@@ -103,17 +104,38 @@ object Dkcheck {
     // bw2.close()
 
     // Generate script for checking dk files with dkcheck
-    val filename3 = session+"/dkcheck/dkcheck.sh"
-    if (verbose) progress.echo("Generates " + filename3 + " ...")
-    val file3 = new File(filename3)
-    val bw3 = new BufferedWriter(new FileWriter(file3))
-    bw3.write("#!/bin/sh\nfor f in "+session+"_Parent.dk")
-    for (theory <- theories) {
-      bw3.write(" " + Prelude.mod_name(theory.toString) + ".dk")
-    }
-    bw3.write(" session_"+session+".dk")
-    bw3.write("\ndo\n  dk check -e --eta $f ") 
-    bw3.write("-I ../../"+anc+"/dkcheck/ ")
+    // val filename3 = session+"/dkcheck/dkcheck.sh"
+    // if (verbose) progress.echo("Generates " + filename3 + " ...")
+    // val file3 = new File(filename3)
+    // val bw3 = new BufferedWriter(new FileWriter(file3))
+    // bw3.write("#!/bin/sh\nfor f in "+session+"_Parent.dk")
+    // for (theory <- theories) {
+    //   bw3.write(" " + Prelude.mod_name(theory.toString) + ".dk")
+    // }
+    // bw3.write(" session_"+session+".dk")
+    // bw3.write("\ndo\n  dk check -e --eta $f ") 
+    // bw3.write("-I ../../"+anc+"/dkcheck/ ")
+    // while (anc != "Pure"){
+    //   val full_stru = Sessions.load_structure(options, dirs = dirs)
+    //   val selected_sessions =
+    //     full_stru.selection(Sessions.Selection(sessions = List[String](anc)))
+    //   val info = selected_sessions(anc)
+    //   anc = info.parent match{
+    //     case Some(x) => x
+    //     case _ => error("the session does not have any parent")
+    //   }
+    //   bw3.write("-I ../../"+anc+"/dkcheck/ ")
+    // }
+    // bw3.write("|| exit 1\ndone\n")
+    // bw3.close()
+
+    // Generate _CoqProject
+    val filename2 = outdir + "_CoqProject_" + session + ".sh"
+    if (verbose) progress.echo("Generates " + filename2 + " ...")
+    val bw2 = new BufferedWriter(new FileWriter(new File(filename2)))
+    bw2.write("-Q ../../../coq IsaCoq\n")
+    bw2.write("-Q ../../../logic DkLogic\n")
+    bw2.write("-Q ../../"+anc+"/dkcheck "+anc+"\n")
     while (anc != "Pure"){
       val full_stru = Sessions.load_structure(options, dirs = dirs)
       val selected_sessions =
@@ -123,10 +145,13 @@ object Dkcheck {
         case Some(x) => x
         case _ => error("the session does not have any parent")
       }
-      bw3.write("-I ../../"+anc+"/dkcheck/ ")
+      bw2.write("-Q ../../"+anc+"/dkcheck "+anc+"\n")
     }
-    bw3.write("|| exit 1\ndone\n")
-    bw3.close()
+    bw2.write("-Q . "+session+"\n")
+    for (theory <- theories) {
+      bw2.write(Prelude.mod_name(theory.toString) + ".v\n")
+    }
+    bw2.close()
   }
 
   // Isabelle tool wrapper and CLI handler
@@ -135,6 +160,7 @@ object Dkcheck {
     Isabelle_Tool(cmd_name, "generate scripts to check the generated dk files", Scala_Project.here,
       { args =>
         var dirs: List[Path] = Nil
+        var outdir = "dkcheck/"
         var options = Options.init()
         var verbose = false
 
@@ -142,11 +168,13 @@ object Dkcheck {
 
   Options are:
     -d DIR       include session directory
+    -D DIR       proof output directory
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
     -v           verbose mode
 
 Generate the scripts dkcheck.sh and kocheck.sh to check the dk files generated by isabelle dedukti_session SESSION.""",
         "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
+        "D:" -> (arg => { outdir = arg + "/" }),
         "o:" -> (arg => { options += arg }),
         "v" -> (_ => verbose = true))
 
@@ -164,7 +192,7 @@ Generate the scripts dkcheck.sh and kocheck.sh to check the dk files generated b
         //if (verbose) progress.echo("Started at " + Build_Log.print_date(start_date) + "\n")
 
         progress.interrupt_handler {
-          try dkcheck(options, session, progress, dirs, verbose)
+          try dkcheck(options, session, progress, dirs, outdir, verbose)
           catch {case x: Exception =>
             progress.echo(x.getStackTrace.mkString("\n"))
             println(x)}
