@@ -4,7 +4,7 @@
 default help:
 	@echo usage: make [-j JOBS] [target] [VAR=VAL] ...
 	@echo targets: build, dk, dko, v, dep, vo, session, sessions, clean-[target,all]
-	@echo variables: ISADK_DIR, ISADB_DIR, ROOT_DIR, SESSION, SESSIONS
+	@echo variables: ISADK_DIR, ISADK_OPT, ISADB_DIR, ROOT_DIR, SESSION, SESSIONS
 
 TIME = /usr/bin/time -f %e
 
@@ -91,7 +91,7 @@ clean-build:
 dk: session_$(SESSION).dk
 
 session_%.dk:
-	isabelle dedukti_session -d$(ROOT_DIR) -r $*
+	isabelle dedukti_session -d$(ROOT_DIR) $(ISADK_OPT) -r $*
 
 .PHONY: clean-dk
 clean-dk: rm-dk rm-sh rm-dko clean-v

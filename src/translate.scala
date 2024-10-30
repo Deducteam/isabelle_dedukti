@@ -51,7 +51,6 @@ object Prelude {
 
   // add a new mapping from an Isabelle full_name to its translation
   def add_name(id: String, kind: String, module0: String) : String = {
-    //print("add_name " + full_name(id, kind) + " -> ")
     val (translated_id,module) = id match {
       case Pure_Thy.FUN => ("arr",STTfa)
       case Pure_Thy.PROP => ("prop",STTfa)
@@ -71,32 +70,34 @@ object Prelude {
     namesMap += full_name(id, kind) -> translated_id
     namesSet += translated_id
     moduleOf += translated_id -> module
+    //println("add_name "+full_name(id,kind)+" -> "+translated_id)
     translated_id
   }
 
   // translate an Isabelle full_name
   def get_name(id: String, kind: String ): String = {
     namesMap get (full_name(id, kind)) match {
-      case None => error ("id '"+id+"' not found")
+      case None => error ("id '"+full_name(id,kind)+"' not found")
       case Some(s) => s
     }
   }
 
   /* kinds */
 
-  def add_class_ident(a: String, module: String): String = add_name(a, Markup.CLASS, module)
+  def add_class_ident(a: String, module: String): String = add_name(a+"_class", Export_Theory.Kind.CONST, module)
   def add_type_ident(a: String, module: String): String = add_name(a, Export_Theory.Kind.TYPE, module)
   def add_const_ident(a: String, module: String): String = add_name(a, Export_Theory.Kind.CONST, module)
   def add_axiom_ident(a: String, module: String): String = add_name(a, Markup.AXIOM, module)
   def add_thm_ident(a: String, module: String): String = add_name(a, Export_Theory.Kind.THM, module)
   def add_proof_ident(serial: Long, module: String): String = add_name(f"proof_$serial", "", module)
-  def ref_class_ident(a: String): String = get_name(a, Markup.CLASS)
+
+  def ref_class_ident(a: String): String = get_name(a+"_class", Export_Theory.Kind.CONST)
   def ref_type_ident(a: String): String = get_name(a, Export_Theory.Kind.TYPE )
   def ref_const_ident(a: String): String = get_name(a, Export_Theory.Kind.CONST)
   def ref_axiom_ident(a: String): String = get_name(a, Markup.AXIOM)
   def ref_thm_ident(a: String): String = get_name(a, Export_Theory.Kind.THM)
   def ref_proof_ident(serial: Long): String = get_name(f"proof_$serial", "")
-  def   var_ident(a: String): String = a+"__var"
+  def var_ident(a: String): String = a+"__var"
 
   /* prologue proper */
   val typeId: String = add_const_ident("Set",STTfa)
@@ -172,8 +173,7 @@ object Translate {
       case Term.TVar(xi, _) => error("Illegal schematic type variable " + xi.toString)
     }
 
-  def eta(ty: Syntax.Term): Syntax.Typ =
-    Syntax.Appl(etaT, ty)
+  def eta(ty: Syntax.Term): Syntax.Typ = Syntax.Appl(etaT, ty)
 
   def term(tm: Term.Term, bounds: Bounds): Syntax.Term =
     tm match {
@@ -533,14 +533,19 @@ object Translate {
 
   /* type classes */
 
-  def class_decl(module: String, c: String): Syntax.Command = {
-    val class_type = Syntax.arrow(typeT, Syntax.Appl(etaT, Syntax.Symb(propId)))
+  def class_decl(module: String, c: String, d: Option[Term.Term]): Syntax.Command = {
+    val out_type = eta(Syntax.Symb(propId))
+    val class_type = Syntax.arrow(typeT,out_type)
     val id_c = add_class_ident(c,module)
     implArgsMap  += id_c -> List(false)
     global_types += id_c -> class_type
-    Syntax.Declaration(id_c, Nil, class_type)
+    d match {
+      case None => Syntax.Declaration(id_c,List(),class_type)
+      case Some(d) =>
+        val typ_arg = Syntax.BoundArg(Some(var_ident("'a")),typeT)
+        Syntax.Definition(id_c,List(typ_arg),Some(out_type),term(d,Bounds()),None)
+    }
   }
-
 
   /* types */
 
