@@ -138,7 +138,7 @@ Qed.
 (****************************************************************************)
 (* class type (top class) *)
 
-Definition type_class : Type' -> Prop := fun A => True.
+Axiom type_class : Type' -> Prop.
 
 Lemma eq_reflection : forall a : Type', (type_class a) -> all a (fun x : a => all a (fun y : a => (Trueprop (@eq a x y)) -> @eq a x y)).
 Proof. intros a _ x y xy. apply xy. Qed.
@@ -154,12 +154,3 @@ Proof. intros a b _ _ f g fg. apply fun_ext. apply fg. Qed.
 
 Lemma the_eq_trivial : forall A : Type', (type_class A) -> all A (fun a : A => Trueprop (@eq A (@ε A (fun x : A => @eq A x a)) a)).
 Proof. intros a _ x. apply ε_spec. exists x. reflexivity. Qed.
-
-Lemma fun_arity : forall a : Type', forall b : Type', (type_class a) -> (type_class b) -> type_class (a -> b).
-Proof. unfold type_class; auto. Qed.
-
-Lemma itself_arity : forall a : Type', (type_class a) -> type_class (itself a).
-Proof. unfold type_class; auto. Qed.
-
-Lemma arity_type_bool : type_class Prop.
-Proof. unfold type_class; auto. Qed.

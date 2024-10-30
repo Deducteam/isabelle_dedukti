@@ -106,6 +106,3 @@ builtin "refl" ≔ HOL_HOL.refl;
 builtin "subst" ≔ HOL_HOL.subst;
 builtin "ext" ≔ HOL_HOL.ext;
 builtin "the_eq_trivial" ≔ HOL_HOL.the_eq_trivial;
-
-//builtin "fun_arity" ≔ HOL_HOL.fun_arity;
-//builtin "itself_arity" ≔ HOL_HOL.itself_arity;
