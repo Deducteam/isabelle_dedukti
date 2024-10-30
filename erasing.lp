@@ -31,8 +31,8 @@ builtin "HOL2DK_MinProof" ≔ MinProof; // unused
 builtin "itself" ≔ Pure.itself;
 builtin "unit" ≔ Pure.type;
 
-//builtin "sort_constraint" ≔ Pure.sort_constraint;
-//builtin "sort_constraint_def" ≔ Pure.sort_constraint_def;
+builtin "sort_constraint" ≔ Pure.sort_constraint;
+builtin "sort_constraint_def" ≔ Pure.sort_constraint_def;
 
 builtin "" ≔ Pure.prop_const; // is defined as the identity
 
@@ -100,7 +100,6 @@ builtin "False" ≔ HOL_HOL.induct_false;
 /* class type (top class) */
 
 builtin "type_class" ≔ HOL_HOL.type_class;
-builtin "HOL2DK_type_class_const" ≔ type_class_const; // unused
 
 builtin "eq_reflection" ≔ HOL_HOL.eq_reflection;
 builtin "refl" ≔ HOL_HOL.refl;
@@ -110,23 +109,3 @@ builtin "the_eq_trivial" ≔ HOL_HOL.the_eq_trivial;
 
 //builtin "fun_arity" ≔ HOL_HOL.fun_arity;
 //builtin "itself_arity" ≔ HOL_HOL.itself_arity;
-
-/* class default */
-
-/*builtin "default_class_default" ≔ HOL_HOL.default_class_default;
-builtin "default" ≔ HOL_HOL.default;
-builtin "default_class_def" ≔ HOL_HOL.default_class_def;*/
-builtin "HOL2DK_default_class" ≔ HOL_HOL.default_class; // unused
-
-/* class equal */
-
-/*builtin "class_equal" ≔ HOL_HOL.class_equal;
-builtin "class_equal_def" ≔ HOL_HOL.class_equal_def;
-builtin "equal_class_equal" ≔ HOL_HOL.equal_class_equal;
-builtin "equal" ≔ HOL_HOL.equal;
-builtin "equal_class_def" ≔ HOL_HOL.equal_class_def;*/
-builtin "HOL2DK_equal_class" ≔ equal_class; // unused
-
-//equal_itself_inst_equal_itself
-//equal_itself_inst_equal_itself_def
-//equal_itself_def_raw

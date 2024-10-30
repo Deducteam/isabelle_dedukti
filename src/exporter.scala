@@ -25,18 +25,19 @@ object Exporter {
     aux(thm.the_content.proof)
   }
 
-  // head and arguments in reverse order of a term
-  def head_revargs(t:Term,args:List[Term]): (Term,List[Term]) = {
+  // head and arguments of a term
+  def head_args(t:Term,args:List[Term]): (Term,List[Term]) = {
     t match {
-      case App(u,v) => head_revargs(u,v::args)
-      case _ => (t,args.reverse)
+      case App(u,v) => head_args(u,v::args)
+      case _ => (t,args)
     }
   }
 
-  // tell if a term is a free variable
-  def is_Free(t:Term): Boolean = {
+  // tell if a term is a free variable or Pure_Thy.TYPE
+  def is_Free_or_TYPE(t:Term): Boolean = {
     t match {
       case Free(_,_) => true
+      case Term.Const(Pure_Thy.TYPE, List(TFree("'a",Nil))) => true
       case _ => false
     }
   }
@@ -63,7 +64,7 @@ object Exporter {
   def abs(b:Term, arg:Term): Term = {
     arg match {
       case Free(n,ty) => Abs(n,ty,b)
-      case _ => error("oops "+arg.toString)
+      case _ => error("exporter.abs: not a free variable "+arg.toString)
     }
   }
 
@@ -97,15 +98,25 @@ object Exporter {
                       if (verbose) progress.echo("axiom "+a.name+": cannot extract definition because it is headed by "+id+" instead of Pure.eq")
                       None
                     } else {
-                      val (h,revargs) = head_revargs(lhs,List())
+                      val (h,args) = head_args(lhs,List())
                       h match {
                         case Cst(n,tys) =>
-                          if (tys.forall(is_TFree) && revargs.forall(is_Free)) {
-                            val rhs2 = debruijn(revargs,rhs)
-                            val dfn = revargs.foldLeft(rhs2)(abs)
-                            Some(n,dfn,eqtys,lhs)
+                          if (tys.forall(is_TFree) && args.forall(is_Free_or_TYPE)) {
+                            if (verbose) progress.echo("  head: "+h.toString+"\n  args: "+args.toString+"\n  rhs: "+rhs.toString)
+                            args match {
+                              case List(Term.Const(Pure_Thy.TYPE,List(TFree(x,Nil)))) =>
+                                lhs match {
+                                  case OFCLASS(_,_) => Some(n,rhs,eqtys,lhs)
+                                  case _ => None
+                                }
+                              case _ =>
+                                val revargs = args.reverse
+                                val rhs2 = debruijn(revargs,rhs)
+                                val dfn = revargs.foldLeft(rhs2)(abs)
+                                Some(n,dfn,eqtys,lhs)
+                            }
                           } else {
-                            if (verbose) progress.echo("axiom "+a.name+": cannot extract definition because it is not applied to free variables")
+                            if (verbose) progress.echo("axiom "+a.name+": cannot extract definition because it is not applied to free variables\n  axiom: "+a.the_content.prop.term.toString+"\n  type arguments: "+tys.toString+"\n  term arguments: "+args.toString)
                             None
                           }
                         case _ => None
@@ -274,14 +285,6 @@ object Exporter {
               val cmd = Translate.type_decl(theory_name, a.name, a.the_content.args, a.the_content.abbrev, a.the_content.syntax)
               writer.command(cmd,notations)
             }
-            // write declarations related to classes
-            writer.nl()
-            writer.comment("Classes")
-            for (a <- theory.classes) {
-              if (verbose) progress.echo("  "+a.toString+" "+a.serial)
-              val cmd = Translate.class_decl(theory_name, a.name)
-              writer.command(cmd,notations)
-            }
             // map constant name -> definition * definitional axiom
             var map_cst_dfn:Map[String,Term] = Map()
             // names of definitional axioms
@@ -306,15 +309,66 @@ object Exporter {
               }
             }
             // ordering on entities
-            def le[A<:Content[A]](e1:Entity[A], e2:Entity[A]) =
-              e1.serial <= e2.serial
-            // write declarations related to constants
+            def le[A<:Content[A]](e1:Entity[A], e2:Entity[A]) = e1.serial <= e2.serial
+            // write declarations related to undefined classes
+            if (verbose) progress.echo("Undefined classes")
             writer.nl()
-            writer.comment("Constants")
+            writer.comment("Undefined classes")
+            for (a <- theory.classes.sortWith(le)) {
+              map_cst_dfn.get(a.name+"_class") match {
+                case None =>
+                  if (verbose) progress.echo("  "+a.toString+" "+a.serial)
+                  val cmd = Translate.class_decl(theory_name, a.name, None)
+                  writer.command(cmd,notations)
+                case Some(_) =>
+              }
+            }
+            // write declarations related to undefined constants
+            writer.nl()
+            writer.comment("Undefined constants")
             for (c <- theory.consts.sortWith(le)) {
-              if (verbose) progress.echo("  "+c.toString+" "+c.serial)
-              val cmd = Translate.const_decl(theory_name, c.name, c.the_content.typargs, c.the_content.typ, map_cst_dfn.get(c.name), c.the_content.syntax)
-              writer.command(cmd,notations)
+              // skip constants corresponding to classes
+              Class_Const.unapply(c.name) match {
+                case Some(_) =>
+                case None =>
+                  map_cst_dfn.get(c.name) match {
+                    case None =>
+                      if (verbose) progress.echo("  "+c.toString+" "+c.serial)
+                      val cmd = Translate.const_decl(theory_name, c.name, c.the_content.typargs, c.the_content.typ, None, c.the_content.syntax)
+                      writer.command(cmd,notations)
+                    case Some(_) =>
+                  }
+              }
+            }
+            // write declarations related to defined constants
+            writer.nl()
+            writer.comment("Defined constants")
+            for (c <- theory.consts.sortWith(le)) {
+              // skip constants corresponding to classes
+              Class_Const.unapply(c.name) match {
+                case Some(_) =>
+                case None =>
+                  map_cst_dfn.get(c.name) match {
+                    case None =>
+                    case Some(dfn) =>
+                      if (verbose) progress.echo("  "+c.toString+" "+c.serial)
+                      val cmd = Translate.const_decl(theory_name, c.name, c.the_content.typargs, c.the_content.typ, Some(dfn), c.the_content.syntax)
+                      writer.command(cmd,notations)
+                  }
+              }
+            }
+            // write declarations related to defined classes
+            if (verbose) progress.echo("Defined classes")
+            writer.nl()
+            writer.comment("Defined classes")
+            for (a <- theory.classes.sortWith(le)) {
+              map_cst_dfn.get(a.name+"_class") match {
+                case Some(d) =>
+                  if (verbose) progress.echo("  "+a.toString+" "+a.serial+" := "+d.toString)
+                  val cmd = Translate.class_decl(theory_name, a.name, Some(d))
+                  writer.command(cmd,notations)
+                case None =>
+              }
             }
             // write declarations related to non-definitional axioms
             writer.nl()
