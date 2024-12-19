@@ -2,7 +2,7 @@
 
 ## Dependencies
 
-* [Isabelle2024](https://isabelle.in.tum.de)
+* [Isabelle2024](https://isabelle.in.tum.de/website-Isabelle2024/dist/Isabelle2024_linux.tar.gz)
 
 * one dk file checker among:
 
@@ -18,7 +18,7 @@
 
   * **Isabelle**
 
-      - Download [Isabelle2024](https://isabelle.in.tum.de)
+      - Download [Isabelle2024](https://isabelle.in.tum.de/website-Isabelle2024/dist/Isabelle2024_linux.tar.gz)
 
       - Unpack and run `Isabelle2024/bin/isabelle jedit` at least
         once, to ensure that everything works (e.g. see Documentation
