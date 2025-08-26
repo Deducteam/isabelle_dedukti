@@ -2,7 +2,7 @@
 
 ## Dependencies
 
-* [Isabelle2023](https://isabelle.in.tum.de/website-Isabelle2023/dist/Isabelle2023_linux.tar.gz)
+* [Isabelle2024](https://isabelle.in.tum.de/website-Isabelle2024/dist/Isabelle2024_linux.tar.gz)
 
 * one dk file checker among:
 
@@ -18,9 +18,9 @@
 
   * **Isabelle**
 
-      - Download [Isabelle2023](https://isabelle.in.tum.de/website-Isabelle2023/dist/Isabelle2023_linux.tar.gz)
+      - Download [Isabelle2024](https://isabelle.in.tum.de/website-Isabelle2024/dist/Isabelle2024_linux.tar.gz)
 
-      - Unpack and run `Isabelle2023/bin/isabelle jedit` at least
+      - Unpack and run `Isabelle2024/bin/isabelle jedit` at least
         once, to ensure that everything works (e.g. see Documentation
         panel with Examples).
 
@@ -85,7 +85,7 @@
     
     ```bash
     cd $path_to_unpatched_Isabelle_dir
-    diff -urNx '*~' -x '*.orig' . $path_to_patched_Isabelle_dir/src/HOL > HOL.patch
+    diff -urNx '*~' -x '*.orig' src/HOL $path_to_patched_Isabelle_dir/src/HOL > HOL.patch
     ```
 
   * **Deleting the Isabelle databases**
@@ -93,7 +93,7 @@
     If something goes wrong, you may delete the databases (which means the proof terms will be rebuilt anew) located somewhere like:
 
     ```bash
-    $ISABELLE_HOME_USER/Isabelle2023/heaps/polyml-$something/log/
+    $ISABELLE_HOME_USER/Isabelle2024/heaps/polyml-$something/log/
     ```
 
 ## How to make Isabelle record proofs?
@@ -154,7 +154,7 @@ To translate other sessions, follow these steps:
   - make sure that the parent session also exports proofs (otherwise, Isabelle generates unfinished proofs which cannot be translated to Dedukti)
 - run the above commands
 
-Remark: to visualize theory dependencies in HOL, you can look at the [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2023/dist/library/HOL/HOL/session_graph.pdf).
+Remark: to visualize theory dependencies in HOL, you can look at the [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2024/dist/library/HOL/HOL/session_graph.pdf).
 
 ## Translation to Coq
 
