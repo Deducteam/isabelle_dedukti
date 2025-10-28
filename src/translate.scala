@@ -227,7 +227,7 @@ object Translate {
         val impl = try implArgsMap(id) catch { case _ : Throwable => Nil }
         cont(Syntax.appls(Syntax.Symb(id), axm.types.map(typ), impl))
       case thm: Term.PThm =>
-        val head = if (thm.name.nonEmpty) ref_thm_ident(thm.name) else {
+        val head = if (!thm.thm_name.is_empty) ref_thm_ident(thm.thm_name.name) else {
           namesMap get (full_name("proof_"+thm.serial.toString, "")) match {
             case None => {
               // println("proof "+thm.serial+" is badly identified from theory "+thm.theory_name+thm.types.foldLeft(""){case (s,ty) => s+" "+ty.toString})

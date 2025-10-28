@@ -328,16 +328,14 @@ object Exporter {
             writer.comment("Undefined constants")
             for (c <- theory.consts.sortWith(le)) {
               // skip constants corresponding to classes
-              Class_Const.unapply(c.name) match {
-                case Some(_) =>
-                case None =>
-                  map_cst_dfn.get(c.name) match {
-                    case None =>
-                      if (verbose) progress.echo("  "+c.toString+" "+c.serial)
-                      val cmd = Translate.const_decl(theory_name, c.name, c.the_content.typargs, c.the_content.typ, None, c.the_content.syntax)
-                      writer.command(cmd,notations)
-                    case Some(_) =>
-                  }
+              if (c.name.endsWith("_Class")) {
+                map_cst_dfn.get(c.name) match {
+                  case None =>
+                    if (verbose) progress.echo("  "+c.toString+" "+c.serial)
+                    val cmd = Translate.const_decl(theory_name, c.name, c.the_content.typargs, c.the_content.typ, None, c.the_content.syntax)
+                    writer.command(cmd,notations)
+                  case Some(_) =>
+                }
               }
             }
             // write declarations related to defined constants
@@ -345,16 +343,14 @@ object Exporter {
             writer.comment("Defined constants")
             for (c <- theory.consts.sortWith(le)) {
               // skip constants corresponding to classes
-              Class_Const.unapply(c.name) match {
-                case Some(_) =>
-                case None =>
-                  map_cst_dfn.get(c.name) match {
-                    case None =>
-                    case Some(dfn) =>
-                      if (verbose) progress.echo("  "+c.toString+" "+c.serial)
-                      val cmd = Translate.const_decl(theory_name, c.name, c.the_content.typargs, c.the_content.typ, Some(dfn), c.the_content.syntax)
-                      writer.command(cmd,notations)
-                  }
+              if (c.name.endsWith("_Class")) {
+                map_cst_dfn.get(c.name) match {
+                  case None =>
+                  case Some(dfn) =>
+                    if (verbose) progress.echo("  "+c.toString+" "+c.serial)
+                    val cmd = Translate.const_decl(theory_name, c.name, c.the_content.typargs, c.the_content.typ, Some(dfn), c.the_content.syntax)
+                    writer.command(cmd,notations)
+                }
               }
             }
             // write declarations related to defined classes
