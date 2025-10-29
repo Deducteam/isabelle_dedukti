@@ -108,31 +108,31 @@ object Syntax {
       case t => (t, args)
     }
 
-  /** Data about an <span style="color:#9932CC;"> lp </span> notation. */
+  /** Data about a <span style="color:#9932CC;"> lambdapi </span> notation. */
   sealed abstract class Notation
-  /** A prefix <span style="color:#9932CC;"> lp </span> notation.
+  /** A prefix <span style="color:#9932CC;"> lambdapi </span> notation.
    * @param op the identifier of the function for which this notation is defined
    * @param priority the priority of the notation (not necessarily an integer). */
   case class Prefix(op: Ident, priority: Double) extends Notation
-  /** A non-associative infix <span style="color:#9932CC;"> lp </span> notation.
+  /** A non-associative infix <span style="color:#9932CC;"> lambdapi </span> notation.
    * @param op the identifier of the function for which this notation is defined
    * @param priority the priority of the notation (not necessarily an integer). */
   case class Infix (op: Ident, priority: Double) extends Notation
-  /** A left-associative infix <span style="color:#9932CC;"> lp </span> notation.
+  /** A left-associative infix <span style="color:#9932CC;"> lambdapi </span> notation.
    * @param op the identifier of the function for which this notation is defined
    * @param priority the priority of the notation (not necessarily an integer). */
   case class InfixL(op: Ident, priority: Double) extends Notation
-  /** A right-associative prefix <span style="color:#9932CC;"> lp </span> notation.
+  /** A right-associative prefix <span style="color:#9932CC;"> lambdapi </span> notation.
    * @param op the identifier of the function for which this notation is defined
    * @param priority the priority of the notation (not necessarily an integer). */
   case class InfixR(op: Ident, priority: Double) extends Notation
-  /** Quantifier-like <span style="color:#9932CC;"> lp </span> notation.
+  /** Quantifier-like <span style="color:#9932CC;"> lambdapi </span> notation.
    * Allows to write {@code <span style="color:#87CEFA"> `op x, t</span>} <br>
    * instead of {@code <span style="color:#87CEFA"> op(λ x, t)</span>}.
    * @param op the identifier of the function for which this notation is defined*/
   case class Quantifier(op: Ident) extends Notation
 
-  /** The priority of a <span style="color:#9932CC;"> lp </span>
+  /** The priority of a <span style="color:#9932CC;"> lambdapi </span>
    * notation.
    * @param not the notation to be inspected
    * @return the floating-point priority of the notation.
@@ -149,7 +149,7 @@ object Syntax {
       case Quantifier(_) => None
     }
 
-  /** Returns the function for which a <span style="color:#9932CC;"> lp </span> notation is defined.
+  /** Returns the function for which a <span style="color:#9932CC;"> lambdapi </span> notation is defined.
    * @param not the notation to be inspected
    * @return the identifier of the function for which the notation is defined */
   def getOperator(not: Notation): Ident =
@@ -161,15 +161,15 @@ object Syntax {
       case Quantifier(op) => op
     }
 
-  /** The internal <span style="color:#9932CC;">lp</span>
+  /** The internal <span style="color:#9932CC;">lambdapi</span>
    * notation for function application {@link Appl}.*/
   val appNotation: Notation = InfixL(" ", Double.PositiveInfinity)
   /** TODO: Understand */
   val justHadPars: Notation = Infix("()", Double.NegativeInfinity)
-  /** The internal <span style="color:#9932CC;">lp</span> notation for arrow types
+  /** The internal <span style="color:#9932CC;">lambdapi</span> notation for arrow types
    * {@link arrow} */
   val arrNotation: Notation = InfixR("→", -2)
-  /** The <span style="color:#9932CC;">lp</span> notation for single-argument
+  /** The <span style="color:#9932CC;">lambdapi</span> notation for single-argument
    * lambda abstraction {@link Abst}.  */
   val absNotation: Notation = InfixR("λ", -1)
   val defaultPrefixPriority = 10.0
@@ -177,7 +177,7 @@ object Syntax {
   /** A <span style="color:#9932CC;">dk/lp</span> command. */
   sealed abstract class Command
   /** <code><span style="color:#87CEFA">constant symbol id (args) : ty;( notation not;)</span></code><br>
-   * Command declaring a <span style="color:#9932CC;">lp</span> constructor symbol.
+   * Command declaring a <span style="color:#9932CC;">lambdapi</span> constructor symbol.
    * @param id the identifier of the symbol
    * @param args the list of arguments of the type of the symbol <br>
    *             (equivalent to a product

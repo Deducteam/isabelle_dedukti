@@ -13,43 +13,61 @@ object Prelude {
 
   // Object name translation, and module dependencies management
 
-  /* An Isabelle object can be uniquely identify from its id (module
-   name dot name) and its kind (class, type, const, etc.). */
+  // An Isabelle object can be uniquely identified from its id (module
+  // name dot name) and its kind (class, type, const, etc.).
+  /** Making an isabelle object name unique by specifying its kind.
+   * @param id the qualified identifier of the object (modulename.name)
+   * @param kind the kind of the object (class, type, const, etc.)
+   * @return the string obtained by appending
+   *         <code><i><span style="color:#FFC0CB;">kind</span></i></code>
+   *         to <code><i><span style="color:#FFC0CB;">id</span></i></code>, with
+   *         a slash to separate them. */
   def full_name(id: String, kind: String): String = id + "/" + kind
 
   /* However, to keep the translated name as close as possible to the
    original name, we remove the module prefix and the kind if this is
    possible. */
 
-  // map Isabelle full_name -> translated name
+  /** map Isabelle full_name -> translated name */
   var namesMap: Map[String, String] = Map()
 
-  // set of translated names
+  /** set of translated names */
   var namesSet: Set[String] = Set()
 
-  // Dedukti or Lambdapi module names cannot contain dots
-  // Dedukti module names can contain letters, digits and "_" only
+  /** Replaces dots with underscore in a name, as dedukti does not accept
+   * dots in a name.
+   * @param m the name to modify
+   * @return the name with each '.' replaced with '_' */
   def mod_name(m: String): String = m.replace(".", "_").replace("-", "_")
 
-  // module of a translated name
+  /** map translated name -> module */
   var moduleOf: Map[String, String] = Map()
 
+  /** Get the module of a translated name using map moduleOf
+   * @param id the translated name
+   * @return the module in which it is defined. <br>
+   *         Prints an error if the name cannot be found. */
   def module_of(id: String): String = {
     moduleOf get id match {
       case None => error("unknown name:" + id)
       case Some(m) => m
     }
   }
-
-  // currently translated module
+  
   var current_module: String = "STTfa"
   var map_theory_session: Map[String, String] = Map("STTfa" -> "Pure")
-  def set_current_module(m: String) = { current_module = m }
-  def set_theory_session(t: String, s: String) = {map_theory_session += t -> s}
-
+  
+  def set_current_module(m: String): Unit = { current_module = m }
+  def set_theory_session(t: String, s: String): Unit = {map_theory_session += t -> s}
+  
+  /** The string "STTfa" */
   val STTfa: String = "STTfa"
 
-  // add a new mapping from an Isabelle full_name to its translation
+  /** Add a new mapping from an Isabelle full_name to its translation.
+   * @param id the qualified identifier of the object (modulename.name)
+   * @param kind the kind of the object (class, type, const, etc.)
+   * @param module0 the current <span style="color:#9932CC;">dk/lp</span> module
+   * @return a unique translated id, after updating maps to account for it */
   def add_name(id: String, kind: String, module0: String) : String = {
     val (translated_id,module) = id match {
       case Pure_Thy.FUN => ("arr",STTfa)
@@ -59,7 +77,7 @@ object Prelude {
       case id =>
         val cut = id.split("[.]", 2)
         val (prefix, radical) = if (cut.length == 1) ("", cut(0)) else (cut(0), cut(1))
-        // because Dedukti does not accept names with dots
+        /** because Dedukti does not accept names with dots */
         var translated_id = radical.replace(".","_")
         if (kind == "var") translated_id += "_"
         if (namesSet(translated_id)) translated_id += "_" + kind
@@ -74,7 +92,11 @@ object Prelude {
     translated_id
   }
 
-  // translate an Isabelle full_name
+  /** Get the translated name of an isabelle object using map namesMap
+   * @param id the qualified identifier of the object (modulename.name)
+   * @param kind the kind of the object (class, type, const, etc.)
+   * @return the translated name of the object. <br>
+   *         Prints an error if the object cannot be found. */
   def get_name(id: String, kind: String ): String = {
     namesMap get (full_name(id, kind)) match {
       case None => error ("id '"+full_name(id,kind)+"' not found")
@@ -83,20 +105,61 @@ object Prelude {
   }
 
   /* kinds */
-
+  /** <pre><code><span style="color:#FFA500;">add_class_ident</span>(<i><span style="color:#FFC0CB;">a</span></i>, <i><span style="color:#FFC0CB;">module</span></i>) =
+   * <span style="color:#FFA500;">{@link add_name}</span>(<i><span style="color:#FFC0CB;">a</span></i>+<span style="color:#006400;">"_class"</span>, Export_Theory.Kind.CONST, <i><span style="color:#FFC0CB;">module</span></i>) */
   def add_class_ident(a: String, module: String): String = add_name(a+"_class", Export_Theory.Kind.CONST, module)
+  /** <pre><code><span style="color:#FFA500;">add_type_ident</span>(<i><span style="color:#FFC0CB;">a</span></i>, <i><span style="color:#FFC0CB;">module</span></i>) =
+   * <span style="color:#FFA500;">{@link add_name}</span>(<i><span style="color:#FFC0CB;">a</span></i>, Export_Theory.Kind.TYPE, <i><span style="color:#FFC0CB;">module</span></i>) */
   def add_type_ident(a: String, module: String): String = add_name(a, Export_Theory.Kind.TYPE, module)
+  /** <pre><code><span style="color:#FFA500;">add_const_ident</span>(<i><span style="color:#FFC0CB;">a</span></i>, <i><span style="color:#FFC0CB;">module</span></i>) =
+   * <span style="color:#FFA500;">{@link add_name}</span>(<i><span style="color:#FFC0CB;">a</span></i>, Export_Theory.Kind.CONST, <i><span style="color:#FFC0CB;">module</span></i>) */
   def add_const_ident(a: String, module: String): String = add_name(a, Export_Theory.Kind.CONST, module)
+  /** <pre><code><span style="color:#FFA500;">add_axiom_ident</span>(<i><span style="color:#FFC0CB;">a</span></i>, <i><span style="color:#FFC0CB;">module</span></i>) =
+   * <span style="color:#FFA500;">{@link add_name}</span>(<i><span style="color:#FFC0CB;">a</span></i>, Markup.AXIOM, <i><span style="color:#FFC0CB;">module</span></i>) */
   def add_axiom_ident(a: String, module: String): String = add_name(a, Markup.AXIOM, module)
+  /** <pre><code><span style="color:#FFA500;">add_thm_ident</span>(<i><span style="color:#FFC0CB;">a</span></i>, <i><span style="color:#FFC0CB;">module</span></i>) =
+   * <span style="color:#FFA500;">{@link add_name}</span>(<i><span style="color:#FFC0CB;">a</span></i>, Export_Theory.Kind.THM, <i><span style="color:#FFC0CB;">module</span></i>) */
   def add_thm_ident(a: String, module: String): String = add_name(a, Export_Theory.Kind.THM, module)
+  /** <pre><code><span style="color:#FFA500;">add_proof_ident</span>(<i><span style="color:#FFC0CB;">serial</span></i>, <i><span style="color:#FFC0CB;">module</span></i>) =
+   * <span style="color:#FFA500;">{@link add_name}</span>(<span style="color:#006400;">f"proof_</span><i>$<span style="color:#FFC0CB;">serial</span></i><span style="color:#006400;">"</span>, <span style="color:#006400;">""</span>, <i><span style="color:#FFC0CB;">module</span></i>) */
   def add_proof_ident(serial: Long, module: String): String = add_name(f"proof_$serial", "", module)
 
+  /** The translated name of an isabelle class
+   * @param a the name of the class
+   * @return The translated name of the object
+   *         <i><span style="color:#FFC0CB;">a</span></i>_class of kind const */
   def ref_class_ident(a: String): String = get_name(a+"_class", Export_Theory.Kind.CONST)
+  /** The translated name of an isabelle type
+   *
+   * @param a the name of the type
+   * @return The translated name of the object
+   *         <i><span style="color:#FFC0CB;">a</span></i> of kind type */
   def ref_type_ident(a: String): String = get_name(a, Export_Theory.Kind.TYPE )
+  /** The translated name of an isabelle constant
+   *
+   * @param a the name of the constant
+   * @return The translated name of the object
+   *         <i><span style="color:#FFC0CB;">a</span></i> of kind const */
   def ref_const_ident(a: String): String = get_name(a, Export_Theory.Kind.CONST)
+  /** The translated name of an isabelle axiom
+   *
+   * @param a the name of the axiom
+   * @return The translated name of the object
+   *         <i><span style="color:#FFC0CB;">a</span></i> of kind axiom */
   def ref_axiom_ident(a: String): String = get_name(a, Markup.AXIOM)
+  /** The translated name of an isabelle theorem
+   *
+   * @param a the name of the theorem
+   * @return The translated name of the object
+   *         <i><span style="color:#FFC0CB;">a</span></i> of kind thm */
   def ref_thm_ident(a: String): String = get_name(a, Export_Theory.Kind.THM)
+  /** the name of the translation of an isabelle proof step
+   * @param serial the index of the proof step
+   * @return The name that was assigned to it */
   def ref_proof_ident(serial: Long): String = get_name(f"proof_$serial", "")
+  /** The translated name of a variable
+   * @param a the name of the variable
+   * @return The string <i><span style="color:#FFC0CB;">a</span></i><span>&#95;&#95</span>var */
   def var_ident(a: String): String = a+"__var"
 
   /* prologue proper */
@@ -104,30 +167,56 @@ object Prelude {
   val  etaId: String = add_const_ident("El",STTfa)
   val  epsId: String = add_const_ident("Prf",STTfa)
 
+  /** The <span style="color:#9932CC;">dk/lp</span> type
+   * <code><span style="color:#87CEFA">Set</span></code> of simple types. */
   val typeT: Syntax.Term = Syntax.Symb(typeId)
+  /** The <span style="color:#9932CC;">dk/lp</span> function
+   * <code><span style="color:#87CEFA">El</span></code>
+   * that maps a simple type to the type of its elements. */
   val  etaT: Syntax.Term = Syntax.Symb( etaId)
+  /** The <span style="color:#9932CC;">dk/lp</span> function
+   * <code><span style="color:#87CEFA">Prf</span></code> that maps
+   * a simple type proposition to the type of its proofs. */
   val  epsT: Syntax.Term = Syntax.Symb( epsId)
-
+  
+  /** The name of the <span style="color:#9932CC;">dk/lp</span> simple type
+   * <code><span style="color:#87CEFA">prop</span></code> of propositions. */
   val propId: String = add_type_ident(Pure_Thy.PROP,STTfa)
+  /** The name of the <span style="color:#9932CC;">dk/lp</span> simple type constructor
+   * <code><span style="color:#87CEFA">arr</span></code> representing arrow types. */
   val  funId: String = add_type_ident(Pure_Thy.FUN,STTfa)
+  /** The name of the <span style="color:#9932CC;">dk/lp</span> simple type connector
+   * <code><span style="color:#87CEFA">imp</span></code> representing implication. */
   val  impId: String = add_const_ident(Pure_Thy.IMP,STTfa)
+  /** The name of the <span style="color:#9932CC;">dk/lp</span> simple type connector
+   * <code><span style="color:#87CEFA">all</span></code> representing universal quantification. */
   val  allId: String = add_const_ident(Pure_Thy.ALL,STTfa)
 
+  /** Declares the <span style="color:#9932CC;">dk/lp</span> type
+   * <code><span style="color:#87CEFA">Set</span></code> of simple types. */
   val typeD: Syntax.Command  = Syntax.Declaration(typeId, Nil, Syntax.TYPE)
 
   val  etaN: Syntax.Notation = Syntax.Prefix("η", 10)
+  /** Declares the <span style="color:#9932CC;">dk/lp</span> function
+   * <code><span style="color:#87CEFA">El</span></code>
+   * that maps a simple type to the type of its elements. */
   val  etaD: Syntax.Command  = Syntax.DefableDecl(etaId, Syntax.arrow(typeT, Syntax.TYPE), inj = true, not = Some(etaN))
 
   val epsN: Syntax.Notation = Syntax.Prefix("ε", 10)
   val epsTy: Syntax.Term = Syntax.arrow(Syntax.Appl(etaT, Syntax.Symb(propId)), Syntax.TYPE)
+  /** Declares the <span style="color:#9932CC;">dk/lp</span> function
+   * <code><span style="color:#87CEFA">Prf</span></code> that maps
+   * a simple type proposition to the type of its proofs. */
   val epsD: Syntax.Command = Syntax.DefableDecl(epsId, epsTy, not = Some(epsN))
 
+  // Tools for implicit arguments will be in comments in case they become usable again.
+  
   // Typing context (for implicit arguments)
-  var global_types: Map[Syntax.Ident, Syntax.Typ] = Map(
+  /* var global_types: Map[Syntax.Ident, Syntax.Typ] = Map(
     typeId -> Syntax.TYPE,
     etaId -> Syntax.arrow(typeT, Syntax.TYPE),
     epsId -> epsTy
-  )
+  ) */
 
 }
 
@@ -138,11 +227,11 @@ object Translate {
 
   /* binders */
 
-  def bound_type_argument(name: String, impl: Boolean = false): Syntax.BoundArg =
-    Syntax.BoundArg(Some(var_ident(name)), typeT, impl)
+  def bound_type_argument(name: String): Syntax.BoundArg = // += impl: Boolean = false
+    Syntax.BoundArg(Some(var_ident(name)), typeT/*, impl*/)
 
-  def bound_term_argument(name: String, ty: Term.Typ, impl: Boolean = false): Syntax.BoundArg =
-    Syntax.BoundArg(Some(var_ident(name)), eta(typ(ty)), impl)
+  def bound_term_argument(name: String, ty: Term.Typ): Syntax.BoundArg = // += impl: Boolean = false
+    Syntax.BoundArg(Some(var_ident(name)), eta(typ(ty))/*, impl*/)
 
   def bound_proof_argument(name: String, tm: Term.Term, bounds: Bounds): Syntax.BoundArg =
     Syntax.BoundArg(Some(var_ident(name)), eps(term(tm, bounds)))
@@ -168,8 +257,8 @@ object Translate {
         Syntax.Var(var_ident(a))
       case Term.Type(c, args) =>
         val id_c = ref_type_ident(c)
-        val impl = try implArgsMap(id_c) catch { case _ : Throwable => Nil }
-        Syntax.appls(Syntax.Symb(id_c), args.map(typ), impl)
+        //val impl = try implArgsMap(id_c) catch { case _ : Throwable => Nil }
+        Syntax.appls(Syntax.Symb(id_c), args.map(typ)/*, impl*/)
       case Term.TVar(xi, _) => error("Illegal schematic type variable " + xi.toString)
     }
 
@@ -179,8 +268,8 @@ object Translate {
     tm match {
       case Term.Const(c, typargs) =>
         val id_c = ref_const_ident(c)
-        val impl = try implArgsMap(id_c) catch { case _ : Throwable => Nil }
-        Syntax.appls(Syntax.Symb(id_c), typargs.map(typ), impl)
+        //val impl = try implArgsMap(id_c) catch { case _ : Throwable => Nil }
+        Syntax.appls(Syntax.Symb(id_c), typargs.map(typ)/*, impl*/)
       case Term.Free(x, _) =>
         Syntax.Var(var_ident(x))
       case Term.Var(xi, _) => error("Illegal schematic variable " + xi.toString)
@@ -197,7 +286,7 @@ object Translate {
 
   def eps(tm: Syntax.Term): Syntax.Term =
     Syntax.Appl(epsT, tm)
-
+  
   def proof(
     prf: Term.Proof,
     bounds: Bounds,
@@ -224,8 +313,8 @@ object Translate {
         proof(b, bounds, prfb => cont(Syntax.Appl(prfa, prfb)))
       case axm: Term.PAxm =>
         val id = ref_axiom_ident(axm.name)
-        val impl = try implArgsMap(id) catch { case _ : Throwable => Nil }
-        cont(Syntax.appls(Syntax.Symb(id), axm.types.map(typ), impl))
+        //val impl = try implArgsMap(id) catch { case _ : Throwable => Nil }
+        cont(Syntax.appls(Syntax.Symb(id), axm.types.map(typ)/*, impl*/))
       case thm: Term.PThm =>
         val head = if (!thm.thm_name.is_empty) ref_thm_ident(thm.thm_name.name) else {
           namesMap get (full_name("proof_"+thm.serial.toString, "")) match {
@@ -294,12 +383,13 @@ object Translate {
           case tm2 => Syntax.Abst(Syntax.BoundArg(Some(id), eta_contract(ty), implicit_arg = false), tm2)
         }
 
-//      case Syntax.Prod(Syntax.BoundArg(Some(id), ty, false), tm2) =>
-//        eta_contract(tm2) match {
-//          case Syntax.Appl(tm1, Syntax.Var(id2), _)
-//            if id == id2 && !lambda_contains(tm1, id) => eta_contract(tm1)
-//          case tm2 => Syntax.Prod(Syntax.BoundArg(Some(id), eta_contract(ty), implicit_arg = false), tm2)
-//        }
+  /** case Syntax.Prod(Syntax.BoundArg(Some(id), ty, false), tm2) =>
+    *   eta_contract(tm2) match {
+    *     case Syntax.Appl(tm1, Syntax.Var(id2), _)
+    *       if id == id2 && !lambda_contains(tm1, id) => eta_contract(tm1)
+    *     case tm2 => Syntax.Prod(Syntax.BoundArg(Some(id), eta_contract(ty), implicit_arg = false), tm2)
+    *   } 
+    */
 
       case Syntax.Abst(Syntax.BoundArg(id, ty, impl), tm2) =>
         Syntax.Abst(Syntax.BoundArg(id, eta_contract(ty), impl), eta_contract(tm2))
