@@ -9,26 +9,60 @@ import isabelle._
 import scala.collection.mutable
 import scala.annotation.tailrec
 
+/** <!-- Some macros for colors and common references.
+ *       Pasted at the start of every object.
+ *       Documentation:
+ *       $dklp: reference dk/lp (purple)
+ *       $dk: reference dedukti (purple)
+ *       $lp: reference lambdapi (purple)
+ *       $isa: reference Isabelle (yellow)
+ *       <$met>metname<$mete>: a scala method (orange,code)
+ *       <$type>typname<$typee>: a scala type (dark orange,bold,code)
+ *       <$arg>argname<$arge>: a scala argument (pink,code)
+ *       <$str>string<$stre>: a scala string (dark green)
+ *       <$lpc>code<$lpce>: some lambdapi code (light blue,code)
+ *       -->
+ * @define dklp <span style="color:#9932CC;">dk/lp</span>
+ * @define dk <span style="color:#9932CC;">dedukti</span>
+ * @define lp <span style="color:#9932CC;">lambdapi</span>
+ * @define isa <span style="color:#FFFF00">Isabelle</span>
+ * @define met code><span style="color:#FFA500;"
+ * @define mete /span></code
+ * @define type code><span style="color:#FF8C00"><b
+ * @define typee /b></span></code
+ * @define arg code><span style="color:#FFC0CB;"
+ * @define arge /span></code
+ * @define str span style="color:#006400;"
+ * @define stre /span
+ * @define lpc code><span style="color:#87CEFA"
+ * @define lpce /span></code
+ */
 object Prelude {
+  
+  def testmet:Unit = ()
 
   // Object name translation, and module dependencies management
 
   // An Isabelle object can be uniquely identified from its id (module
   // name dot name) and its kind (class, type, const, etc.).
-  /** Making an isabelle object name unique by specifying its kind.
-   * @param id the qualified identifier of the object (modulename.name)
+
+  //The following scaladoc contains commands used throughout.
+  /**
+   * Making  an <span style="color:#FFFF00">Isabelle</span> object name unique by specifying its kind.
+   * @param id $arg test$arge the qualified identifier of the object (modulename.name)
    * @param kind the kind of the object (class, type, const, etc.)
    * @return the string obtained by appending
-   *         <code><i><span style="color:#FFC0CB;">kind</span></i></code>
-   *         to <code><i><span style="color:#FFC0CB;">id</span></i></code>, with
-   *         a slash to separate them. */
+   *         <code><span style="color:#FFC0CB;">kind</span></code>
+   *         to <code><span style="color:#FFC0CB;">id</span></code>, with
+   *         a slash to separate them
+   */
   def full_name(id: String, kind: String): String = id + "/" + kind
 
   /* However, to keep the translated name as close as possible to the
    original name, we remove the module prefix and the kind if this is
    possible. */
 
-  /** map Isabelle full_name -> translated name */
+  /** map $lp <span style="color:#FFFF00">Isabelle</span> full_name -> translated name */
   var namesMap: Map[String, String] = Map()
 
   /** set of translated names */
@@ -63,7 +97,7 @@ object Prelude {
   /** The string "STTfa" */
   val STTfa: String = "STTfa"
 
-  /** Add a new mapping from an Isabelle full_name to its translation.
+  /** Add a new mapping from an <span style="color:#FFFF00">Isabelle</span> full_name to its translation.
    * @param id the qualified identifier of the object (modulename.name)
    * @param kind the kind of the object (class, type, const, etc.)
    * @param module0 the current <span style="color:#9932CC;">dk/lp</span> module
@@ -92,7 +126,7 @@ object Prelude {
     translated_id
   }
 
-  /** Get the translated name of an isabelle object using map namesMap
+  /** Get the translated name of an <span style="color:#FFFF00">Isabelle</span> object using map namesMap
    * @param id the qualified identifier of the object (modulename.name)
    * @param kind the kind of the object (class, type, const, etc.)
    * @return the translated name of the object. <br>
@@ -105,61 +139,61 @@ object Prelude {
   }
 
   /* kinds */
-  /** <pre><code><span style="color:#FFA500;">add_class_ident</span>(<i><span style="color:#FFC0CB;">a</span></i>, <i><span style="color:#FFC0CB;">module</span></i>) =
-   * <span style="color:#FFA500;">{@link add_name}</span>(<i><span style="color:#FFC0CB;">a</span></i>+<span style="color:#006400;">"_class"</span>, Export_Theory.Kind.CONST, <i><span style="color:#FFC0CB;">module</span></i>) */
+  /** <pre><code><span style="color:#FFA500;">add_class_ident</span>(<span style="color:#FFC0CB;">a</span>, <span style="color:#FFC0CB;">module</span>) =
+   * <span style="color:#FFA500;"><u>[[add_name]]</u></span>(<span style="color:#FFC0CB;">a</span>+<span style="color:#006400;">"_class"</span>, Export_Theory.Kind.CONST, <span style="color:#FFC0CB;">module</span>) */
   def add_class_ident(a: String, module: String): String = add_name(a+"_class", Export_Theory.Kind.CONST, module)
-  /** <pre><code><span style="color:#FFA500;">add_type_ident</span>(<i><span style="color:#FFC0CB;">a</span></i>, <i><span style="color:#FFC0CB;">module</span></i>) =
-   * <span style="color:#FFA500;">{@link add_name}</span>(<i><span style="color:#FFC0CB;">a</span></i>, Export_Theory.Kind.TYPE, <i><span style="color:#FFC0CB;">module</span></i>) */
+  /** <pre><code><span style="color:#FFA500;">add_type_ident</span>(<span style="color:#FFC0CB;">a</span>, <span style="color:#FFC0CB;">module</span>) =
+   * <span style="color:#FFA500;"><u>[[add_name]]</u></span>(<span style="color:#FFC0CB;">a</span>, Export_Theory.Kind.TYPE, <span style="color:#FFC0CB;">module</span>) */
   def add_type_ident(a: String, module: String): String = add_name(a, Export_Theory.Kind.TYPE, module)
-  /** <pre><code><span style="color:#FFA500;">add_const_ident</span>(<i><span style="color:#FFC0CB;">a</span></i>, <i><span style="color:#FFC0CB;">module</span></i>) =
-   * <span style="color:#FFA500;">{@link add_name}</span>(<i><span style="color:#FFC0CB;">a</span></i>, Export_Theory.Kind.CONST, <i><span style="color:#FFC0CB;">module</span></i>) */
+  /** <pre><code><span style="color:#FFA500;">add_const_ident</span>(<span style="color:#FFC0CB;">a</span>, <span style="color:#FFC0CB;">module</span>) =
+   * <span style="color:#FFA500;"><u>[[add_name]]</u></span>(<span style="color:#FFC0CB;">a</span>, Export_Theory.Kind.CONST, <span style="color:#FFC0CB;">module</span>) */
   def add_const_ident(a: String, module: String): String = add_name(a, Export_Theory.Kind.CONST, module)
-  /** <pre><code><span style="color:#FFA500;">add_axiom_ident</span>(<i><span style="color:#FFC0CB;">a</span></i>, <i><span style="color:#FFC0CB;">module</span></i>) =
-   * <span style="color:#FFA500;">{@link add_name}</span>(<i><span style="color:#FFC0CB;">a</span></i>, Markup.AXIOM, <i><span style="color:#FFC0CB;">module</span></i>) */
+  /** <pre><code><span style="color:#FFA500;">add_axiom_ident</span>(<span style="color:#FFC0CB;">a</span>, <span style="color:#FFC0CB;">module</span>) =
+   * <span style="color:#FFA500;"><u>[[add_name]]</u></span>(<span style="color:#FFC0CB;">a</span>, Markup.AXIOM, <span style="color:#FFC0CB;">module</span>) */
   def add_axiom_ident(a: String, module: String): String = add_name(a, Markup.AXIOM, module)
-  /** <pre><code><span style="color:#FFA500;">add_thm_ident</span>(<i><span style="color:#FFC0CB;">a</span></i>, <i><span style="color:#FFC0CB;">module</span></i>) =
-   * <span style="color:#FFA500;">{@link add_name}</span>(<i><span style="color:#FFC0CB;">a</span></i>, Export_Theory.Kind.THM, <i><span style="color:#FFC0CB;">module</span></i>) */
+  /** <pre><code><span style="color:#FFA500;">add_thm_ident</span>(<span style="color:#FFC0CB;">a</span>, <span style="color:#FFC0CB;">module</span>) =
+   * <span style="color:#FFA500;"><u>[[add_name]]</u></span>(<span style="color:#FFC0CB;">a</span>, Export_Theory.Kind.THM, <span style="color:#FFC0CB;">module</span>) */
   def add_thm_ident(a: String, module: String): String = add_name(a, Export_Theory.Kind.THM, module)
-  /** <pre><code><span style="color:#FFA500;">add_proof_ident</span>(<i><span style="color:#FFC0CB;">serial</span></i>, <i><span style="color:#FFC0CB;">module</span></i>) =
-   * <span style="color:#FFA500;">{@link add_name}</span>(<span style="color:#006400;">f"proof_</span><i>$<span style="color:#FFC0CB;">serial</span></i><span style="color:#006400;">"</span>, <span style="color:#006400;">""</span>, <i><span style="color:#FFC0CB;">module</span></i>) */
+  /** <pre><code><span style="color:#FFA500;">add_proof_ident</span>(<span style="color:#FFC0CB;">serial</span>, <span style="color:#FFC0CB;">module</span>) =
+   * <span style="color:#FFA500;"><u>[[add_name]]</u></span>(<span style="color:#006400;">f"proof_</span>$<span style="color:#FFC0CB;">serial</span><span style="color:#006400;">"</span>, <span style="color:#006400;">""</span>, <span style="color:#FFC0CB;">module</span>) */
   def add_proof_ident(serial: Long, module: String): String = add_name(f"proof_$serial", "", module)
 
-  /** The translated name of an isabelle class
+  /** The translated name of an <span style="color:#FFFF00">Isabelle</span> class
    * @param a the name of the class
    * @return The translated name of the object
-   *         <i><span style="color:#FFC0CB;">a</span></i>_class of kind const */
+   *         <span style="color:#FFC0CB;">a</span>_class of kind const */
   def ref_class_ident(a: String): String = get_name(a+"_class", Export_Theory.Kind.CONST)
-  /** The translated name of an isabelle type
+  /** The translated name of an <span style="color:#FFFF00">Isabelle</span> type
    *
    * @param a the name of the type
    * @return The translated name of the object
-   *         <i><span style="color:#FFC0CB;">a</span></i> of kind type */
+   *         <span style="color:#FFC0CB;">a</span> of kind type */
   def ref_type_ident(a: String): String = get_name(a, Export_Theory.Kind.TYPE )
-  /** The translated name of an isabelle constant
+  /** The translated name of an <span style="color:#FFFF00">Isabelle</span> constant
    *
    * @param a the name of the constant
    * @return The translated name of the object
-   *         <i><span style="color:#FFC0CB;">a</span></i> of kind const */
+   *         <span style="color:#FFC0CB;">a</span> of kind const */
   def ref_const_ident(a: String): String = get_name(a, Export_Theory.Kind.CONST)
-  /** The translated name of an isabelle axiom
+  /** The translated name of an <span style="color:#FFFF00">Isabelle</span> axiom
    *
    * @param a the name of the axiom
    * @return The translated name of the object
-   *         <i><span style="color:#FFC0CB;">a</span></i> of kind axiom */
+   *         <span style="color:#FFC0CB;">a</span> of kind axiom */
   def ref_axiom_ident(a: String): String = get_name(a, Markup.AXIOM)
-  /** The translated name of an isabelle theorem
+  /** The translated name of an <span style="color:#FFFF00">Isabelle</span> theorem
    *
    * @param a the name of the theorem
    * @return The translated name of the object
-   *         <i><span style="color:#FFC0CB;">a</span></i> of kind thm */
+   *         <span style="color:#FFC0CB;">a</span> of kind thm */
   def ref_thm_ident(a: String): String = get_name(a, Export_Theory.Kind.THM)
-  /** the name of the translation of an isabelle proof step
+  /** the name of the translation of an <span style="color:#FFFF00">Isabelle</span> proof step
    * @param serial the index of the proof step
    * @return The name that was assigned to it */
   def ref_proof_ident(serial: Long): String = get_name(f"proof_$serial", "")
   /** The translated name of a variable
    * @param a the name of the variable
-   * @return The string <i><span style="color:#FFC0CB;">a</span></i><span>&#95;&#95</span>var */
+   * @return The string <span style="color:#FFC0CB;">a</span><span>&#95;&#95</span>var */
   def var_ident(a: String): String = a+"__var"
 
   /* prologue proper */
@@ -221,37 +255,54 @@ object Prelude {
 }
 
 object Translate {
-  import Prelude._
+  import Prelude.*
   var global_eta_expand = false
 
 
   /* binders */
-
+  
   def bound_type_argument(name: String): Syntax.BoundArg = // += impl: Boolean = false
     Syntax.BoundArg(Some(var_ident(name)), typeT/*, impl*/)
-
+  
   def bound_term_argument(name: String, ty: Term.Typ): Syntax.BoundArg = // += impl: Boolean = false
     Syntax.BoundArg(Some(var_ident(name)), eta(typ(ty))/*, impl*/)
 
   def bound_proof_argument(name: String, tm: Term.Term, bounds: Bounds): Syntax.BoundArg =
     Syntax.BoundArg(Some(var_ident(name)), eps(term(tm, bounds)))
 
-  // Object to record de Bruijn index names
+  /** Object used as a map between variable names and de Bruijn indices. <br>
+   * Represents the context of bound variables. */
   sealed case class Bounds(
     trm: List[String] = Nil,
     prf: List[String] = Nil
   ) {
+    /** Adds a mapping between a term variable and a de Bruijn index 
+     * @param tm the name of the variable
+     * @return the context updated with the new variable */
     def add_trm(tm: String): Bounds = copy(trm = tm :: trm)
+    /** Adds a mapping between a proof variable and a de Bruijn index
+     * @param tm the name of the variable
+     * @return the context updated with the new variable */
     def add_prf(pf: String): Bounds = copy(prf = pf :: prf)
 
+    /** Get a term variable from its de Bruijn index
+     * @param idx the de Bruijn index of the variable
+     * @return the name of the bound term variable at that index, fetched from a list. */
     def get_trm(idx: Int): String = trm(idx)
+    /** Get a proof variable from its de Bruijn index
+     *
+     * @param idx the de Bruijn index of the variable
+     * @return the name of the bound proof variable at that index, fetched from a list. */
     def get_prf(idx: Int): String = prf(idx)
   }
 
 
   /* types and terms */
-
-  def typ(ty: Term.Typ): Syntax.Typ =
+  /** Translates an <span style="color:#FFFF00">Isabelle</span>
+   * type to a <span style="color:#9932CC;">dk/lp</span> simple type 
+   * @param ty the <span style="color:#FFFF00">Isabelle</span> type to translate
+   * @return the corresponding <span style="color:#9932CC;">dk/lp</span> simple type */
+  def typ(ty: Term.Typ): Syntax.Term =
     ty match {
       case Term.TFree(a, _) =>
         Syntax.Var(var_ident(a))
@@ -262,8 +313,21 @@ object Translate {
       case Term.TVar(xi, _) => error("Illegal schematic type variable " + xi.toString)
     }
 
+  /** Function mapping a <span style="color:#9932CC;">dk/lp</span> simple type
+   * to the type of its elements.
+   * @param ty a <span style="color:#9932CC;">dk/lp</span> term,
+   * which must be of type <code><span style="color:#87CEFA">Set</span></code>
+   * in order for the output to be typable.
+   * @return the type <code><span style="color:#87CEFA">El ty</span></code> of elements of
+   * <code><span style="color:#FFC0CB;">ty</span></code> */
   def eta(ty: Syntax.Term): Syntax.Typ = Syntax.Appl(etaT, ty)
 
+  /** Translates an <span style="color:#FFFF00">Isabelle</span>
+   * term to a <span style="color:#9932CC;">dk/lp</span> one 
+   *
+   * @param tm the <span style="color:#FFFF00">Isabelle</span> term to translate
+   * @param bounds the context of bound variables and their de Bruijn indices
+   * @return the corresponding <span style="color:#9932CC;">dk/lp</span> term */
   def term(tm: Term.Term, bounds: Bounds): Syntax.Term =
     tm match {
       case Term.Const(c, typargs) =>
@@ -284,9 +348,24 @@ object Translate {
         Syntax.Appl(term(a, bounds), term(b, bounds))
     }
 
+  /** Function mapping a <span style="color:#9932CC;">dk/lp</span> simple type proposition
+   * to the type of its proofs.
+   *
+   * @param tm a <span style="color:#9932CC;">dk/lp</span> term,
+   *           which must be of type <code><span style="color:#87CEFA">prop</span></code>
+   *           in order for the output to be typable.
+   * @return the type <code><span style="color:#87CEFA">Prf tm</span></code> of proofs of
+   *         <code><span style="color:#FFC0CB;">tm</span></code> */
   def eps(tm: Syntax.Term): Syntax.Term =
     Syntax.Appl(epsT, tm)
-  
+
+  /** Translates an <span style="color:#FFFF00">Isabelle</span>
+   * proof to a <span style="color:#9932CC;">dk/lp</span> term
+   *
+   * @param prf the <span style="color:#FFFF00">Isabelle</span> proof to translate
+   * @param bounds the context of bound variables and their de Bruijn indices
+   * @param cont an accumulator storing the result as a function (default: <code>t => t</code>) 
+   * @return the corresponding <span style="color:#9932CC;">dk/lp</span> proof term */
   def proof(
     prf: Term.Proof,
     bounds: Bounds,
@@ -334,75 +413,93 @@ object Translate {
 
   /* eta contraction */
 
-  // Looks if ident is used freely in term
+  /** Looks if an identifier is used freely in a <span style="color:#9932CC;">dk/lp</span> term
+   * @param term the term in which to search
+   * @param ident the identifier to search for
+   * @return true if a symbol or free variable named
+   *         <code><span style="color:#FFC0CB;">ident</span></code>
+   *         appears in <code><span style="color:#FFC0CB;">term</span></code>
+   *         (including in the type of bound variables) */
   def lambda_contains(term: Syntax.Term, ident: Syntax.Ident): Boolean =
     term match {
       case Syntax.TYPE => false
       case Syntax.Symb(id) => id == ident
       case Syntax.Var(id)  => id == ident
-      case Syntax.Appl(t1, t2, _) => lambda_contains(t1, ident) || lambda_contains(t2, ident)
-      case Syntax.Abst(Syntax.BoundArg(arg, ty, _), t) =>
+      case Syntax.Appl(t1, t2/*, _*/) => lambda_contains(t1, ident) || lambda_contains(t2, ident)
+      case Syntax.Abst(Syntax.BoundArg(arg, ty/*, _*/), t) =>
         !arg.contains(ident) && (lambda_contains(ty, ident) || lambda_contains(t, ident))
-      case Syntax.Prod(Syntax.BoundArg(arg, ty, _), t) =>
+      case Syntax.Prod(Syntax.BoundArg(arg, ty/*, _*/), t) =>
         !arg.contains(ident) && (lambda_contains(ty, ident) || lambda_contains(t, ident))
     }
 
-  // Replace all free uses of ident to value in tm
+  /** Replaces all free occurrences of an identifier in a
+   * <span style="color:#9932CC;">dk/lp</span> term with a term
+   * @param tm the term in which to replace
+   * @param ident the identifier to search for
+   * @param value to term to replace all occurrences with
+   * @return a copy of the term <code><span style="color:#FFC0CB;">tm</span></code>
+   *         wherein any symbol or free variable named
+   *         <code><span style="color:#FFC0CB;">ident</span></code> is replaced with
+   *         <code><span style="color:#FFC0CB;">value</span></code>
+   *         (including inside the type of bound variables) */
   def lambda_replace(tm: Syntax.Term, ident: Syntax.Ident, value: Syntax.Term): Syntax.Term =
     tm match {
       case Syntax.TYPE => tm
-      case Syntax.Symb(id) if id == ident => value
-      case Syntax.Symb(_) => tm
-      case Syntax.Var(id) if id == ident => value
-      case Syntax.Var(_) => tm
-      case Syntax.Appl(t1, t2, b) => Syntax.Appl(lambda_replace(t1, ident, value), lambda_replace(t2, ident, value), b)
-      case Syntax.Abst(Syntax.BoundArg(arg, ty, b), t) =>
-        Syntax.Abst(Syntax.BoundArg(arg, lambda_replace(ty, ident, value), b),
+      case Syntax.Symb(id) => if (id == ident) value else tm
+      case Syntax.Var(id) => if (id == ident) value else tm
+      case Syntax.Appl(t1, t2/*, b*/) => Syntax.Appl(lambda_replace(t1, ident, value), lambda_replace(t2, ident, value), b)
+      case Syntax.Abst(Syntax.BoundArg(arg, ty/*, b*/), t) =>
+        Syntax.Abst(Syntax.BoundArg(arg, lambda_replace(ty, ident, value)/*, b*/),
           if (arg.fold(false)(arg => arg == ident)) t
           else lambda_replace(t, ident, value))
-      case Syntax.Prod(Syntax.BoundArg(arg, ty, b), t) =>
-        Syntax.Prod(Syntax.BoundArg(arg, lambda_replace(ty, ident, value), b),
+      case Syntax.Prod(Syntax.BoundArg(arg, ty/*, b*/), t) =>
+        Syntax.Prod(Syntax.BoundArg(arg, lambda_replace(ty, ident, value)/*, b*/),
           if (arg.fold(false)(arg => arg == ident)) t
           else lambda_replace(t, ident, value))
     }
 
-  // Same as above
+  /**  applies [[lambda_replace]] in the type of <span style="color:#FFC0CB;">arg</span>*/
   def lambda_replace_arg(arg: Syntax.BoundArg, ident: Syntax.Ident, value: Syntax.Term): Syntax.BoundArg =
     arg match {
-      case Syntax.BoundArg(arg, ty, b) =>
-        Syntax.BoundArg(arg, lambda_replace(ty, ident, value), b)
+      case Syntax.BoundArg(arg, ty/*, b*/) =>
+        Syntax.BoundArg(arg, lambda_replace(ty, ident, value)/*, b*/)
     }
 
-  // Contract λ(x: _), (Λ x)
+  /** Applies eta-contraction inside all subterms of a
+   * <span style="color:#9932CC;">dk/lp</span> term.
+   * @param tm the <span style="color:#9932CC;">dk/lp</span> term
+   *           in which to do the contraction
+   * @return a copy of <code><span style="color:#FFC0CB;">tm</span></code>
+   *         in which all subterms of the form
+   *         <code><span style="color:#87CEFA">λ x, t x </span></code>
+   *         are replaced by t as long as x does not appear in t.*/
   def eta_contract(tm: Syntax.Term) : Syntax.Term =
     tm match {
-      case Syntax.Abst(Syntax.BoundArg(Some(id), ty, false), tm2) =>
+      case Syntax.Abst(Syntax.BoundArg(Some(id), ty/*, false*/), tm2) =>
         eta_contract(tm2) match {
-          case Syntax.Appl(tm1, Syntax.Var(id2), _)
+          case Syntax.Appl(tm1, Syntax.Var(id2)/*, _*/)
             if id == id2 && !lambda_contains(tm1, id) => eta_contract(tm1)
-          case tm2 => Syntax.Abst(Syntax.BoundArg(Some(id), eta_contract(ty), implicit_arg = false), tm2)
+          case tm2 => Syntax.Abst(Syntax.BoundArg(Some(id), eta_contract(ty)/*, implicit_arg = false*/), tm2)
         }
 
-  /** case Syntax.Prod(Syntax.BoundArg(Some(id), ty, false), tm2) =>
-    *   eta_contract(tm2) match {
-    *     case Syntax.Appl(tm1, Syntax.Var(id2), _)
-    *       if id == id2 && !lambda_contains(tm1, id) => eta_contract(tm1)
-    *     case tm2 => Syntax.Prod(Syntax.BoundArg(Some(id), eta_contract(ty), implicit_arg = false), tm2)
-    *   } 
-    */
+      case Syntax.Abst(Syntax.BoundArg(id, ty/*, impl*/), tm2) =>
+        Syntax.Abst(Syntax.BoundArg(id, eta_contract(ty)/*, impl*/), eta_contract(tm2))
 
-      case Syntax.Abst(Syntax.BoundArg(id, ty, impl), tm2) =>
-        Syntax.Abst(Syntax.BoundArg(id, eta_contract(ty), impl), eta_contract(tm2))
+      case Syntax.Prod(Syntax.BoundArg(id, ty/*, impl*/), tm2) =>
+        Syntax.Prod(Syntax.BoundArg(id, eta_contract(ty)/*, impl*/), eta_contract(tm2))
 
-      case Syntax.Prod(Syntax.BoundArg(id, ty, impl), tm2) =>
-        Syntax.Prod(Syntax.BoundArg(id, eta_contract(ty), impl), eta_contract(tm2))
-
-      case Syntax.Appl(t1, t2, impl) => Syntax.Appl(eta_contract(t1), eta_contract(t2), impl)
+      case Syntax.Appl(t1, t2/*, impl*/) => Syntax.Appl(eta_contract(t1), eta_contract(t2)/*, impl*/)
       case _ => tm
     }
 
+  /** Mutable objects of type A. <br>
+  * Simply contains a variable
+  * <code><span style="color:#FFC0CB;">value</span></code> of type A. */
   case class Mut[A](var value: A) {}
 
+  /** Basically implements some counter in an alphabetic string
+   * representing a base 26 integer, stopping when it reaches only 'z's by replacing
+   * <span style="color:#006400;">"zz....z"</span> with <span style="color:#006400;">"€aa....a"</span>*/
   def update_name(name: String): String = {
     if (!(name.length > 1 && name(0) == '€'))
       error("Broke invariant: " + name)
@@ -417,7 +514,14 @@ object Translate {
     }
   }
 
-  // Escape default arguments
+  /** Given a <span style="color:#9932CC;">dk/lp</span> type and a list of bound arguments it depends on,
+   * renames all named arguments by adding a <span style="color:#006400;">'£'</span> in front
+   * @param argnames the list of bound arguments to rename, where the type of an argument might depend on the
+   *                 arguments before it in the list.
+   * @param ret_ty the return type parametrized by <code><span style="color:#FFC0CB;">argname</span></code>
+   * @return the updated list and type, where all named variables are prefixed by a
+   *         <span style="color:#006400;">'£'</span> and are replaced as such in the type of all arguments
+   *         coming after in the list as well as in <code><span style="color:#FFC0CB;">ret_ty</span></code> */
   def alpha_escape(argnames: List[Syntax.BoundArg], ret_ty: Syntax.Typ) : (List[Syntax.BoundArg], Syntax.Typ) =
     argnames match {
       case Nil => (Nil, ret_ty)
@@ -432,7 +536,15 @@ object Translate {
       }
     }
 
-  // Create and name new arguments, only if the spine does not provide them
+  /** <b>TODO: is it used for proofs? if not, then known_argnames is only used for type names</b><br>
+   * Create and name new arguments to a <span style="color:#9932CC;">dk/lp</span>
+   * function when they don't already exist (partially applied function)
+   * @param known_argnames the names given to the arguments in the type (in case of a product and not an arrow type).
+   *                       Supposed to be renamed using [[alpha_escape]] before being given to the function
+   * @param spine The arguments already given to the function
+   * @param ctxt a map storing the type of all bound variable in the context
+   * @param name_ref
+   * @see [[eta_expand]] */
   def name_args_of_list(known_argnames: List[Syntax.BoundArg], spine: List[Syntax.Term], ctxt: Map[String, Syntax.Typ], name_ref: Mut[String], ret_type: Syntax.Typ) : List[Syntax.BoundArg] = {
     (known_argnames, spine) match {
       case (Syntax.BoundArg(id, _, _) :: tl, tm :: spine) => {
