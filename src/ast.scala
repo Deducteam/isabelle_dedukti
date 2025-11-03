@@ -44,7 +44,8 @@ object Syntax {
 
   /** A $dklp binder for variables and function arguments.
    * @param id the identifier of the variable/argument. <$met>None<$mete> if anonymous
-   * @param typ the type of the variable/argument */
+   * @param typ the type of the variable/argument 
+   * @constructor test */
   sealed case class BoundArg(
     id: Option[Ident],
     typ: Typ/*,
