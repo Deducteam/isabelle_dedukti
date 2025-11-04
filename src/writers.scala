@@ -9,7 +9,8 @@ import java.io.{FileOutputStream, OutputStreamWriter, BufferedWriter, Writer}
 import java.nio.file.{Files, StandardCopyOption}
 import scala.collection.mutable.{Map => MutableMap}
 
-
+/** Opens a path.part file for writing.
+ * @see [[Writer]] */
 class Part_Writer(file: Path) extends Writer {
   private val file_part = file.ext("part")
 
@@ -26,7 +27,7 @@ class Part_Writer(file: Path) extends Writer {
   }
 }
 
-
+/** Tools to write <span style="color:#9932CC;">lambdapi</span> identifiers */
 trait Ident_Writer {
   val reserved: Set[String]
 
@@ -37,26 +38,79 @@ trait Ident_Writer {
     else f"{|$ident|}"
 
   def escape_if_needed(a: String): String = {
-    val a1 = if (a.startsWith("'")||a.startsWith(":")) ("_" + a.substring(1,a.length())) else a
+    val a1 =
+      if (a.startsWith("'")||a.startsWith(":"))
+        "_" + a.substring(1,a.length())
+      else a
     val a2 = a1.replace('(','_').replace(')','_').replace('\\','_').replace('<','_').replace('>','_').replace('^','_')
     if (reserved(a2) || !is_regular_identifier(a2)) escape(a2) else a2
   }
 }
 
-
+/** Tools for writing in a translated file
+ *  <!-- Some macros for colors and common references.
+ *       Pasted at the start of every object.
+ *       Documentation:
+ *       $dklp: reference dk/lp (purple)
+ *       $dk: reference dedukti (purple)
+ *       $lp: reference lambdapi (purple)
+ *       $isa: reference Isabelle (yellow)
+ *       <$met>metname<$mete>: a scala method (orange,code)
+ *       <$metc>metname<$metce>: a scala method inside code (orange)
+ *       <$type>typname<$typee>: a scala type (dark orange,bold,code)
+ *       <$arg>argname<$arge>: a scala argument (pink,code)
+ *       <$argc>argname<$argce>: a scala argument inside code (pink)
+ *       <$str>string<$stre>: a scala string (dark green)
+ *       <$lpc>code<$lpce>: some lambdapi code (light blue,code)
+ *       -->
+ * @define dklp <span style="color:#9932CC;">dk/lp</span>
+ * @define dk <span style="color:#9932CC;">dedukti</span>
+ * @define lp <span style="color:#9932CC;">lambdapi</span>
+ * @define isa <span style="color:#FFFF00">Isabelle</span>
+ * @define met code><span style="color:#FFA500;"
+ * @define metc span style="color:#FFA500;"
+ * @define mete /span></code
+ * @define metce /span
+ * @define type code><span style="color:#FF8C00"><b
+ * @define typee /b></span></code
+ * @define arg code><span style="color:#FFC0CB;"
+ * @define argc span style="color:#FFC0CB;"
+ * @define arge /span></code
+ * @define argce /span
+ * @define str span style="color:#006400;"
+ * @define stre /span
+ * @define lpc code><span style="color:#87CEFA"
+ * @define lpce /span></code
+ */
 abstract class Abstract_Writer(root: String, writer: Writer) extends Ident_Writer {
   def write(c: Char):   Unit = writer.write(c)
   def write(s: String): Unit = writer.write(s)
 
   def space() : Unit = write(' ')
+  /** Write a newline character */
   def nl()    : Unit = write('\n')
 
+  /** Write a left parenthesis */
   def lpar()  : Unit = write('(')
+  /** Write a right parenthesis */
   def rpar()  : Unit = write(')')
   def colon() : Unit = write(" : ")
-
+  
+  /** enclose the result of body inside parentheses */
   def block(body: => Unit): Unit = { lpar(); body; rpar() }
-  // Determine whether wrapping [body] in parentheses is needed
+
+  /** To be used while in the middle of writing a term.
+   *  Does <$arg>body<$arge>, but may enclose the results inside parentheses depending
+   *  on priorities and associativity of notations
+   * 
+   * @param curNot the $lp notation of the current symbol
+   * @param prevNot the $lp notation of the previous symbol
+   * @param right If the current notation is infix, whether we are to the right of it or not.
+   *              Default: <code>false</code>
+   * @param force_no input true to force non-parenthesising, for example when simply
+   *                 writing one symbol. Default: <code>false</code>
+   * @param body a writing command
+   */
   def block_if(
     curNot: Syntax.Notation,
     prevNot: Syntax.Notation,
@@ -102,11 +156,11 @@ abstract class Abstract_Writer(root: String, writer: Writer) extends Ident_Write
 
   def arg(a: Syntax.BoundArg, block: Boolean, notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit = {
     if (block) {
-      if (a.implicit_arg) {
+      /*if (a.implicit_arg) {
         write("[")
-      } else {
+      } else {*/
         write("(")
-      }
+      //}
     }
     a.id match {
       case Some(id) => var_ident(id)
@@ -127,7 +181,40 @@ abstract class Abstract_Writer(root: String, writer: Writer) extends Ident_Write
   def command(c: Syntax.Command, notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit
 }
 
-
+/** <!-- Some macros for colors and common references.
+ *       Pasted at the start of every object.
+ *       Documentation:
+ *       $dklp: reference dk/lp (purple)
+ *       $dk: reference dedukti (purple)
+ *       $lp: reference lambdapi (purple)
+ *       $isa: reference Isabelle (yellow)
+ *       <$met>metname<$mete>: a scala method (orange,code)
+ *       <$metc>metname<$metce>: a scala method inside code (orange)
+ *       <$type>typname<$typee>: a scala type (dark orange,bold,code)
+ *       <$arg>argname<$arge>: a scala argument (pink,code)
+ *       <$argc>argname<$argce>: a scala argument inside code (pink)
+ *       <$str>string<$stre>: a scala string (dark green)
+ *       <$lpc>code<$lpce>: some lambdapi code (light blue,code)
+ *       -->
+ * @define dklp <span style="color:#9932CC;">dk/lp</span>
+ * @define dk <span style="color:#9932CC;">dedukti</span>
+ * @define lp <span style="color:#9932CC;">lambdapi</span>
+ * @define isa <span style="color:#FFFF00">Isabelle</span>
+ * @define met code><span style="color:#FFA500;"
+ * @define metc span style="color:#FFA500;"
+ * @define mete /span></code
+ * @define metce /span
+ * @define type code><span style="color:#FF8C00"><b
+ * @define typee /b></span></code
+ * @define arg code><span style="color:#FFC0CB;"
+ * @define argc span style="color:#FFC0CB;"
+ * @define arge /span></code
+ * @define argce /span
+ * @define str span style="color:#006400;"
+ * @define stre /span
+ * @define lpc code><span style="color:#87CEFA"
+ * @define lpce /span></code
+ */
 class LP_Writer(use_notations: Boolean, writer: Writer)
   extends Abstract_Writer("Isabelle.", writer) {
   val reserved = // copied from lambdapi/src/parsing/lpLexer.ml lines 185-240

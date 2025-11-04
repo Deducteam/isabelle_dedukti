@@ -171,9 +171,13 @@ object Syntax {
       case Quantifier(op) => op
     }
 
-  /** The internal $lp notation for function application [[Appl]].*/
+  /** $lp notation representing function application [[Appl]].
+   *  Used for decision of parenthesising, as it is left associative and
+   *  has +∞ priority */
   val appNotation: Notation = InfixL(" ", Double.PositiveInfinity)
-  /** <b>TODO: Understand what this is</b> */
+  /** $lp notation representing the fact that there is no notation.
+   *  Used for decision of parenthesising, as it is non-associative and
+   *  has -∞ priority*/
   val justHadPars: Notation = Infix("()", Double.NegativeInfinity)
   /** The internal $lp notation for arrow types [[arrow]] */
   val arrNotation: Notation = InfixR("→", -2)

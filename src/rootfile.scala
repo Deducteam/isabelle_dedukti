@@ -2,29 +2,79 @@
 
 package isabelle.dedukti
 
-import isabelle._
+import isabelle.*
+import isabelle.Document.Node.Name
 
 import scala.collection.mutable
-import scala.util.control.Breaks._
-import java.io._
+import scala.util.control.Breaks.*
+import java.io.*
 import java.nio.file.Files
 import java.nio.file.Paths
-import sys.process._
+import sys.process.*
 import scala.language.postfixOps
 import scala.io.Source
 
+/** <!-- Some macros for colors and common references.
+ *       Pasted at the start of every object.
+ *       Documentation:
+ *       $dklp: reference dk/lp (purple)
+ *       $dk: reference dedukti (purple)
+ *       $lp: reference lambdapi (purple)
+ *       $isa: reference Isabelle (yellow)
+ *       <$met>metname<$mete>: a scala method (orange,code)
+ *       <$metc>metname<$metce>: a scala method inside code (orange)
+ *       <$type>typname<$typee>: a scala type (dark orange,bold,code)
+ *       <$arg>argname<$arge>: a scala argument (pink,code)
+ *       <$argc>argname<$argce>: a scala argument inside code (pink)
+ *       <$str>string<$stre>: a scala string (dark green)
+ *       <$lpc>code<$lpce>: some lambdapi code (light blue,code)
+ *       -->
+ * @define dklp <span style="color:#9932CC;">dk/lp</span>
+ * @define dk <span style="color:#9932CC;">dedukti</span>
+ * @define lp <span style="color:#9932CC;">lambdapi</span>
+ * @define isa <span style="color:#FFFF00">Isabelle</span>
+ * @define met code><span style="color:#FFA500;"
+ * @define metc span style="color:#FFA500;"
+ * @define mete /span></code
+ * @define metce /span
+ * @define type code><span style="color:#FF8C00"><b
+ * @define typee /b></span></code
+ * @define arg code><span style="color:#FFC0CB;"
+ * @define argc span style="color:#FFC0CB;"
+ * @define arge /span></code
+ * @define argce /span
+ * @define str span style="color:#006400;"
+ * @define stre /span
+ * @define lpc code><span style="color:#87CEFA"
+ * @define lpce /span></code
+ */
 object Rootfile {
+  
+  /** Get the ancestor of an $isa session */
+  def get_ancestor(session : String) : String =
+    val selected_sessions =
+      full_stru.selection(Sessions.Selection(sessions = List[String](session)))
+    val info = selected_sessions(session)
+    info.parent match {
+      case Some(x) => x
+      case _ => error("the session does not have any parent")
+    }
 
-  // theory graph of a session
+  /** theory graph of an $isa session
+   * 
+   * @return a dependency graph where the nodes are the theories in the session that do not come
+   *         from an ancestor session
+   */
   def graph(
     options: Options,
     session: String,
-    anc: String,
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
     verbose: Boolean = false,
-    ) = {
-
+    ): Name.Graph[Unit] = {
+    
+    val anc = get_ancestor(session)
+    
     var theory_graph =
       if (session == "Pure") {
         (Document.Node.Name.make_graph(List(((Document.Node.Name("Pure", theory = Thy_Header.PURE), ()),List[Document.Node.Name]()))))
@@ -38,7 +88,7 @@ object Rootfile {
         val resources = new Resources(background)
         resources.session_dependencies(session_info, progress = progress).theory_graph
       }
-    var anc_theories = 
+    val anc_theories = 
       if (session == "Pure") {
         List[String]()
       } else {
@@ -61,6 +111,11 @@ object Rootfile {
     theory_graph
   }
 
+  /** creates a rootfile for an $isa session.<br>
+   *  Also, for each theory in the session, creates a directory Ex/(theoryname)
+   * 
+   * @return a ROOT file with a proof-exporting session for each theory of a session.
+   */
   def rootfile(
     options: Options,
     session: String,
@@ -109,6 +164,10 @@ object Rootfile {
 
   // Isabelle tool wrapper and CLI handler
   val cmd_name = "dedukti_root"
+
+  /** Isabelle tool to generate a ROOT file via the command line.
+   *  @see <$met>[[rootfile]]<$metc>
+   */
   val isabelle_tool: Isabelle_Tool =
     Isabelle_Tool(cmd_name, "generate a ROOT file with a proof-exporting session for each theory of a session", Scala_Project.here,
       { args =>

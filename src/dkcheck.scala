@@ -1,4 +1,4 @@
-/** Generator of ROOT file for Dedukti export **/
+/** Generator of a _CoqProject file for a session **/
 
 package isabelle.dedukti
 
@@ -13,6 +13,40 @@ import sys.process._
 import scala.language.postfixOps
 import scala.io.Source
 
+/** <!-- Some macros for colors and common references.
+ *       Pasted at the start of every object.
+ *       Documentation:
+ *       $dklp: reference dk/lp (purple)
+ *       $dk: reference dedukti (purple)
+ *       $lp: reference lambdapi (purple)
+ *       $isa: reference Isabelle (yellow)
+ *       <$met>metname<$mete>: a scala method (orange,code)
+ *       <$metc>metname<$metce>: a scala method inside code (orange)
+ *       <$type>typname<$typee>: a scala type (dark orange,bold,code)
+ *       <$arg>argname<$arge>: a scala argument (pink,code)
+ *       <$argc>argname<$argce>: a scala argument inside code (pink)
+ *       <$str>string<$stre>: a scala string (dark green)
+ *       <$lpc>code<$lpce>: some lambdapi code (light blue,code)
+ *       -->
+ * @define dklp <span style="color:#9932CC;">dk/lp</span>
+ * @define dk <span style="color:#9932CC;">dedukti</span>
+ * @define lp <span style="color:#9932CC;">lambdapi</span>
+ * @define isa <span style="color:#FFFF00">Isabelle</span>
+ * @define met code><span style="color:#FFA500;"
+ * @define metc span style="color:#FFA500;"
+ * @define mete /span></code
+ * @define metce /span
+ * @define type code><span style="color:#FF8C00"><b
+ * @define typee /b></span></code
+ * @define arg code><span style="color:#FFC0CB;"
+ * @define argc span style="color:#FFC0CB;"
+ * @define arge /span></code
+ * @define argce /span
+ * @define str span style="color:#006400;"
+ * @define stre /span
+ * @define lpc code><span style="color:#87CEFA"
+ * @define lpce /span></code
+ */
 object Dkcheck {
 
   // def format(
@@ -42,6 +76,26 @@ object Dkcheck {
   //   writer.write("done\n")
   // }
 
+  /** Iterate over all recursive ancestors of the $isa session
+   * <$arg>session<$arge>, itself excluded, until reaching the
+   * <$str>"Pure"<$stre> session.
+   */
+  class Session_iterator (private var session : String) extends Iterator[String] {
+    override def hasNext: Boolean =
+      session != "Pure"
+    
+    override def next(): String = {
+      session = Rootfile.get_ancestor(session)
+      session
+    }
+  }
+  
+  /** In its current form, just generates a _coqProject file for the translation of
+   *  the $isa session <$arg>session<$arge>.<br>
+   *  Note that for it to work, I believe it is expected that outdir is
+   *  Ex/<$arg>session<$arge>/dkcheck/<br>
+   *  TODO: What is the priority with this?
+   */ 
   def dkcheck(
     options: Options,
     session: String,
@@ -51,18 +105,10 @@ object Dkcheck {
     verbose: Boolean = false,
     ): Unit = {
 
-    // getting the ancestor
     val full_stru = Sessions.load_structure(options, dirs = dirs)
-    val selected_sessions =
-      full_stru.selection(Sessions.Selection(sessions = List[String](session)))
-    val info = selected_sessions(session)
-    var anc = info.parent match{
-      case Some(x) => x
-      case _ => error("the session does not have any parent")
-    }
 
     // theory graph
-    val theory_graph = Rootfile.graph(options, session, anc, progress, dirs, verbose)
+    val theory_graph = Rootfile.graph(options, session, progress, dirs, verbose)
     // if (verbose) progress.echo("graph: " +theory_graph)
     val theories : List[Document.Node.Name] = theory_graph.topological_order
     // if (verbose) progress.echo("Session graph top ordered: " + theories)
@@ -130,23 +176,17 @@ object Dkcheck {
     // bw3.close()
 
     // Generate _CoqProject
+
+    /* TODO: ? This is a proper _CoqProject, why does it have a .sh extension? */
     val filename2 = outdir + "_CoqProject_" + session + ".sh"
     if (verbose) progress.echo("Generates " + filename2 + " ...")
     val bw2 = new BufferedWriter(new FileWriter(new File(filename2)))
-    bw2.write("-Q ../../../coq IsaCoq\n")
+    /* TODO: find out what these directories are supposed to be */
+    bw2.write("-Q ../../../rocq IsaRocq\n")
     bw2.write("-Q ../../../logic DkLogic\n")
     bw2.write("-Q ../../"+anc+"/dkcheck "+anc+"\n")
-    while (anc != "Pure"){
-      val full_stru = Sessions.load_structure(options, dirs = dirs)
-      val selected_sessions =
-        full_stru.selection(Sessions.Selection(sessions = List[String](anc)))
-      val info = selected_sessions(anc)
-      anc = info.parent match{
-        case Some(x) => x
-        case _ => error("the session does not have any parent")
-      }
-      bw2.write("-Q ../../"+anc+"/dkcheck "+anc+"\n")
-    }
+    //
+    Session_iterator(session).foreach(bw2.write("-Q ../../"+_+"/dkcheck"+_+"\n"))
     bw2.write("-Q . "+session+"\n")
     for (theory <- theories) {
       bw2.write(Prelude.mod_name(theory.toString) + ".v\n")
@@ -156,6 +196,9 @@ object Dkcheck {
 
   // Isabelle tool wrapper and CLI handler
   val cmd_name = "dedukti_check"
+  /** $isa tool to generate a _CoqProject from the command line
+   * @see <$met><u>[[dk_check]]</u><$mete>
+   */
   val isabelle_tool: Isabelle_Tool =
     Isabelle_Tool(cmd_name, "generate scripts to check the generated dk files", Scala_Project.here,
       { args =>
