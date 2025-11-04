@@ -1,6 +1,6 @@
-diff -urNx '*~' -x '*.orig' ./Enum.thy ../../src/HOL/Enum.thy
---- ./Enum.thy	2023-09-12 02:30:48.000000000 +0900
-+++ ../../src/HOL/Enum.thy	2023-11-14 01:29:49.827014000 +0900
+diff -urNx *~ -x *.orig ./Enum.thy ../../src/HOL/Enum.thy
+--- ./Enum.thy	2024-12-18 15:58:48
++++ ../../src/HOL/Enum.thy	2024-12-18 15:55:54
 @@ -929,15 +929,47 @@
  definition "x mod y = (case y of a\<^sub>1 \<Rightarrow> x | _ \<Rightarrow> a\<^sub>1)"
  definition "abs = (\<lambda>x. case x of a\<^sub>3 \<Rightarrow> a\<^sub>2 | _ \<Rightarrow> x)"
@@ -189,9 +189,9 @@ diff -urNx '*~' -x '*.orig' ./Enum.thy ../../src/HOL/Enum.thy
  end
  
  
-diff -urNx '*~' -x '*.orig' ./MacLaurin.thy ../../src/HOL/MacLaurin.thy
---- ./MacLaurin.thy	2023-09-12 02:30:48.000000000 +0900
-+++ ../../src/HOL/MacLaurin.thy	2023-12-07 15:57:09.716141800 +0900
+diff -urNx *~ -x *.orig ./MacLaurin.thy ../../src/HOL/MacLaurin.thy
+--- ./MacLaurin.thy	2024-12-18 15:58:48
++++ ../../src/HOL/MacLaurin.thy	2024-12-18 15:55:54
 @@ -22,7 +22,7 @@
  
  lemma eq_diff_eq': "x = y - z \<longleftrightarrow> y = x + z"
@@ -299,9 +299,9 @@ diff -urNx '*~' -x '*.orig' ./MacLaurin.thy ../../src/HOL/MacLaurin.thy
  qed
  
  
-diff -urNx '*~' -x '*.orig' ./Quickcheck_Narrowing.thy ../../src/HOL/Quickcheck_Narrowing.thy
---- ./Quickcheck_Narrowing.thy	2023-09-12 02:30:48.000000000 +0900
-+++ ../../src/HOL/Quickcheck_Narrowing.thy	2023-12-07 15:12:05.918558000 +0900
+diff -urNx *~ -x *.orig ./Quickcheck_Narrowing.thy ../../src/HOL/Quickcheck_Narrowing.thy
+--- ./Quickcheck_Narrowing.thy	2024-12-18 15:58:48
++++ ../../src/HOL/Quickcheck_Narrowing.thy	2024-12-18 15:55:55
 @@ -196,8 +196,10 @@
  
  external_file \<open>~~/src/HOL/Tools/Quickcheck/Narrowing_Engine.hs\<close>
@@ -373,9 +373,9 @@ diff -urNx '*~' -x '*.orig' ./Quickcheck_Narrowing.thy ../../src/HOL/Quickcheck_
  
  code_printing constant "Code_Evaluation.term_of :: integer \<Rightarrow> term" \<rightharpoonup> (Haskell_Quickcheck) 
    "(let { t = Typerep.Typerep \"Code'_Numeral.integer\" [];
-diff -urNx '*~' -x '*.orig' ./Quickcheck_Random.thy ../../src/HOL/Quickcheck_Random.thy
---- ./Quickcheck_Random.thy	2023-09-12 02:30:48.000000000 +0900
-+++ ../../src/HOL/Quickcheck_Random.thy	2023-11-14 23:24:09.350321700 +0900
+diff -urNx *~ -x *.orig ./Quickcheck_Random.thy ../../src/HOL/Quickcheck_Random.thy
+--- ./Quickcheck_Random.thy	2024-12-18 15:58:48
++++ ../../src/HOL/Quickcheck_Random.thy	2024-12-18 15:55:54
 @@ -229,7 +229,7 @@
         (Code_Numeral.Suc i,
          random j \<circ>\<rightarrow> (%x. random_aux_set i j \<circ>\<rightarrow> (%s. Pair (valtermify_insert x s))))])"
@@ -385,9 +385,9 @@ diff -urNx '*~' -x '*.orig' ./Quickcheck_Random.thy ../../src/HOL/Quickcheck_Ran
    "random_aux_set i j =
      collapse (Random.select_weight [(1, Pair valterm_emptyset),
        (i, random j \<circ>\<rightarrow> (%x. random_aux_set (i - 1) j \<circ>\<rightarrow> (%s. Pair (valtermify_insert x s))))])"
-diff -urNx '*~' -x '*.orig' ./String.thy ../../src/HOL/String.thy
---- ./String.thy	2023-09-12 02:30:48.000000000 +0900
-+++ ../../src/HOL/String.thy	2023-11-14 22:56:50.941606400 +0900
+diff -urNx *~ -x *.orig ./String.thy ../../src/HOL/String.thy
+--- ./String.thy	2024-12-18 15:58:48
++++ ../../src/HOL/String.thy	2024-12-18 15:55:55
 @@ -40,11 +40,21 @@
  
  lemma (in comm_semiring_1) of_nat_of_char:
@@ -424,9 +424,9 @@ diff -urNx '*~' -x '*.orig' ./String.thy ../../src/HOL/String.thy
      by simp
    moreover have \<open>Literal' b0 b1 b2 b3 b4 b5 b6 s = String.literal_of_asciis
      [of_char (Char b0 b1 b2 b3 b4 b5 b6 False)] + s\<close>
-diff -urNx '*~' -x '*.orig' ./Tools/Quickcheck/exhaustive_generators.ML ../../src/HOL/Tools/Quickcheck/exhaustive_generators.ML
---- ./Tools/Quickcheck/exhaustive_generators.ML	2023-09-12 02:30:48.000000000 +0900
-+++ ../../src/HOL/Tools/Quickcheck/exhaustive_generators.ML	2023-12-05 14:15:45.920628300 +0900
+diff -urNx *~ -x *.orig ./Tools/Quickcheck/exhaustive_generators.ML ../../src/HOL/Tools/Quickcheck/exhaustive_generators.ML
+--- ./Tools/Quickcheck/exhaustive_generators.ML	2024-12-18 15:58:48
++++ ../../src/HOL/Tools/Quickcheck/exhaustive_generators.ML	2024-12-18 15:55:54
 @@ -546,7 +546,7 @@
          instantiate_bounded_forall_datatype)))
  
@@ -443,10 +443,10 @@ diff -urNx '*~' -x '*.orig' ./Tools/Quickcheck/exhaustive_generators.ML ../../sr
 -
 +*)
  end
-diff -urNx '*~' -x '*.orig' ./Tools/Quickcheck/narrowing_generators.ML ../../src/HOL/Tools/Quickcheck/narrowing_generators.ML
---- ./Tools/Quickcheck/narrowing_generators.ML	2023-09-12 02:30:48.000000000 +0900
-+++ ../../src/HOL/Tools/Quickcheck/narrowing_generators.ML	2023-12-07 15:21:55.316631600 +0900
-@@ -543,8 +543,10 @@
+diff -urNx *~ -x *.orig ./Tools/Quickcheck/narrowing_generators.ML ../../src/HOL/Tools/Quickcheck/narrowing_generators.ML
+--- ./Tools/Quickcheck/narrowing_generators.ML	2024-12-18 15:58:48
++++ ../../src/HOL/Tools/Quickcheck/narrowing_generators.ML	2024-12-18 15:55:54
+@@ -542,8 +542,10 @@
    Theory.setup
     (Code.datatype_interpretation ensure_partial_term_of
      #> Code.datatype_interpretation ensure_partial_term_of_code
@@ -457,9 +457,9 @@ diff -urNx '*~' -x '*.orig' ./Tools/Quickcheck/narrowing_generators.ML ../../src
      #> Context.theory_map (Quickcheck.add_tester ("narrowing", (active, test_goals))))
  
  end
-diff -urNx '*~' -x '*.orig' ./Tools/Quickcheck/random_generators.ML ../../src/HOL/Tools/Quickcheck/random_generators.ML
---- ./Tools/Quickcheck/random_generators.ML	2023-09-12 02:30:48.000000000 +0900
-+++ ../../src/HOL/Tools/Quickcheck/random_generators.ML	2023-11-30 17:13:13.090725100 +0900
+diff -urNx *~ -x *.orig ./Tools/Quickcheck/random_generators.ML ../../src/HOL/Tools/Quickcheck/random_generators.ML
+--- ./Tools/Quickcheck/random_generators.ML	2024-12-18 15:58:48
++++ ../../src/HOL/Tools/Quickcheck/random_generators.ML	2024-12-18 15:55:54
 @@ -481,10 +481,12 @@
  
  val active = Attrib.setup_config_bool \<^binding>\<open>quickcheck_random_active\<close> (K false);
@@ -473,10 +473,10 @@ diff -urNx '*~' -x '*.orig' ./Tools/Quickcheck/random_generators.ML ../../src/HO
 +*)
  
  end;
-diff -urNx '*~' -x '*.orig' ./Transcendental.thy ../../src/HOL/Transcendental.thy
---- ./Transcendental.thy	2023-09-12 02:30:48.000000000 +0900
-+++ ../../src/HOL/Transcendental.thy	2023-12-07 17:44:30.135911500 +0900
-@@ -3448,8 +3448,9 @@
+diff -urNx *~ -x *.orig ./Transcendental.thy ../../src/HOL/Transcendental.thy
+--- ./Transcendental.thy	2024-12-18 15:58:48
++++ ../../src/HOL/Transcendental.thy	2024-12-18 15:55:54
+@@ -3572,8 +3572,9 @@
          using \<open>n \<le> p\<close> neq0_conv that(1) by blast
        then have \<section>: "(- 1::real) ^ (p div 2 - Suc 0) = - ((- 1) ^ (p div 2))"
          using \<open>even p\<close> by (auto simp add: dvd_def power_eq_if)
