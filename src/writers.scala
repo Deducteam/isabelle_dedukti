@@ -152,14 +152,14 @@ abstract class Abstract_Writer(root: String, writer: Writer) extends Ident_Write
   }
 
   def term(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation],
-           prevNot: Notation = absNotation, no_impl: Boolean = false, right: Boolean = false): Unit
+           prevNot: Notation = justHadPars, no_impl: Boolean = false, right: Boolean = false): Unit
 
   def arg(a: Syntax.BoundArg, block: Boolean, notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit = {
     if (block) {
       /*if (a.implicit_arg) {
         write("[")
       } else {*/
-        write("(")
+        rpar()
       //}
     }
     a.id match {
@@ -167,13 +167,13 @@ abstract class Abstract_Writer(root: String, writer: Writer) extends Ident_Write
       case None => write('_')
     }
     colon()
-    term(a.typ, notations, prevNot = justHadPars)
+    term(a.typ, notations)
     if (block) {
-      if (a.implicit_arg) {
+      /*if (a.implicit_arg) {
         write("]")
-      } else {
-        write(")")
-      }
+      } else {*/
+        lpar()
+      //}
     }
   }
 
@@ -300,11 +300,15 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
       "@",
     )
 
+  /** true if <$arg>ident<$arge> is non-empty and does not contain
+   *  characters that require escaping for lambdapi */
   def is_regular_identifier(ident: String): Boolean =
     ident.nonEmpty &&
       ident.forall(c => !" ,;\r\t\n(){}[]:.`\"".contains(c))
 
-  // Manually escape the name given to unnamed lambda abstraction arguments which doesn't fit lambdapi's rules, even when escaping
+  /** Manually escape the name given to unnamed lambda abstraction arguments which doesn't
+   *  fit lambdapi's rules, even when escaping.
+   */
   override def escape(ident: String): String = {
     val pattern = """:(\d+)""".r
     val matched = pattern.findFirstMatchIn(ident)
