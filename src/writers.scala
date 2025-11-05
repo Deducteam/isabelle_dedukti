@@ -2,12 +2,13 @@
 
 package isabelle.dedukti
 
-import isabelle._
-import isabelle.dedukti.Syntax._
+import isabelle.*
+import isabelle.dedukti.Syntax.*
 
-import java.io.{FileOutputStream, OutputStreamWriter, BufferedWriter, Writer}
+import java.io.{BufferedWriter, FileOutputStream, OutputStreamWriter, Writer}
 import java.nio.file.{Files, StandardCopyOption}
-import scala.collection.mutable.{Map => MutableMap}
+import scala.collection.mutable
+import scala.collection.mutable.Map as MutableMap
 
 /** Opens a path.part file for writing.
  * @see [[Writer]] */
@@ -150,31 +151,38 @@ abstract class Abstract_Writer(root: String, writer: Writer) extends Ident_Write
   def sym_qident(a: String): Unit = {
     write(root + Prelude.mod_name(Prelude.module_of(a)) + "." + escape_if_needed(a))
   }
-
+  
   def term(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation],
            prevNot: Notation = justHadPars, no_impl: Boolean = false, right: Boolean = false): Unit
 
+  /** Write on <code>this</code> an argument and its type<br>
+   *  <b>TODO: why parenthesising for lambdas and pis it if there is always only one argument?</b>
+   *
+   * @param a the $dklp argument to write
+   * @param block true if it needs to be parenthesised
+   * @param notations a map between identifiers and their notation
+   */
   def arg(a: Syntax.BoundArg, block: Boolean, notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit = {
-    if (block) {
-      /*if (a.implicit_arg) {
+    if (block) rpar()/*{
+      if (a.implicit_arg) {
         write("[")
-      } else {*/
+      } else {
         rpar()
-      //}
-    }
+      }
+    }*/
     a.id match {
       case Some(id) => var_ident(id)
       case None => write('_')
     }
     colon()
     term(a.typ, notations)
-    if (block) {
-      /*if (a.implicit_arg) {
+    if (block) lpar()/*{
+      if (a.implicit_arg) {
         write("]")
-      } else {*/
+      } else {
         lpar()
-      //}
-    }
+      }
+    }*/
   }
 
   def comment(c: String): Unit
@@ -188,6 +196,7 @@ abstract class Abstract_Writer(root: String, writer: Writer) extends Ident_Write
  *       $dk: reference dedukti (purple)
  *       $lp: reference lambdapi (purple)
  *       $isa: reference Isabelle (yellow)
+ *       $this: references the object itself (code)
  *       <$met>metname<$mete>: a scala method (orange,code)
  *       <$metc>metname<$metce>: a scala method inside code (orange)
  *       <$type>typname<$typee>: a scala type (dark orange,bold,code)
@@ -200,6 +209,7 @@ abstract class Abstract_Writer(root: String, writer: Writer) extends Ident_Write
  * @define dk <span style="color:#9932CC;">dedukti</span>
  * @define lp <span style="color:#9932CC;">lambdapi</span>
  * @define isa <span style="color:#FFFF00">Isabelle</span>
+ * @define this <code>this</code>
  * @define met code><span style="color:#FFA500;"
  * @define metc span style="color:#FFA500;"
  * @define mete /span></code
@@ -329,36 +339,44 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
   def lambda()      : Unit = write("λ ")
   def pi()          : Unit = write("Π ")
   def turnstile()   : Unit = write(" ⊢ ")
+  /** prints <$str>";"<$stre> and goes to next line */
   def end_command() : Unit = { semicolon(); nl() }
 
-  // Terms that are applications (can be a head only), pretty-prints infix operators
+  /** Write on $this a $lp term that is an application (can be a head only),
+   *  pretty-prints infix operators.
+   *
+   * @param t the $lp term to write
+   * @param notations a map between identifiers and their notation
+   * @param prevNot the notation of the last symbol read
+   * @param right whether the term to write is on the right of an infix operator
+   */
   def appl(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation],
-           prevNot: Notation, no_impl: Boolean = false, right: Boolean): Unit = {
-    val (head, pre_spine) = Syntax.destruct_appls(t)
-    val spine = pre_spine.filter(!_._2).map(_._1)
-    val contains_impl_arg = pre_spine.exists(_._2)
+           prevNot: Notation/*, no_impl: Boolean = false*/, right: Boolean): Unit = {
+    val (head, /*pre_*/spine) = Syntax.destruct_appls(t)
+    // val spine = pre_spine.filter(!_._2).map(_._1)
+    // val contains_impl_arg = pre_spine.exists(_._2)
     head match {
       case Syntax.Symb(id) if notations contains id =>
         val not = notations(id)
         val op = getOperator(not)
         (not, spine) match {
           case (Syntax.Quantifier(_), _) => isabelle.error("NotImplemented")
-          case (Syntax.Prefix(op, _), List(arg)) if !(no_impl && contains_impl_arg) =>
-          block_if(not, prevNot, right)({
-            sym_qident(op)
-            space()
-            term(arg, notations, not, no_impl)
-          })
-          case (Syntax.Infix(_, _) | Syntax.InfixL(_, _) | Syntax.InfixR(_, _), List(arg1, arg2)) if !(no_impl && contains_impl_arg) =>
+          case (Syntax.Prefix(op, _), List(arg)) /*if !(no_impl && contains_impl_arg)*/ =>
             block_if(not, prevNot, right)({
+              sym_qident(op)
+              space()
+              term(arg, notations, not/*, no_impl*/)
+            })
+          case (Syntax.Infix(_, _) | Syntax.InfixL(_, _) | Syntax.InfixR(_, _), List(arg1, arg2))/* if !(no_impl && contains_impl_arg)*/ =>
+            block_if(not, prevNot, right){
               val op = getOperator(not) // Ugly Scala where I can't get that from the pattern
-              term(arg1, notations, not, no_impl)
+              term(arg1, notations, not/*, no_impl*/)
               space()
               sym_qident(op)
               space()
-              term(arg2, notations, not, no_impl, right = true)
-            })
-          case _ =>
+              term(arg2, notations, not/*, no_impl*/, right = true)
+            }
+          /*case _ =>
             // val op = getOperator(not) Incomprehensible Scala to disallow this
             val not = Syntax.appNotation
             val force_no = pre_spine.isEmpty
@@ -371,58 +389,64 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
                 space(); term(arg, notations, not, no_impl, right = true)
                 }
               }
-            }
+            }*/
           }
       case _ =>
         val not = appNotation
-        val force_no = pre_spine.isEmpty
-        block_if(not, prevNot, right, force_no)({
+        val force_no = /*pre_*/spine.isEmpty
+        block_if(not, prevNot, right, force_no){
           term(head, notations, not, right)
-          for ((arg, impl) <- pre_spine) {
+          for (arg <- spine) {
+            space() ; term(arg, notations, not, right = true)
+          }
+          /*for ((arg, impl) <- pre_spine) {
             if (impl) {
               if (no_impl || spine.isEmpty) { space(); write("["); term(arg, notations, Syntax.justHadPars, right = true); write("]") }
             } else {
               space()
               term(arg, notations, not, right = true)
             }
-          }
-        })
+          }*/
+        }
     }
   }
 
+  /** Particular case of <$met><u>[[term]]</u><$mete>. */
   def term_notation(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation],
-           prevNot: Notation = justHadPars, no_impl: Boolean = false, right: Boolean = false): Unit =
+           prevNot: Notation/*, no_impl: Boolean = false*/, right: Boolean): Unit =
     t match {
       case Syntax.TYPE =>
         write("TYPE")
       case Syntax.Symb(id) if notations contains id =>
-        appl(t, notations, prevNot, no_impl, right)
+        appl(t, notations, prevNot/*, no_impl*/, right)
       case Syntax.Symb(id) =>
         sym_qident(id)
       case Syntax.Var(id) =>
         var_ident(id)
-      case Syntax.Appl(_, _, _) =>
-        appl(t, notations, prevNot, no_impl, right)
+      case Syntax.Appl(_, _/*, _*/) =>
+        appl(t, notations, prevNot/*, no_impl*/, right)
       case Syntax.Abst(a, t) =>
-        block_if(Syntax.absNotation, prevNot, right) {
-          lambda(); arg(a, block = true, notations); comma(); term(t, notations, no_impl = no_impl)
+        val not = absNotation
+        block_if(not, prevNot, right) {
+          lambda(); arg(a, block = true, notations); comma(); term(t, notations, not/*, no_impl = no_impl*/)
         }
-      case Syntax.Prod(Syntax.BoundArg(None, ty1, false), ty2) =>
+      case Syntax.Prod(Syntax.BoundArg(None, ty1/*, false*/), ty2) =>
         val not = arrNotation
         block_if(not, prevNot, right) {
-          val op = getOperator(not)
           term(ty1, notations, not, no_impl)
-          space(); write(op); space() // write should be ident, but we allow escaping
+          arrow()
           term(ty2, notations, not, no_impl, right = true)
         }
       case Syntax.Prod(a, t) =>
-        block_if(Syntax.absNotation, prevNot, right) {
-          pi(); arg(a, block = true, notations); comma(); term(t, notations, absNotation, no_impl)
+        val not = absNotation
+        block_if(not, prevNot, right) {
+          pi(); arg(a, block = true, notations); comma(); term(t, notations, not/*, no_impl*/)
         }
     }
 
+  /** Particular case of <$met><u>[[term]]</u><$mete>. */
   def term_no_notation(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation],
-                       prevNot: Notation = justHadPars, no_impl: Boolean = false, right: Boolean = false): Unit =
+                       prevNot: Notation/*, no_impl: Boolean = false*/, right: Boolean): Unit =
     t match {
       case Syntax.TYPE =>
         write("TYPE")
@@ -432,66 +456,81 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
         sym_qident(id)
       case Syntax.Var(id) =>
         var_ident(id)
-      case Syntax.Appl(t1, t2, isImplicit) =>
+      case Syntax.Appl(t1, t2/*, isImplicit*/) =>
         val not = appNotation
         block_if(not, prevNot, right) {
           term(t1, notations, not)
           space()
-          val newNot = if (isImplicit) justHadPars else appNotation
-          if (isImplicit) write("[")
+          //val newNot = if (isImplicit) justHadPars else appNotation
+          //if (isImplicit) write("[")
           term(t2, notations, newNot, right = true)
-          if (isImplicit) write("]")
+          //if (isImplicit) write("]")
         }
       case Syntax.Abst(a, t) =>
         block_if(Syntax.absNotation, prevNot, right) {
           lambda(); arg(a, block = true, notations); comma(); term(t, notations)
         }
-      case Syntax.Prod(Syntax.BoundArg(None, ty1, false), ty2) =>
+      case Syntax.Prod(Syntax.BoundArg(None, ty1/*, false*/), ty2) =>
         val not = arrNotation
         block_if(not, prevNot, right) {
           val op = getOperator(not)
           term(ty1, notations, not)
-          space(); write(op); space() // write should be ident, but we allow escaping
+          arrow()
           term(ty2, notations, not, right = true)
         }
       case Syntax.Prod(a, t) =>
-        block_if(Syntax.absNotation, prevNot, right) {
-          pi(); arg(a, block = true, notations); comma(); term(t, notations, absNotation)
+        val not = absNotation
+        block_if(not, prevNot, right) {
+          pi(); arg(a, block = true, notations); comma(); term(t, notations, not)
         }
     }
 
+  /** Write on $this a $lp term
+   *
+   * @param t         the $lp term to write
+   * @param notations a map between identifiers and their notation
+   * @param prevNot   the notation of the last symbol read
+   * @param right     whether the term to write is on the right of an infix operator
+   */
   def term(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation],
-           prevNot: Notation = justHadPars, no_impl: Boolean = false, right: Boolean = false): Unit =
+           prevNot: Notation = justHadPars/*, no_impl: Boolean = false*/, right: Boolean = false): Unit =
     if (use_notations)
       term_notation(t, notations, prevNot, no_impl, right)
     else
       term_no_notation(t, notations, prevNot, no_impl, right)
 
+  /** comment + new line */
   def comment(c: String): Unit = {
     write("// " + c)
     nl()
   }
 
-  def patternize(t: Syntax.Term, vars: Set[Ident]): Syntax.Term =
+  /** Marks pattern variables in a term in a rewrite rule
+   *
+   *  @param t the $lp term in which to apply the changes,
+   *           left or right-hand side of the rule
+   *  @param vars the set of names of variables to mark
+   *
+   *  @return a copy of t in which <$str>'$'<$stre> is prepended to the name
+   *          of all free variables with a name in <$arg>vars<$arge>
+   */
+  def patternize(t: Syntax.Term, vars: Set[Ident]): Syntax.Term = {
+    def newvars(idopt: Option[Ident]): Set[Ident] = idopt.fold(vars)(vars - _)
     t match {
       case Syntax.TYPE => t
       case Syntax.Symb(_) => t
       case Syntax.Var(id) if vars(id) => Syntax.Var("$" + id)
       case Syntax.Var(_) => t
       case Syntax.Appl(t1, t2, b) => Syntax.Appl(patternize(t1, vars), patternize(t2, vars), b)
-      case Syntax.Abst(a @ BoundArg(Some(id), _, _), t) => Syntax.Abst(patternize_arg(a, vars), patternize(t, vars - id))
-      case Syntax.Abst(a, t) => Syntax.Abst(patternize_arg(a, vars), patternize(t, vars))
-      case Syntax.Prod(a @ BoundArg(Some(id), _, _), t) => Syntax.Prod(patternize_arg(a, vars), patternize(t, vars - id))
-      case Syntax.Prod(a, t) => Syntax.Prod(patternize_arg(a, vars), patternize(t, vars))
+      case Syntax.Abst(BoundArg(idopt, ty/*, impl*/), t) =>
+        Syntax.Abst(BoundArg(idopt, patternize(ty,vars)/*, impl*/), patternize(t, newvars(idopt)))
+      case Syntax.Prod(BoundArg(idopt, ty/*, impl*/), t) =>
+        Syntax.Prod(BoundArg(idopt, patternize(ty,vars)/*, impl*/), patternize(t, newvars(idopt)))
     }
+  }
 
-  def patternize_arg(a: Syntax.BoundArg, vars: Set[Ident]): Syntax.BoundArg =
-    a match {
-      case BoundArg(id, ty, impl) => BoundArg(id, patternize(ty, vars), impl)
-    }
-
-  def notation(fullId: Ident, notation: Notation, notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit = {
-    notations(fullId) = notation
+  /** Writes a $lp notation on $this */
+  def notation(notation: Notation): Unit = {
     write ("notation ")
     notation match {
       case Prefix(op, priority) => sym_qident(op); space(); write("prefix");      space(); write(priority.toString)
@@ -502,51 +541,54 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
     }
   }
 
-  def ident_or_notation(id: Syntax.Ident, not: Option[Syntax.Notation]): Unit = {
-    not.fold(sym_ident(id))(not => sym_ident(getOperator(not))) // Ugly
-  }
+  /** Writes a $lp symbol definition and the corresponding notation on $this.
+   *  Does not use/write the notation if variable <code>use_notations</code> is set to false.
+   * 
+   * @param id the (possibly modified) identifier of the symbol in $isa
+   * @param args the list of arguments of the symbol
+   * @param ty_opt the optional type of the symbol
+   * @param body_opt the optional definition of the symbol
+   * @param nota_opt the optional notation of the symbol
+   * @param notations a map between identifiers and their $lp notation
+   */
+  def symbol_and_notation(id: Ident, args: List[BoundArg], ty_opt: Option[Typ], body_opt: Option[Term],
+                          nota_opt: Option[Notation], notations: MutableMap[Ident, Notation]): Unit =
+    val (new_id, new_nota_opt) =
+      if (use_notations) (nota_opt.fold(id)(getOperator),nota_opt)
+      else (id,None)
+    write("symbol "); sym_ident(newid)
+    for (a <- args) {space(); arg(a, block = true, notations)}
+    for (ty <- ty) {colon(); term(ty, notations)}
+    for (tm <- body) {colon_equal(); term(tm, notations)}
+    for (not <- new_nota_opt) {end_command(); notation(not); notations(id)=not}
 
+  /** Writes the $lp command <$arg>c<$arge> on $this, possibly updating the
+   *  <$arg>notations<$arge> map.
+   */
   def command(c: Syntax.Command, notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit = {
     c match {
       case Syntax.Rewrite(vars, lhs, rhs) =>
         val vars_set = Set.from(vars)
         write("rule ")
-        term(patternize(lhs, vars_set), notations, no_impl = true)
+        term(patternize(lhs, vars_set), notations/*, no_impl = true*/)
         hook_arrow()
-        term(patternize(rhs, vars_set), notations, no_impl = true)
-      case Syntax.Declaration(id, args, ty, not) =>
-        val not_opt: Option[Notation] = if (use_notations) not else None
+        term(patternize(rhs, vars_set), notations/*, no_impl = true*/)
+      case Syntax.Declaration(id, args, ty, not) => 
         write("constant ")
-        write("symbol ")
-        ident_or_notation(id, not_opt)
-        for (a <- args) { space(); arg(a, block = true, notations) }
-        colon(); term(ty, notations)
-        for (not <- not_opt) { end_command(); notation(id, not, notations) }
+        symbol_and_notation(id, args, Some(ty), None, not, notations)
       case Syntax.DefableDecl(id, ty, inj, not) =>
-        val not_opt: Option[Notation] = if (use_notations) not else None
-        if (inj) { write("injective ") }
-        write("symbol ")
-        ident_or_notation(id, not_opt)
-        colon(); term(ty, notations)
-        for (not <- not_opt) { end_command(); notation(id, not, notations) }
+        if (inj) write("injective ")
+        symbol_and_notation(id, List(), Some(ty), None, not, notations)
       case Syntax.Definition(id, args, ty, tm, not) =>
-        val not_opt: Option[Notation] = if (use_notations) not else None
-        write("symbol ")
-        ident_or_notation(id, not_opt)
-        for (a <- args) { space(); arg(a, block = true, notations) }
-        for (ty <- ty) { colon(); term(ty, notations) }
-        colon_equal(); term(tm, notations)
-        for (not <- not_opt) { end_command(); notation(id, not, notations) }
+        symbol_and_notation(id, args, ty, Some(tm), not, notations)
       case Syntax.Theorem(id, args, ty, prf) =>
-        write("opaque symbol ")
-        sym_ident(id)
-        for (a <- args) { space(); arg(a, block = true, notations) }
-        colon(); term(ty, notations)
-        colon_equal(); term(prf, notations)
+        write("opaque ")
+        symbol_and_notation(id, args, Some(ty), Some(prf), None, notations)
     }
   end_command()
   }
-
+  
+  /** Writes on $this the $lp command to set the "eta_equality" flag on */
   def eta_equality(): Unit = {
     write("""flag "eta_equality" on""")
     end_command()
@@ -559,7 +601,6 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
   }
 }
 
-
 class DK_Writer(writer: Writer) extends Abstract_Writer("", writer) {
   val reserved =
     Set(
@@ -567,9 +608,9 @@ class DK_Writer(writer: Writer) extends Abstract_Writer("", writer) {
       "thm",
       "Type",
       "_")
-
+  
   def is_regular_identifier(ident: String): Boolean =
-    ident.nonEmpty &&
+    ident.nonEmpty && 
       ident(0) != '\'' &&
       ident.forall(c => Symbol.is_ascii_letter(c) || Symbol.is_ascii_digit(c) || "_!?'".contains(c))
 
@@ -581,8 +622,8 @@ class DK_Writer(writer: Writer) extends Abstract_Writer("", writer) {
   def ar_pi()  : Unit = write(" -> ")
   def ar_rew() : Unit = write(" --> ")
 
-  def term(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation] = MutableMap(),
-           prevNot: Notation = justHadPars, no_impl: Boolean = false, right: Boolean = false): Unit =
+  def term(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation] = mutable.Map(),
+           prevNot: Notation = justHadPars/*, no_impl: Boolean = false*/, right: Boolean = false): Unit =
     t match {
       case Syntax.TYPE =>
         write("Type")
@@ -590,7 +631,7 @@ class DK_Writer(writer: Writer) extends Abstract_Writer("", writer) {
         sym_qident(id)
       case Syntax.Var(id) =>
         var_ident(id)
-      case Syntax.Appl(_, _, _) =>
+      case Syntax.Appl(_, _/*, _*/) =>
         block_if(appNotation, prevNot, right) {
           val (head, spine) = Syntax.destruct_appls(t)
           term(head, prevNot = appNotation)
@@ -598,7 +639,7 @@ class DK_Writer(writer: Writer) extends Abstract_Writer("", writer) {
         }
       case Syntax.Abst(a, t) =>
         block_if(absNotation, prevNot, right) { arg(a, block = false, notations); ar_lam(); term(t) }
-      case Syntax.Prod(Syntax.BoundArg(None, ty1, false), ty2) =>
+      case Syntax.Prod(Syntax.BoundArg(None, ty1/*, false*/), ty2) =>
         val not = arrNotation
         block_if(not, prevNot, right) {
           term(ty1, notations, not)
@@ -616,7 +657,7 @@ class DK_Writer(writer: Writer) extends Abstract_Writer("", writer) {
 
   def command(
     c: Syntax.Command,
-    notations: MutableMap[Syntax.Ident, Syntax.Notation] = MutableMap()
+    notations: MutableMap[Syntax.Ident, Syntax.Notation] = mutable.Map()
   ): Unit = {
     c match {
       case Syntax.Declaration(id, args, ty, _) =>

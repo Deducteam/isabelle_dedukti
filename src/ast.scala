@@ -173,16 +173,22 @@ object Syntax {
 
   /** $lp notation representing function application [[Appl]].
    *  Used for decision of parenthesising, as it is left associative and
-   *  has +∞ priority */
+   *  has priority +∞
+   */
   val appNotation: Notation = InfixL(" ", Double.PositiveInfinity)
   /** $lp notation representing the fact that there is no notation.
    *  Used for decision of parenthesising, as it is non-associative and
-   *  has -∞ priority*/
+   *  has priority -∞
+   */
   val justHadPars: Notation = Infix("()", Double.NegativeInfinity)
-  /** The internal $lp notation for arrow types [[arrow]] */
+  /** $lp notation representing arrow types [[arrow]].
+   * Used for Decision of parenthesising, as it is non-associative and has priority -1. */
   val arrNotation: Notation = InfixR("→", -2)
-  /** The $lp notation for single-argument lambda abstraction [[Abst]]. */
+  /** $lp notation representing single-argument lambda abstraction [[Abst]].
+   *  Used for decision of parenthesising, as it is right associative and has
+   *  priority -1 */
   val absNotation: Notation = InfixR("λ", -1)
+  /** Has value 10.0. */
   val defaultPrefixPriority = 10.0
 
   /** A $dklp command relevant to this library. */

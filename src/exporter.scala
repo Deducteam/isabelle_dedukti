@@ -2,14 +2,49 @@
 
 package isabelle.dedukti
 
-import isabelle._
-import isabelle.Term.{Const => Cst, Proof => Prf, _}
-import isabelle.Export_Theory._
+import isabelle.*
+import isabelle.Term.{Const as Cst, Proof as Prf, *}
+import isabelle.Export_Theory.*
 
-import java.io._
+import java.io.*
+import scala.annotation.tailrec
 import scala.collection.mutable
-import scala.util.control.Breaks._
+import scala.util.control.Breaks.*
 
+/** <!-- Some macros for colors and common references.
+ *       Pasted at the start of every object.
+ *       Documentation:
+ *       $dklp: reference dk/lp (purple)
+ *       $dk: reference dedukti (purple)
+ *       $lp: reference lambdapi (purple)
+ *       $isa: reference Isabelle (yellow)
+ *       <$met>metname<$mete>: a scala method (orange,code)
+ *       <$metc>metname<$metce>: a scala method inside code (orange)
+ *       <$type>typname<$typee>: a scala type (dark orange,bold,code)
+ *       <$arg>argname<$arge>: a scala argument (pink,code)
+ *       <$argc>argname<$argce>: a scala argument inside code (pink)
+ *       <$str>string<$stre>: a scala string (dark green)
+ *       <$lpc>code<$lpce>: some lambdapi code (light blue,code)
+ *       -->
+ * @define dklp <span style="color:#9932CC;">dk/lp</span>
+ * @define dk <span style="color:#9932CC;">dedukti</span>
+ * @define lp <span style="color:#9932CC;">lambdapi</span>
+ * @define isa <span style="color:#FFFF00">Isabelle</span>
+ * @define met code><span style="color:#FFA500;"
+ * @define metc span style="color:#FFA500;"
+ * @define mete /span></code
+ * @define metce /span
+ * @define type code><span style="color:#FF8C00"><b
+ * @define typee /b></span></code
+ * @define arg code><span style="color:#FFC0CB;"
+ * @define argc span style="color:#FFC0CB;"
+ * @define arge /span></code
+ * @define argce /span
+ * @define str span style="color:#006400;"
+ * @define stre /span
+ * @define lpc code><span style="color:#87CEFA"
+ * @define lpce /span></code
+ */
 object Exporter {
 
   // compute the biggest theorem serial occurring in a theorem
@@ -26,7 +61,8 @@ object Exporter {
   }
 
   // head and arguments of a term
-  def head_args(t:Term,args:List[Term]): (Term,List[Term]) = {
+  @tailrec
+  def head_args(t:Term, args:List[Term]): (Term,List[Term]) = {
     t match {
       case App(u,v) => head_args(u,v::args)
       case _ => (t,args)
