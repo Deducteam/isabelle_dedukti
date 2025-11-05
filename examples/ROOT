@@ -10,7 +10,43 @@ session HOL_Nat_wp in HOL_Nat_wp = HOL_Groups_wp +
   theories
     HOL.Nat
 
-session HOL_Pre_Enum_wp in HOL_Pre_Enum_wp = HOL_Nat_wp +
+session HOL_BNF_Def_wp in HOL_BNF_Def_wp = HOL_Nat_wp +
+  options [strict_facts,export_theory,export_proofs,record_proofs=2]
+  sessions HOL
+  theories
+    HOL.BNF_Def
+
+session HOL_Int_wp in HOL_Int_wp = HOL_BNF_Def_wp +
+  options [strict_facts,export_theory,export_proofs,record_proofs=2]
+  sessions HOL
+  theories
+    HOL.Int
+
+session HOL_Set_Interval_wp in HOL_Set_Interval_wp = HOL_Int_wp +
+  options [strict_facts,export_theory,export_proofs,record_proofs=2]
+  sessions HOL
+  theories
+    HOL.Set_Interval
+
+session HOL_Groebner_Basis_wp in HOL_Groebner_Basis_wp = HOL_Set_Interval_wp +
+  options [strict_facts,export_theory,export_proofs,record_proofs=2]
+  sessions HOL
+  theories
+    HOL.Groebner_Basis
+
+session HOL_Presburger_wp in HOL_Presburger_wp = HOL_Groebner_Basis_wp +
+  options [strict_facts,export_theory,export_proofs,record_proofs=2]
+  sessions HOL
+  theories
+    HOL.Presburger
+
+session HOL_List_wp in HOL_List_wp = HOL_Presburger_wp +
+  options [strict_facts,export_theory,export_proofs,record_proofs=2]
+  sessions HOL
+  theories
+    HOL.List
+
+session HOL_Pre_Enum_wp in HOL_Pre_Enum_wp = HOL_List_wp +
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
   sessions HOL
   theories

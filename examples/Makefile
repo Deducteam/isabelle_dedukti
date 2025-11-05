@@ -72,15 +72,18 @@ rm-caches:
 
 ############# generation of Isabelle proofs ##############
 
-ISADB_DIR = ~/.isabelle/Isabelle2023/heaps/polyml-5.9_x86_64_32-linux/log
+ISADB_DIR =
 ROOT_DIR = .
 SESSION = HOL_Nat_wp
 
 .PHONY: build
 build: $(ISADB_DIR)/$(SESSION).db
 
-$(ISADB_DIR)/%.db: $(ROOT_DIR)/ROOT
+$(ISADB_DIR)/%.db: $(ROOT_DIR)/ROOT $(SESSION)
 	isabelle build -b -d$(ROOT_DIR) $*
+
+$(SESSION):
+	mkdir -p $@
 
 clean-build:
 	rm -f $(ISADB_DIR)/$(SESSION).db

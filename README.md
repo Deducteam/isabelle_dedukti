@@ -84,8 +84,7 @@
     - To update the patch:
     
     ```bash
-    cd $path_to_unpatched_Isabelle_dir
-    diff -urNx '*~' -x '*.orig' src/HOL $path_to_patched_Isabelle_dir/src/HOL > HOL.patch
+    diff -urNx '*~' -x '*.orig' $path_to_unpatched_Isabelle_dir/src/HOL $path_to_patched_Isabelle_dir/src/HOL > HOL.patch
     ```
 
   * **Deleting the Isabelle databases**
@@ -120,7 +119,7 @@ session HOL_wp in HOL_wp = Pure +
 
 Isabelle requires a dedicated directory for each session, specified by the `in HOL_wp` part above. Usually, it suffices to have an empty directory with the same name as the session.
 
-To actually export proof terms from Isabelle, assuming the `ROOT` file containing the session info is located in `$rootdir` do:
+To actually export proof terms from Isabelle, assuming the `ROOT` file containing the session info is located in `$rootdir` and that the directory `$rootdir/$session` exists, do:
 
 ```bash
 isabelle build -b -d $rootdir $session
@@ -165,19 +164,25 @@ The generated Dedukti files can be translated to Coq by using the Coq export fun
 Performance on a machine with 32 processors i9-13950HX and 64 Go RAM
 (but multiprocessing is used in v and vo only for the moment):
 
-| SESSION                     |  build | db size |   dk | dk size |   dko |    v |            vo |
-|:----------------------------|-------:|--------:|-----:|--------:|------:|-----:|--------------:|
-| Pure                        |     2s |       0 |   3s |     52K |    0s |   0s |            1s |
-| HOL_Groups_wp               |    16s |      7M |   8s |     14M |    1s |   0s |           17s |
-| HOL_Nat_wp                  |    51s |     19M |  33s |    111M |   11s |   2s |         2m29s |
-| HOL_Pre_Enum_wp             | 15m12s |    195M |   9m |    3.2G | 4m56s | 1m9s | out of memory |
-| HOL_Enum_wp                 |  1m19s |    8.6M | 1m5s |    206M |   18s |  12s |               |
-| HOL_Quickcheck_Random_wp    |        |         |      |         |       |      |               |
-| HOL_Quickcheck_Narrowing_wp |        |         |      |         |       |      |               |
-| HOL_Main                    |        |         |      |         |       |      |               |
-| HOL_Pre_Transcendental_wp   |        |         |      |         |       |      |               |
-| HOL_Transcendental_wp       |        |         |      |         |       |      |               |
-| HOL_Complex_Main_wp         |        |         |      |         |       |      |               |
+| SESSION                     | build | db size |  dk | dk size | dko |  v |    vo |
+|:----------------------------|------:|--------:|----:|--------:|----:|---:|------:|
+| Pure                        |    2s |       0 |  3s |     52K |  0s | 0s |    1s |
+| HOL_Groups_wp               |   16s |      7M |  8s |     14M |  1s | 0s |   17s |
+| HOL_Nat_wp                  |   53s |     19M | 33s |    111M | 11s | 2s | 2m29s |
+| HOL_BNF_Def_wp              | 1m39s |     30M |     |         |     |    |       |
+| HOL_Int_wp                  | 1m51s |     33M |     |         |     |    |       |
+| HOL_Set_Interval_wp         | 3m37s |     44M |     |         |     |    |       |
+| HOL_Groebner_Basis_wp       |   15s |    1.3M |     |         |     |    |       |
+| HOL_Presburger_wp           | 2m14s |     41M |     |         |     |    |       |
+| HOL_List_wp                 | 8m19s |     46M |     |         |     |    |       |
+| HOL_Pre_Enum_wp             |   22s |    3.4M |     |         |     |    |       |
+| HOL_Enum_wp                 | 1m24s |    8.5M |     |         |     |    |       |
+| HOL_Quickcheck_Random_wp    |       |         |     |         |     |    |       |
+| HOL_Quickcheck_Narrowing_wp |       |         |     |         |     |    |       |
+| HOL_Main                    |       |         |     |         |     |    |       |
+| HOL_Pre_Transcendental_wp   |       |         |     |         |     |    |       |
+| HOL_Transcendental_wp       |       |         |     |         |     |    |       |
+| HOL_Complex_Main_wp         |       |         |     |         |     |    |       |
 
 There is room for many important improvements. Makarius Wenzel is working on improving the export of proof terms in Isabelle. The generation of dk files is not modular. No term sharing is currently used in dk and v files.
 
