@@ -583,10 +583,10 @@ object Translate {
       }
     }
 
-  /** <b>TODO: is it used for proofs? if not, then known_argnames is only used for type names</b><br>
-   * Create and name new arguments to a $dklp
-   * function when they do not already exist (partially applied function)
-   * @param known_argnames the names given to the arguments in the type
+  /** Create and name new arguments to a $dklp function when
+   *  they do not already exist (partially applied function)
+   *  
+   * @param known_argnames the names given to the arguments in the type/proposition
    *                       (in case of a product and not an arrow type).
    *                       Supposed to be renamed using <$met><u>[[alpha_escape]]</u><$mete>
    *                       before being given to the function
@@ -651,7 +651,7 @@ object Translate {
     }
 
   // Modifed to also include lambda abstraction
-  /** <b>TODO:Is it okay that I modified it? it does not seem used anywhere</b><br>
+  /** <b>TODO:Is it okay that I modified it? Also, it was not used anywhere</b><br>
    * <code><$met>appls_args<$mete>(<$arg>tm<$arge>, List(<$arg>x1<$arge>,
    *  ..., <$arg>xn<$arge>))</code> is <$lpc>λ x1 ... xn, tm x1 ... xn 
    *  
@@ -754,7 +754,7 @@ object Translate {
   }
 
   /** <code><$arg>ba1<$arge>==<$arg>ba2<$arge></code><br>
-   *  <b>TODO: Why is it not the definition?</b>
+   *  <b>TODO: Why is it not just equality? Do I not understand case classes correctly? </b>
    */
   def compatible_bound_args(ba1: Syntax.BoundArg, ba2: Syntax.BoundArg): Boolean =
     (ba1, ba2) match {
@@ -854,7 +854,7 @@ object Translate {
   }
 
   /** Translates $isa notation data into $dklp notation data */
-  def notation_decl: Export_Theory.Syntax => Option[Syntax.Notation] = { // TODO: Ugly
+  def notation_decl (nota: Export_Theory.Syntax): Option[Syntax.Notation] = nota match { // TODO: Ugly (... but in what sense?)
     case No_Syntax => None
     case Prefix(op) => Some(Syntax.Prefix(notations_get(op), Syntax.defaultPrefixPriority))
     case Export_Theory.Infix(Export_Theory.Assoc.NO_ASSOC,    op, priority) => Some(Syntax.Infix (notations_get(op), priority))

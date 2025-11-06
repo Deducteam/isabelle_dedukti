@@ -119,7 +119,7 @@ object Exporter {
     }
   }
 
-  /** Reads and $isa session and possibly translate it to $dk files
+  /** Reads an $isa session and possibly translates it to $dk files
    * 
    * @param options $isa options to read the session
    * @param session the $isa session to read
@@ -388,7 +388,8 @@ object Exporter {
             for (c <- theory.consts.sortWith(le)) {
               if (verbose) progress.echo("  "+c.toString+" "+c.serial)
               //skip constants corresponding to classes
-              // TODO: is everything not coming from a class named ..._Class ?
+              // TODO: from the previous comment,
+              //       is everything not coming from a class named ..._Class ?
               if (c.name.endsWith("_Class")) 
                 val def_opt = map_cst_dfn.get(c.name)
                 val cmd = Translate.const_decl(theory_name, c.name, c.the_content.typargs, c.the_content.typ, def_opt, c.the_content.syntax)

@@ -13,20 +13,65 @@ import sys.process._
 import scala.language.postfixOps
 import scala.io.Source
 
-object Generator {
 
+
+/** <!-- Some macros for colors and common references.
+ *       Pasted at the start of every object.
+ *       Documentation:
+ *       $dklp: reference dk/lp (purple)
+ *       $dk: reference dedukti (purple)
+ *       $lp: reference lambdapi (purple)
+ *       $isa: reference Isabelle (yellow)
+ *       <$met>metname<$mete>: a scala method (orange,code)
+ *       <$metc>metname<$metce>: a scala method inside code (orange)
+ *       <$type>typname<$typee>: a scala type (dark orange,bold,code)
+ *       <$arg>argname<$arge>: a scala argument (pink,code)
+ *       <$argc>argname<$argce>: a scala argument inside code (pink)
+ *       <$str>string<$stre>: a scala string (dark green)
+ *       <$lpc>code<$lpce>: some lambdapi code (light blue,code)
+ *       -->
+ * @define dklp <span style="color:#9932CC;">dk/lp</span>
+ * @define dk <span style="color:#9932CC;">dedukti</span>
+ * @define lp <span style="color:#9932CC;">lambdapi</span>
+ * @define isa <span style="color:#FFFF00">Isabelle</span>
+ * @define met code><span style="color:#FFA500;"
+ * @define metc span style="color:#FFA500;"
+ * @define mete /span></code
+ * @define metce /span
+ * @define type code><span style="color:#FF8C00"><b
+ * @define typee /b></span></code
+ * @define arg code><span style="color:#FFC0CB;"
+ * @define argc span style="color:#FFC0CB;"
+ * @define arge /span></code
+ * @define argce /span
+ * @define str span style="color:#006400;"
+ * @define stre /span
+ * @define lpc code><span style="color:#87CEFA"
+ * @define lpce /span></code
+ */
+object Generator {
+  /** reads an $isa Session and all its parents
+   *  and calls <$met><u>[[Exporter.exporter]]</u><$metc>
+   * 
+   * @param options $isa options for reading the session info
+   * @param session the $isa session to translate
+   * @param recursive set to true to recursively translate all parent sessions 
+   * @param dirs paths to session directories
+   * @param outdir the directory to output to
+   * @param translate pass the info from recursive
+   */
   def generator(
     options: Options,
     session: String,
-    target_theory: String,
+    //target_theory: String, TODO: It is not used right?
     recursive: Boolean,
-    translate: Boolean,
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
     outdir: String = "",
     use_notations: Boolean = false,
     eta_expand: Boolean = false,
     verbose: Boolean = false,
+    translate: Boolean = true
   ): Unit = {
 
     progress.echo("Start handling session "+session)
@@ -45,10 +90,10 @@ object Generator {
             import Document.Node._
             Name.make_graph(List(((Name("Pure",Thy_Header.PURE),()),List())))
           } else error("the session has no parent")
-        case Some(anc) => {
-          generator(options, anc, target_theory, recursive, recursive, progress, dirs, outdir, use_notations, eta_expand, verbose)
+        case Some(anc) =>
+          generator(options, anc, target_theory, recursive, progress, dirs, outdir, use_notations, eta_expand, verbose, translate = recursive)
           Rootfile.graph(options, session, anc, progress, dirs, verbose)
-        }
+        
       }
 
     val term_cache = Term.Cache.make()
@@ -65,7 +110,10 @@ object Generator {
   }
 
   // Isabelle tool wrapper and CLI handler
-  val cmd_name = "dedukti_session"
+  val cmd_name = "dedukti_translate_session"
+  /** $isa tool to translate an $isa Session from the command line
+   * @see <$met><u>[[generator]]</u><$mete>
+   */
   val isabelle_tool: Isabelle_Tool =
     Isabelle_Tool(cmd_name, "generate a dk or lp file for every theory of a session", Scala_Project.here,
       { args =>
@@ -77,7 +125,7 @@ object Generator {
         var options = Options.init()
         var verbose = false
 
-        val getopts = Getopts("Usage: isabelle " + cmd_name + """ [OPTIONS] SESSION [THEORY]
+        val getopts = Getopts("Usage: isabelle " + cmd_name + """ [OPTIONS] SESSION""" /* + """ [THEORY]"""*/ + """
 
   Options are:
     -d DIR       include session directory
@@ -88,7 +136,7 @@ object Generator {
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
     -v           verbose mode
 
-Generate a dk or lp file for every theory of SESSION (up to THEORY).""",
+Generate a dk or lp file for every theory of SESSION""" /*+ """ (up to THEORY)"""*/ + """.""",
         "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
         "D:" -> (arg => { outdir = arg + "/" }),
         "r" -> (_ => recursive = true),
@@ -99,12 +147,16 @@ Generate a dk or lp file for every theory of SESSION (up to THEORY).""",
 
         val more_args = getopts(args)
 
-        val (session, target_theory) =
+        val session = more_args match {
+          case List(session) => session
+          case _ => getopts.usage()
+        }
+        /*val (session, target_theory) =
           more_args match {
             case List(session) => (session, "")
             case List(session, target_theory) => (session, target_theory)
             case _ => getopts.usage()
-          }
+          }*/
 
         val progress = new Console_Progress(verbose = true)
 
@@ -113,7 +165,7 @@ Generate a dk or lp file for every theory of SESSION (up to THEORY).""",
 
         progress.interrupt_handler {
           try {
-            generator(options, session, target_theory, recursive, true, progress, dirs, outdir, use_notations, eta_expand, verbose)
+            generator(options, session/*, target_theory*/, recursive, progress, dirs, outdir, use_notations, eta_expand, verbose)
           }
           catch {case x: Exception =>
             progress.echo(x.getStackTrace.mkString("\n"))

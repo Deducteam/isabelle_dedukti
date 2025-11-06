@@ -155,8 +155,7 @@ abstract class Abstract_Writer(root: String, writer: Writer) extends Ident_Write
   def term(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation],
            prevNot: Notation = justHadPars, no_impl: Boolean = false, right: Boolean = false): Unit
 
-  /** Write on <code>this</code> an argument and its type<br>
-   *  <b>TODO: why parenthesising for lambdas and pis it if there is always only one argument?</b>
+  /** Write on <code>this</code> an argument and its type
    *
    * @param a the $dklp argument to write
    * @param block true if it needs to be parenthesised
@@ -430,6 +429,7 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
       case Syntax.Abst(a, t) =>
         val not = absNotation
         block_if(not, prevNot, right) {
+          // TODO: why parenthesising arguments (block = true) for lambdas and pis if there is always only one argument?
           lambda(); arg(a, block = true, notations); comma(); term(t, notations, not/*, no_impl = no_impl*/)
         }
       case Syntax.Prod(Syntax.BoundArg(None, ty1/*, false*/), ty2) =>

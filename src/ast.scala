@@ -207,8 +207,7 @@ object Syntax {
    * @param not an optional notation for the symbol (default: <$met>None<$mete>)
    */
   case class Declaration(id: Ident, args: List[BoundArg], ty: Typ, not: Option[Notation] = None) extends Command
-  /** <b>TODO: Why is there no argument list? </b><br>
-   * <$lpc>(injective )symbol id : ty;( notation not;)<$lpce>
+  /** <$lpc>(injective )symbol id : ty;( notation not;)<$lpce>
    * Command declaring a definable $dklp symbol.
    * @param id the identifier of the symbol
    * @param ty the type of the symbol

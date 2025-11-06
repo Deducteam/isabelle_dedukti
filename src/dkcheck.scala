@@ -177,11 +177,11 @@ object Dkcheck {
 
     // Generate _CoqProject
 
-    /* TODO: ? This is a proper _CoqProject, why does it have a .sh extension? */
+    /* TODO: This is a proper _CoqProject, why does it have a .sh extension? */
     val filename2 = outdir + "_CoqProject_" + session + ".sh"
     if (verbose) progress.echo("Generates " + filename2 + " ...")
     val bw2 = new BufferedWriter(new FileWriter(new File(filename2)))
-    /* TODO: find out what these directories are supposed to be */
+    /* TODO: What are the rocq and logic repos? Never mentioned anywhere else */
     bw2.write("-Q ../../../rocq IsaRocq\n")
     bw2.write("-Q ../../../logic DkLogic\n")
     bw2.write("-Q ../../"+anc+"/dkcheck "+anc+"\n")
