@@ -110,9 +110,14 @@ object Syntax {
   /** <code><$met>destruct_appls<$mete>(<$met>appls<$mete>(<$arg>head<$arge>,
    * <$arg>spine<$arge>))=(<$arg>head<$arge>,<$arg>spine<$arge>)</code> <br>
    * Recursively splits a $dklp term between its head and its arguments.
+   * 
    * @param t the term being split
-   * @param args the list of arguments encountered so far (default: <$met>Nil<$mete>)
-   * @return the couple of the head function and the list of arguments it is applied to*/
+   * @param args the list of arguments encountered so far (default: <code>Nil</code>)
+   *             
+   * @return the couple of the head function and the list of arguments it is applied to
+   * 
+   * @see <$met><u>[[Exporter.head_args]]</u><$mete> for $isa terms
+   */
   @tailrec
   def destruct_appls(t: Term, args: List[Term] = Nil): (Term, List[Term]) = //List[Term]->List[(Term,Boolean)]
     t match {

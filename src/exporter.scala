@@ -25,6 +25,7 @@ import scala.util.control.Breaks.*
  *       <$argc>argname<$argce>: a scala argument inside code (pink)
  *       <$str>string<$stre>: a scala string (dark green)
  *       <$lpc>code<$lpce>: some lambdapi code (light blue,code)
+ *       <$isac>code<$isace>: some isabelle code (red,code)
  *       -->
  * @define dklp <span style="color:#9932CC;">dk/lp</span>
  * @define dk <span style="color:#9932CC;">dedukti</span>
@@ -44,10 +45,13 @@ import scala.util.control.Breaks.*
  * @define stre /span
  * @define lpc code><span style="color:#87CEFA"
  * @define lpce /span></code
+ * @define isac code><span style="color:#D40606"
+ * @define isace /span></code
  */
 object Exporter {
 
-  // compute the biggest theorem serial occurring in a theorem
+  /** Compute the biggest theorem serial occurring in
+   *  the proof of an $isa theorem. */
   def max_serial(thm: Entity[Thm]): Long = {
     def aux(p:Prf) : Long = p match {
       case PThm(serial,_,_,_) => serial
@@ -60,25 +64,33 @@ object Exporter {
     aux(thm.the_content.proof)
   }
 
-  // head and arguments of a term
+  /** Recursively splits an $isa term between its head and its arguments.
+   * 
+   * @param t the term being split
+   * @param args the list of arguments encountered so far (default: <$met>Nil<$mete>)
+   *             
+   * @return the couple of the head function and the list of arguments it is applied to
+   *         
+   * @see <$met><u>[[isabelle.dedukti.Syntax.destruct_appls]]</u><$mete> for $dklp terms
+   */
   @tailrec
-  def head_args(t:Term, args:List[Term]): (Term,List[Term]) = {
+  def head_args(t:Term, args:List[Term]=List()): (Term,List[Term]) = {
     t match {
       case App(u,v) => head_args(u,v::args)
       case _ => (t,args)
     }
   }
 
-  // tell if a term is a free variable or Pure_Thy.TYPE
+  /** True if the $isa term <$arg>t<$arge> is a free term variable or <$isac>Pure.type<$isace> */
   def is_Free_or_TYPE(t:Term): Boolean = {
     t match {
       case Free(_,_) => true
-      case Term.Const(Pure_Thy.TYPE, List(TFree("'a",Nil))) => true
+      case Term.Const(Pure_Thy.TYPE, List(TFree("'a"))) => true
       case _ => false
     }
   }
 
-  // tell if a type is a free variable
+  /** tell if an $isa type is a free variable */
   def is_TFree(t:Typ): Boolean = {
     t match {
       case TFree(_,_) => true
@@ -86,17 +98,20 @@ object Exporter {
     }
   }
 
-  // replace free variables by De Bruijn indices
+  /** Replace all free variables in an $isa term by De Bruijn indices (therefore binding them)
+   * 
+   *  @param revargs the list of bound variables, to which those bound in the term are added
+   *         during the process. */
   def debruijn(revargs:List[Term], t:Term): Term = {
     t match {
-      case Free(n,ty) => Bound(revargs.indexOf(t))
+      case Free(_,_) => Bound(revargs.indexOf(t))
       case App(u,v) => App(debruijn(revargs,u),debruijn(revargs,v))
       case Abs(n,ty,b) => Abs(n,ty,debruijn(Free(n,ty)::revargs,b))
       case _ => t
     }
   }
 
-  // build an abstraction assuming that arg is a free variable
+  /** build an $isa abstraction assuming that <$arg>arg<$arge> is a free variable */
   def abs(b:Term, arg:Term): Term = {
     arg match {
       case Free(n,ty) => Abs(n,ty,b)
@@ -104,6 +119,27 @@ object Exporter {
     }
   }
 
+  /** @define dklp <span style="color:#9932CC;">dk/lp</span>
+   * @define dk <span style="color:#9932CC;">dedukti</span>
+   * @define lp <span style="color:#9932CC;">lambdapi</span>
+   * @define isa <span style="color:#FFFF00">Isabelle</span>
+   * @define met code><span style="color:#FFA500;"
+   * @define metc span style="color:#FFA500;"
+   * @define mete /span></code
+   * @define metce /span
+   * @define type code><span style="color:#FF8C00"><b
+   * @define typee /b></span></code
+   * @define arg code><span style="color:#FFC0CB;"
+   * @define argc span style="color:#FFC0CB;"
+   * @define arge /span></code
+   * @define argce /span
+   * @define str span style="color:#006400;"
+   * @define stre /span
+   * @define lpc code><span style="color:#87CEFA"
+   * @define lpce /span></code
+   * @define isac code><span style="color:#D40606"
+   * @define isace /span></code
+   */
   def exporter(
     options: Options,
     session: String,
@@ -119,53 +155,41 @@ object Exporter {
     outdir: String = "",
   ): Unit = {
 
-    /* from an equality [Pure.eq[eqtys] lhs rhs] where [lhs = c[tys] x1
-     * .. xn] with tys and xj variables, returns (c,dfn,eqtys,lhs)
-     * where [dfn=\x1..\xn,rhs] */
-    def is_eq_axiom(a:Entity[Axiom]):Option[(String,Term,List[Typ],Term)] = {
-      if (a.name.endsWith("_def") || a.name.endsWith("_def_raw")) {
-        a.the_content.prop.term match {
-          case App(u,rhs) =>
-            u match {
-              case App(e,lhs) =>
-                e match {
-                  case Cst(id,eqtys) =>
-                    if (id != "Pure.eq") {
-                      if (verbose) progress.echo("axiom "+a.name+": cannot extract definition because it is headed by "+id+" instead of Pure.eq")
-                      None
-                    } else {
-                      val (h,args) = head_args(lhs,List())
-                      h match {
-                        case Cst(n,tys) =>
-                          if (tys.forall(is_TFree) && args.forall(is_Free_or_TYPE)) {
-                            if (verbose) progress.echo("  head: "+h.toString+"\n  args: "+args.toString+"\n  rhs: "+rhs.toString)
-                            args match {
-                              case List(Term.Const(Pure_Thy.TYPE,List(TFree(x,Nil)))) =>
-                                lhs match {
-                                  case OFCLASS(_,_) => Some(n,rhs,eqtys,lhs)
-                                  case _ => None
-                                }
-                              case _ =>
-                                val revargs = args.reverse
-                                val rhs2 = debruijn(revargs,rhs)
-                                val dfn = revargs.foldLeft(rhs2)(abs)
-                                Some(n,dfn,eqtys,lhs)
-                            }
-                          } else {
-                            if (verbose) progress.echo("axiom "+a.name+": cannot extract definition because it is not applied to free variables\n  axiom: "+a.the_content.prop.term.toString+"\n  type arguments: "+tys.toString+"\n  term arguments: "+args.toString)
-                            None
-                          }
-                        case _ => None
-                      }
-                    }
-                  case _ => None
-                }
-              case _ => None
-            }
-          case _ => None
-        }
-      } else None
-    }
+    /** from an $isa equality axiom <$isac>Pure.eq[eqtys] lhs rhs<$isace>
+     * where <code>lhs = <$isac>c[tys] x1 .. xn<$isace></code> with tys and xj variables,
+     * returns <code>(c,dfn,eqtys,lhs)</code> where
+     * <code>dfn=<$isac>λ x1...λ xn. rhs<$isace></code> 
+     * 
+     * @define isa <span style="color:#FFFF00">Isabelle</span>
+     * @define isac code><span style="color:#D40606"
+     * @define isace /span></code*/
+    def is_eq_axiom(a:Entity[Axiom]): Option[(String,Term,List[Typ],Term)] = {
+      if (!(a.name.endsWith("_def") || a.name.endsWith("_def_raw"))) None
+      else a.the_content.prop.term match {
+        case App(App(Cst(id, _), _), _) if id != "Pure.eq" =>
+          if (verbose) progress.echo("axiom " + a.name + ": cannot extract definition because it is headed by " + id + " instead of Pure.eq")
+          None
+        case App(App(Cst(id, eqtys), lhs), rhs) =>
+          head_args(lhs) match {
+            case (Cst(n, tys), args) if !(tys.forall(is_TFree) && args.forall(is_Free_or_TYPE)) =>
+              if (verbose) progress.echo("axiom " + a.name + ": cannot extract definition because it is not applied to free variables\n  axiom: " + a.the_content.prop.term.toString + "\n  type arguments: " + tys.toString + "\n  term arguments: " + args.toString)
+              None
+            case (Cst(n, tys), args) =>
+              if (verbose) progress.echo("  head: " + h.toString + "\n  args: " + args.toString + "\n  rhs: " + rhs.toString)
+              /* TODO: Modified this method quite a bit, especially here, please tell me if it is wrong
+                 I particularly removed a part that I believe was impossible to reach. */
+              if (args = List(Term.Const(Pure_Thy.TYPE, List(TFree(x, Nil))))) None
+              else {
+                val revargs = args.reverse
+                val rhs2 = debruijn(revargs, rhs)
+                val dfn = revargs.foldLeft(rhs2)(abs)
+                Some(n, dfn, eqtys, lhs)
+              }
+            case _ => None
+          }
+        case _ => None
+      }
+    } 
 
     val notations: mutable.Map[Syntax.Ident, Syntax.Notation] = mutable.Map()
     Translate.global_eta_expand = eta_expand
