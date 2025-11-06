@@ -10,7 +10,7 @@ import java.nio.file.{Files, StandardCopyOption}
 import scala.collection.mutable
 import scala.collection.mutable.Map as MutableMap
 
-/** Opens a path.part file for writing.
+/** Opens a path.part file for writing and then copy it to path.
  * @see [[Writer]] */
 class Part_Writer(file: Path) extends Writer {
   private val file_part = file.ext("part")
@@ -187,6 +187,8 @@ abstract class Abstract_Writer(root: String, writer: Writer) extends Ident_Write
 
   def comment(c: String): Unit
   def command(c: Syntax.Command, notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit
+  def commands(q: Queue[Syntax.Command], notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit =
+    for (cmd <- q) {command(cmd,notations)}
 }
 
 /** <!-- Some macros for colors and common references.

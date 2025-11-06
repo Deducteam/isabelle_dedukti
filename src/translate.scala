@@ -175,34 +175,40 @@ object Prelude {
    *
    * @param a the name of the type
    * @return The translated name of the object <$arg>a<$arge> of kind type
+   * @see <$met><u>[[get_name]]</u><$mete>
    */
   def ref_type_ident(a: String): String = get_name(a, Export_Theory.Kind.TYPE )
   /** The translated name of an $isa constant
    *
    * @param a the name of the constant
    * @return The translated name of the object <$arg>a<$arge> of kind const
+   * @see <$met><u>[[get_name]]</u><$mete>
    */
   def ref_const_ident(a: String): String = get_name(a, Export_Theory.Kind.CONST)
   /** The translated name of an $isa axiom
    *
    * @param a the name of the axiom
    * @return The translated name of the object <$arg>a<$arge> of kind axiom
+   * @see <$met><u>[[get_name]]</u><$mete>
    */
   def ref_axiom_ident(a: String): String = get_name(a, Markup.AXIOM)
   /** The translated name of an $isa theorem
    *
    * @param a the name of the theorem
    * @return The translated name of the object <$arg>a<$arge> of kind thm
+   * @see <$met><u>[[get_name]]</u><$mete>
    */
   def ref_thm_ident(a: String): String = get_name(a, Export_Theory.Kind.THM)
   /** the name of the translation of an $isa proof step
    * @param serial the index of the proof step
    * @return The name that was assigned to it
+   * @see <$met><u>[[get_name]]</u><$mete>
    */
   def ref_proof_ident(serial: Long): String = get_name(f"proof_$serial", "")
   /** The translated name of a variable
    * @param a the name of the variable
-   * @return The string <$arg>a<$arge>&#95_var */
+   * @return The string <$arg>a<$arge>&#95_var
+   */
   def var_ident(a: String): String = a+"__var"
 
   /* prologue proper */

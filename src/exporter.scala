@@ -119,26 +119,16 @@ object Exporter {
     }
   }
 
-  /** @define dklp <span style="color:#9932CC;">dk/lp</span>
-   * @define dk <span style="color:#9932CC;">dedukti</span>
-   * @define lp <span style="color:#9932CC;">lambdapi</span>
-   * @define isa <span style="color:#FFFF00">Isabelle</span>
-   * @define met code><span style="color:#FFA500;"
-   * @define metc span style="color:#FFA500;"
-   * @define mete /span></code
-   * @define metce /span
-   * @define type code><span style="color:#FF8C00"><b
-   * @define typee /b></span></code
-   * @define arg code><span style="color:#FFC0CB;"
-   * @define argc span style="color:#FFC0CB;"
-   * @define arge /span></code
-   * @define argce /span
-   * @define str span style="color:#006400;"
-   * @define stre /span
-   * @define lpc code><span style="color:#87CEFA"
-   * @define lpce /span></code
-   * @define isac code><span style="color:#D40606"
-   * @define isace /span></code
+  /** Reads and $isa session and possibly translate it to $dk files
+   * 
+   * @param options $isa options to read the session
+   * @param session the $isa session to read
+   * @param parent the parent session unless it is Pure
+   * @param theory_graph the dependency graph of the theories in the session
+   * @param translate whether to translate this theory or (if it is already translated for example)
+   *                  to just read it to update name maps
+   * @param dirs directories in which to find $lp dependencies
+   * @param outdir the directory in which to translate (only useful if translate is <code>true</code>)
    */
   def exporter(
     options: Options,
@@ -190,7 +180,7 @@ object Exporter {
         case _ => None
       }
     } 
-
+    
     val notations: mutable.Map[Syntax.Ident, Syntax.Notation] = mutable.Map()
     Translate.global_eta_expand = eta_expand
     val build_results =
@@ -203,11 +193,15 @@ object Exporter {
     val thys = theory_graph.topological_order
     val theory_names = thys.map(node_name => node_name.toString)
 
-    // file associated to a session or theory
+    /** Opens for writing a .dk.part file associated to a session or theory,
+     *  which, when closed, is copied to the corresponding .dk file
+     */
     def new_dk_part_writer(name: String) =
       new Part_Writer(Path.explode(outdir+Prelude.mod_name(name)+".dk"))
 
-    // command for a proof
+    /** Reads the proof of theorem <code><span style="color:#FFC0CB;">serial</span></code>
+     *  if there is one and returns a command declaring it as a lemma or axiom 
+     */
     def decl_proof(serial: Long, theory_name: String): Syntax.Command = {
       read_proof(ses_cont, Thm_Id(serial,theory_name), other_cache=Some(term_cache)) match {
         case Some(proof) =>
@@ -217,17 +211,17 @@ object Exporter {
       }
     }
 
-    // map theory_name -> proofs in increasing order
+    /** map theory_name -> set of proofs in increasing order */
     val map_theory_proofs = mutable.Map[String, mutable.SortedSet[Long]]()
     // add an entry for each theory
     for (theory_name <- theory_names) {
       map_theory_proofs += (theory_name -> mutable.SortedSet[Long]())
     }
 
-    // module for orphan proofs (not in the current session theories)
+    /** the name of the module for orphan proofs (not in the current session theories) */
     val mod_name_orphans = Prelude.mod_name(session)+"_orphans"
 
-    // commands for orphan proofs
+    /** commands for orphan proofs */
     val orphan_commands = mutable.Queue[Syntax.Command]()
 
     // record proof idents and update map_theory_proofs or orphan_commands
@@ -240,7 +234,7 @@ object Exporter {
         if (verbose) progress.echo("  proof " + serial)
         if (map_theory_proofs.keySet.contains(theory_name)) {
           Prelude.add_proof_ident(serial,theory_name)
-          map_theory_proofs(theory_name) += (serial)
+          map_theory_proofs(theory_name) += serial
         } else {
           Prelude.add_proof_ident(serial,mod_name_orphans)
           orphan_commands += (decl_proof(serial,theory_name))
@@ -248,7 +242,10 @@ object Exporter {
       }
     }
 
-    if (!translate) {
+    if (!translate) { /* if translate is false, just update maps to keep in mind
+                         the translated names of the session, but do not
+                         write anything anywhere
+                      */
       progress.echo("Start reading session "+session)
       for (thy <- thys) {
         val theory_name = thy.toString
@@ -282,6 +279,7 @@ object Exporter {
 
     else {
       progress.echo("Start translating session "+session)
+      /** name of the module for this session */
       val mod_name_session = "session_"+Prelude.mod_name(session)
 
       // set up generation of shell script to check dedukti files
@@ -298,9 +296,7 @@ object Exporter {
             progress.echo("Start writing "+mod_name_orphans+".dk")
             val orphan_writer = new DK_Writer(part_writer)
             orphan_writer.require("session_"+anc)
-            for (cmd <- orphan_commands) {
-              orphan_writer.command(cmd,notations)
-            }
+            orphan_writer.commands(orphan_commands,notations)
             progress.echo("End writing "+mod_name_orphans+".dk")
           }
         case _ =>
@@ -312,10 +308,12 @@ object Exporter {
         case _ =>
       }
 
-      // generate the dedukti file importing all the theories of the session
-      using(new_dk_part_writer(mod_name_session)) { part_writer =>
+      /* Open a dk file S for the session, then translate each theory of the
+       * session in a dk file T, and simply import module T in S
+       */
+      using(new_dk_part_writer(mod_name_session)) { part_writer1 =>
         progress.echo("Start writing "+mod_name_session+".dk")
-        val session_writer = new DK_Writer(part_writer)
+        val session_writer = new DK_Writer(part_writer1)
 
         for (thy <- thys) {
           val theory_name = thy.toString
@@ -324,15 +322,14 @@ object Exporter {
           val theory = read_theory(provider)
           session_writer.require(theory_name)
           val mod_name_theory = Prelude.mod_name(theory_name)
-
-          // generate the dedukti file of the theory
+          
           sh.write(" "+mod_name_theory+".dk")
-          using(new_dk_part_writer(mod_name_theory)) { part_writer =>
-            val writer = new DK_Writer(part_writer)
+          using(new_dk_part_writer(mod_name_theory)) { part_writer2 =>
+            val writer = new DK_Writer(part_writer2)
             progress.echo("Start writing "+mod_name_theory+".dk")
             writer.comment("Theory "+theory_name)
             // write module dependencies
-            if (parent != None) writer.require(mod_name_orphans)
+            if (parent.isDefined) writer.require(mod_name_orphans)
             for (node_name <- theory_graph.imm_preds(thy)) {
               writer.require(node_name.toString)
             }
@@ -345,15 +342,15 @@ object Exporter {
               val cmd = Translate.type_decl(theory_name, a.name, a.the_content.args, a.the_content.abbrev, a.the_content.syntax)
               writer.command(cmd,notations)
             }
-            // map constant name -> definition * definitional axiom
+            /** map constant name -> definition */
             var map_cst_dfn:Map[String,Term] = Map()
-            // names of definitional axioms
+            /** map definitional axiom name -> (type variables, the term it defines) */
             var map_axm_eqtyp:Map[String,(List[Typ],Term)] = Map()
-            // check constant abbreviations
+            // check constant definitions
             for (a <- theory.consts) {
               a.the_content.abbrev match {
                 case Some(d) =>
-                  if (verbose) progress.echo(a.name+" has abbreviation")
+                  if (verbose) progress.echo(a.name+" has definition")
                   map_cst_dfn += (a.name -> d)
                 case _ =>
               }
@@ -370,127 +367,104 @@ object Exporter {
             }
             // ordering on entities
             def le[A<:Content[A]](e1:Entity[A], e2:Entity[A]) = e1.serial <= e2.serial
+            // Store declarations of defined classes and constants and definitional lemmas
+            val defined_classes_decls = mutable.Queue[Syntax.Command]()
+            val defined_constants_decls = mutable.Queue[Syntax.Command]()
+            val definitional_lemmas_decls = Mutable.Queue[Syntax.Command]()
             // write declarations related to undefined classes
             if (verbose) progress.echo("Undefined classes")
             writer.nl()
             writer.comment("Undefined classes")
             for (a <- theory.classes.sortWith(le)) {
-              map_cst_dfn.get(a.name+"_class") match {
-                case None =>
-                  if (verbose) progress.echo("  "+a.toString+" "+a.serial)
-                  val cmd = Translate.class_decl(theory_name, a.name, None)
-                  writer.command(cmd,notations)
-                case Some(_) =>
-              }
+              if (verbose) progress.echo("  "+a.toString+" "+a.serial)
+              val def_opt = map_cst_dfn.get(a.name+"_class")
+              val cmd = Translate.class_decl(theory_name, a.name, def_opt)
+              if (def_opt.isEmpty) writer.command(cmd,notations)
+              else defined_classes_decls += cmd
             }
             // write declarations related to undefined constants
             writer.nl()
             writer.comment("Undefined constants")
             for (c <- theory.consts.sortWith(le)) {
-              // skip constants corresponding to classes
-              if (c.name.endsWith("_Class")) {
-                map_cst_dfn.get(c.name) match {
-                  case None =>
-                    if (verbose) progress.echo("  "+c.toString+" "+c.serial)
-                    val cmd = Translate.const_decl(theory_name, c.name, c.the_content.typargs, c.the_content.typ, None, c.the_content.syntax)
-                    writer.command(cmd,notations)
-                  case Some(_) =>
-                }
-              }
+              if (verbose) progress.echo("  "+c.toString+" "+c.serial)
+              //skip constants corresponding to classes
+              // TODO: is everything not coming from a class named ..._Class ?
+              if (c.name.endsWith("_Class")) 
+                val def_opt = map_cst_dfn.get(c.name)
+                val cmd = Translate.const_decl(theory_name, c.name, c.the_content.typargs, c.the_content.typ, def_opt, c.the_content.syntax)
+                if (def_opt.isEmpty) writer.command(cmd,notations)
+                else defined_constants_decls += cmd
             }
             // write declarations related to defined constants
             writer.nl()
             writer.comment("Defined constants")
-            for (c <- theory.consts.sortWith(le)) {
-              // skip constants corresponding to classes
-              if (c.name.endsWith("_Class")) {
-                map_cst_dfn.get(c.name) match {
-                  case None =>
-                  case Some(dfn) =>
-                    if (verbose) progress.echo("  "+c.toString+" "+c.serial)
-                    val cmd = Translate.const_decl(theory_name, c.name, c.the_content.typargs, c.the_content.typ, Some(dfn), c.the_content.syntax)
-                    writer.command(cmd,notations)
-                }
-              }
-            }
+            writer.commands(defined_constants_decls,notations)
             // write declarations related to defined classes
             if (verbose) progress.echo("Defined classes")
             writer.nl()
             writer.comment("Defined classes")
-            for (a <- theory.classes.sortWith(le)) {
-              map_cst_dfn.get(a.name+"_class") match {
-                case Some(d) =>
-                  if (verbose) progress.echo("  "+a.toString+" "+a.serial+" := "+d.toString)
-                  val cmd = Translate.class_decl(theory_name, a.name, Some(d))
-                  writer.command(cmd,notations)
-                case None =>
-              }
-            }
+            writer.commands(defined_classes_decls,notations)
             // write declarations related to non-definitional axioms
             writer.nl()
             writer.comment("Axioms")
             for (a <- theory.axioms.sortWith(le)) {
-              if (!map_axm_eqtyp.contains(a.name)) {
-                if (verbose) progress.echo("  "+a.toString+" "+a.serial)
-                val cmd = Translate.stmt_decl(Prelude.add_axiom_ident(a.name,theory_name), a.the_content.prop, None)
-                writer.command(cmd,notations)
+              if (verbose) progress.echo("  "+a.toString+" "+a.serial)
+              val def_opt = map_axm_eqtyp.get(a.name).map{
+                case (eqtys,lhs) => Appt(PAxm("Pure.reflexive",eqtys),lhs)
               }
+              val cmd = Translate.stmt_decl(Prelude.add_axiom_ident(a.name,theory_name), a.the_content.prop, def_opt)
+              if (def_opt.isEmpty) writer.command(cmd,notations)
+              else definitional_lemmas_decls += cmd
             }
             // write declarations related to definitional axioms
             writer.nl()
             writer.comment("Definitional theorems")
-            for (a <- theory.axioms.sortWith(le)) {
-              map_axm_eqtyp.get(a.name) match {
-                case None =>
-                case Some(eqtys,lhs) =>
-                  if (verbose) progress.echo("  "+a.toString+" "+a.serial)
-                  val p = a.the_content.prop
-                  val prf = Appt(PAxm("Pure.reflexive",eqtys),lhs)
-                  //println("proof of "+a.name+": "+prf.toString)
-                  val cmd = Translate.stmt_decl(Prelude.add_axiom_ident(a.name,theory_name), a.the_content.prop, Some(prf))
-                  writer.command(cmd,notations)
-              }
-            }
-            // function writing a declaration related to a theorem
+            writer.commands(definitional_lemmas_decls,notations)
+            
+            /** function writing a declaration related to a theorem */
             def decl_thm(thm : Entity[Thm]): Unit = {
               if (verbose) progress.echo("  "+thm.toString+" "+thm.serial)
               val cmd = Translate.stmt_decl(Prelude.add_thm_ident(thm.name,theory_name), thm.the_content.prop, Some(thm.the_content.proof))
               writer.command(cmd, notations)
             }
-            // function writing declarations related to theorems
-            def write_proofs(
-              prfs : List[Long], // proofs to handle
-              thm : Entity[Thm], // first theorem to handle
-              thms : List[Entity[Thm]], // remaining theorems
-              thm_prf : Long // maximal proof index in thm
-            ) : Unit = prfs match {
-              case prf::prfs2 =>
-                if (prf > thm_prf) {
-                  // all proofs <= thm_prf have been handled already
-                  decl_thm(thm)
-                  thms match {
-                    case thm2 :: thms2 =>
-                      write_proofs(prfs,thm2,thms2,max_serial(thm2))
-                    case Nil =>
-                      write_proofs(prfs,null,Nil,Long.MaxValue)
+
+            /** function writing all the proofs in prfs,
+             *  also declaring all theorems in thms once 
+             *  their [[max_serial]] has been reached
+             *  
+             * @param prfs proofs to handle
+             * @param thms remaining theorems
+             */
+            @tailrec
+            def write_proofs(prfs: List[Long], thms: List[Entity[Thm]]) : Unit =
+              thms match {
+                case thm :: thms =>
+                  write_proofs_body(prfs,thm,thms,max_serial(thms))
+                case _ => write_proofs_body(prfs,null,Nil,Long.MaxValue)
+              }
+              
+            @tailrec
+            def write_proofs_body(prfs: List[Long], thm: Entity[Thm], thms: List[Entity[Thm]], thm_prf: Long): Unit =
+              prfs match {
+                case prf::prfs2 =>
+                  if (prf > thm_prf) {
+                    // all proofs <= thm_prf have been handled already
+                    decl_thm(thm)
+                    write_proofs(prfs2,thms)
+                  } else {
+                    if (verbose) progress.echo("  proof "+prf)
+                    val cmd = decl_proof(prf,theory_name)
+                    writer.command(cmd,notations)
+                    write_proofs_body(prfs2,thm,thms,thm_prf)
                   }
-                } else {
-                  if (verbose) progress.echo("  proof "+prf)
-                  val cmd = decl_proof(prf,theory_name)
-                  writer.command(cmd,notations)
-                  write_proofs(prfs2,thm,thms,thm_prf)
-                }
-              case _ =>
-            }
+                case _ =>
+              }
             // write declarations related to theorems
             writer.nl()
             writer.comment("Theorems")
             // all proofs in increasing order
             val prfs = map_theory_proofs(theory_name).toList
-            theory.thms match {
-              case thm :: thms => write_proofs(prfs,thm,thms,max_serial(thm))
-              case _ => write_proofs(prfs,null,Nil,Long.MaxValue)
-            }
+            write_proofs(theory.thms)
             progress.echo("End writing "+mod_name_theory+".dk")
           }
           progress.echo("End reading theory "+theory_name)
