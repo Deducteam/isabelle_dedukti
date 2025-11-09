@@ -85,7 +85,7 @@ object Exporter {
   def is_Free_or_TYPE(t:Term): Boolean = {
     t match {
       case Free(_,_) => true
-      case Term.Const(Pure_Thy.TYPE, List(TFree("'a"))) => true
+      case Term.Const(Pure_Thy.TYPE, List(TFree("'a",Nil))) => true
       case _ => false
     }
   }
@@ -164,17 +164,17 @@ object Exporter {
             case (Cst(n, tys), args) if !(tys.forall(is_TFree) && args.forall(is_Free_or_TYPE)) =>
               if (verbose) progress.echo("axiom " + a.name + ": cannot extract definition because it is not applied to free variables\n  axiom: " + a.the_content.prop.term.toString + "\n  type arguments: " + tys.toString + "\n  term arguments: " + args.toString)
               None
-            case (Cst(n, tys), args) =>
+            case (h @ Cst(n, tys), args @ List(Term.Const(Pure_Thy.TYPE, List(TFree(_, Nil))))) =>
               if (verbose) progress.echo("  head: " + h.toString + "\n  args: " + args.toString + "\n  rhs: " + rhs.toString)
-              /* TODO: Modified this method quite a bit, especially here, please tell me if it is wrong
-                 I particularly removed a part that I believe was impossible to reach. */
-              if (args = List(Term.Const(Pure_Thy.TYPE, List(TFree(x, Nil))))) None
-              else {
-                val revargs = args.reverse
-                val rhs2 = debruijn(revargs, rhs)
-                val dfn = revargs.foldLeft(rhs2)(abs)
-                Some(n, dfn, eqtys, lhs)
-              }
+              None
+            case (h @ Cst(n, tys), args) =>
+              if (verbose) progress.echo("  head: " + h.toString + "\n  args: " + args.toString + "\n  rhs: " + rhs.toString)
+              // TODO: Modified this method quite a bit, especially here, please tell me if it is wrong
+              //       I particularly removed a part that I believe was impossible to reach.
+              val revargs = args.reverse
+              val rhs2 = debruijn(revargs, rhs)
+              val dfn = revargs.foldLeft(rhs2)(abs)
+              Some(n, dfn, eqtys, lhs)
             case _ => None
           }
         case _ => None
@@ -245,7 +245,7 @@ object Exporter {
     if (!translate) { /* if translate is false, just update maps to keep in mind
                          the translated names of the session, but do not
                          write anything anywhere
-                      */
+                      */ 
       progress.echo("Start reading session "+session)
       for (thy <- thys) {
         val theory_name = thy.toString
@@ -370,7 +370,7 @@ object Exporter {
             // Store declarations of defined classes and constants and definitional lemmas
             val defined_classes_decls = mutable.Queue[Syntax.Command]()
             val defined_constants_decls = mutable.Queue[Syntax.Command]()
-            val definitional_lemmas_decls = Mutable.Queue[Syntax.Command]()
+            val definitional_lemmas_decls = mutable.Queue[Syntax.Command]()
             // write declarations related to undefined classes
             if (verbose) progress.echo("Undefined classes")
             writer.nl()
@@ -390,11 +390,12 @@ object Exporter {
               //skip constants corresponding to classes
               // TODO: from the previous comment,
               //       is everything not coming from a class named ..._Class ?
-              if (c.name.endsWith("_Class")) 
+              if (c.name.endsWith("_Class")) {
                 val def_opt = map_cst_dfn.get(c.name)
                 val cmd = Translate.const_decl(theory_name, c.name, c.the_content.typargs, c.the_content.typ, def_opt, c.the_content.syntax)
-                if (def_opt.isEmpty) writer.command(cmd,notations)
+                if (def_opt.isEmpty) writer.command(cmd, notations)
                 else defined_constants_decls += cmd
+              }
             }
             // write declarations related to defined constants
             writer.nl()
@@ -440,7 +441,7 @@ object Exporter {
             def write_proofs(prfs: List[Long], thms: List[Entity[Thm]]) : Unit =
               thms match {
                 case thm :: thms =>
-                  write_proofs_body(prfs,thm,thms,max_serial(thms))
+                  write_proofs_body(prfs,thm,thms,max_serial(thm))
                 case _ => write_proofs_body(prfs,null,Nil,Long.MaxValue)
               }
               
@@ -465,7 +466,7 @@ object Exporter {
             writer.comment("Theorems")
             // all proofs in increasing order
             val prfs = map_theory_proofs(theory_name).toList
-            write_proofs(theory.thms)
+            write_proofs(prfs, theory.thms)
             progress.echo("End writing "+mod_name_theory+".dk")
           }
           progress.echo("End reading theory "+theory_name)

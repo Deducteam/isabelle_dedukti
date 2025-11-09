@@ -51,7 +51,7 @@ import scala.io.Source
 object Rootfile {
   
   /** Get the ancestor of an $isa session */
-  def get_ancestor(session : String) : String =
+  def get_ancestor(session : String) : String = {
     val selected_sessions =
       full_stru.selection(Sessions.Selection(sessions = List[String](session)))
     val info = selected_sessions(session)
@@ -59,6 +59,7 @@ object Rootfile {
       case Some(x) => x
       case _ => error("the session does not have any parent")
     }
+  }
 
   /** theory graph of an $isa session
    * 

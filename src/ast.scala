@@ -45,11 +45,11 @@ object Syntax {
   /** A $dklp binder for variables and function arguments.
    * @param id the identifier of the variable/argument. <$met>None<$mete> if anonymous
    * @param typ the type of the variable/argument 
-   * @constructor test */
+   * @param implicit_arg true if this is an implicit argument (default: <code>false</code>) */
   sealed case class BoundArg(
     id: Option[Ident],
-    typ: Typ/*,
-    implicit_arg: Boolean = false*/)
+    typ: Typ,
+    implicit_arg: Boolean = false)
 
   /** The $dklp sort
    * <$lpc>TYPE<$lpce> of all types. */
@@ -60,12 +60,12 @@ object Syntax {
   /** A $dklp reference to a named binder
    * @param id the name of the binder */
   case  class  Var(id: Ident) extends Term
-  // Tools for implicit arguments will be in comments in case they become
-  // usable again.
   /** The $dklp application <$lpc>t1 t2<$lpce>
    * @param t1 the function that is applied
-   * @param t2 the term that it is applied to */
-  case  class Appl(t1: Term, t2: Term/*, isImplicit: Boolean = false*/) extends Term
+   * @param t2 the term that it is applied to
+   * @param isImplicit true if t2 should be implicit (can be either written with [] or not written at all).
+   *                   Default: <code>false</code> */
+  case  class Appl(t1: Term, t2: Term, isImplicit: Boolean = false) extends Term
   /** The $dklp anonymous function <$lpc> λ arg, t<$lpce> mapping <$arg>arg<$arge> to <$arg>t<$arge>.
    * @param arg the argument of the function
    * @param t the body of the function*/
@@ -87,17 +87,16 @@ object Syntax {
    * is the $dklp chained application <$lpc>head x1 ... xn<$lpce>.
    * @param head the curried function that is applied
    * @param spine the list of arguments that the function is applied to
+   * @param impl <$arg>impl<$arge>(i) is true if <$arg>spine<$arge>(i) is an implicit argument
    * @return the term which results from applying <$arg>head<$arge>
    *         to each argument in <$arg>spine<$arge>.*/
   @tailrec
-  def appls(head: Term, spine: List[Term]): Term = // += impl: List[Boolean]
-    /* (spine, impl) match {
-      case (Nil, impl) if impl.exists(identity) => isabelle.error("Missing implicit argument")
-      case (Nil, _) => head
+  def appls(head: Term, spine: List[Term], impl: List[Boolean]): Term =
+    (spine, impl) match {
+      case (_, Nil) => spine.foldLeft(head)(Appl)
       case (arg :: spine, impl :: impls) => appls(Appl(head, arg, impl), spine, impls)
-      case (spine, Nil) => spine.foldLeft(head)(Appl(_, _))
-    } */
-    spine.foldLeft(head)(Appl(_,_))
+      case _ => isabelle.error("Missing implicit argument")
+    }
 
   /** <code><$met>arrows<$mete>([<$arg>T1<$arge>, ..., <$arg>Tn<$arge>], <$arg>tm<$arge>)</code>
    * is the $dklp chained arrow type <$lpc>T1 → ... → Tn → tm<$lpce>.
@@ -119,9 +118,9 @@ object Syntax {
    * @see <$met><u>[[Exporter.head_args]]</u><$mete> for $isa terms
    */
   @tailrec
-  def destruct_appls(t: Term, args: List[Term] = Nil): (Term, List[Term]) = //List[Term]->List[(Term,Boolean)]
+  def destruct_appls(t: Term, args: List[(Term,Boolean)] = Nil): (Term, List[(Term,Boolean)]) =
     t match {
-      case Syntax.Appl(t1, t2/*, b*/) => destruct_appls(t1, args = /*(*/t2/*, b)*/ :: args)
+      case Syntax.Appl(t1, t2, b) => destruct_appls(t1, args = (t2, b) :: args)
       case t => (t, args)
     }
 
@@ -228,7 +227,7 @@ object Syntax {
    *             notation for the symbol (default: <$mete>None<$mete>) */
   case class Definition (id: Ident, args: List[BoundArg], ty: Option[Typ],
                           tm: Term, not: Option[Notation] = None) extends Command
-  /** <$lpc>opaque symbol id (args) : ty ≔ prf<$lpce>
+  /** <$lpc>opaque symbol id (args)(: ty )≔ prf<$lpce>
    * Command declaring a $dklp theorem.
    * @param id   the identifier of the theorem
    * @param args the list of arguments of the type of the symbol <br>

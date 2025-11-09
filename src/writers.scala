@@ -48,7 +48,7 @@ trait Ident_Writer {
   }
 }
 
-/** Tools for writing in a translated file
+/** Tools for writing in a translated $dklp file
  *  <!-- Some macros for colors and common references.
  *       Pasted at the start of every object.
  *       Documentation:
@@ -102,11 +102,13 @@ abstract class Abstract_Writer(root: String, writer: Writer) extends Ident_Write
 
   /** To be used while in the middle of writing a term.
    *  Does <$arg>body<$arge>, but may enclose the results inside parentheses depending
-   *  on priorities and associativity of notations
+   *  on priorities and associativity of notations. Can be used without notations (like in $dk)
+   *  by having a default notation for arrows for example 
    * 
    * @param curNot the $lp notation of the current symbol
    * @param prevNot the $lp notation of the previous symbol
-   * @param right If the current notation is infix, whether we are to the right of it or not.
+   * @param right used if <$arg>curNot<$arge> and <$arg>prevNot<$arge> are the same infix notation,
+   *              is true if we are on the right of the previous symbol.
    *              Default: <code>false</code>
    * @param force_no input true to force non-parenthesising, for example when simply
    *                 writing one symbol. Default: <code>false</code>
@@ -186,7 +188,7 @@ abstract class Abstract_Writer(root: String, writer: Writer) extends Ident_Write
 
   def comment(c: String): Unit
   def command(c: Syntax.Command, notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit
-  def commands(q: Queue[Syntax.Command], notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit =
+  def commands(q: mutable.Queue[Syntax.Command], notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit =
     for (cmd <- q) {command(cmd,notations)}
 }
 
@@ -429,8 +431,7 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
       case Syntax.Abst(a, t) =>
         val not = absNotation
         block_if(not, prevNot, right) {
-          // TODO: why parenthesising arguments (block = true) for lambdas and pis if there is always only one argument?
-          lambda(); arg(a, block = true, notations); comma(); term(t, notations, not/*, no_impl = no_impl*/)
+          lambda(); arg(a, block = false, notations); comma(); term(t, notations, not/*, no_impl = no_impl*/)
         }
       case Syntax.Prod(Syntax.BoundArg(None, ty1/*, false*/), ty2) =>
         val not = arrNotation
@@ -442,7 +443,7 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
       case Syntax.Prod(a, t) =>
         val not = absNotation
         block_if(not, prevNot, right) {
-          pi(); arg(a, block = true, notations); comma(); term(t, notations, not/*, no_impl*/)
+          pi(); arg(a, block = false, notations); comma(); term(t, notations, not/*, no_impl*/)
         }
     }
 
@@ -554,15 +555,25 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
    * @param notations a map between identifiers and their $lp notation
    */
   def symbol_and_notation(id: Ident, args: List[BoundArg], ty_opt: Option[Typ], body_opt: Option[Term],
-                          nota_opt: Option[Notation], notations: MutableMap[Ident, Notation]): Unit =
+                          nota_opt: Option[Notation], notations: MutableMap[Ident, Notation]): Unit = {
     val (new_id, new_nota_opt) =
-      if (use_notations) (nota_opt.fold(id)(getOperator),nota_opt)
-      else (id,None)
-    write("symbol "); sym_ident(newid)
-    for (a <- args) {space(); arg(a, block = true, notations)}
-    for (ty <- ty) {colon(); term(ty, notations)}
-    for (tm <- body) {colon_equal(); term(tm, notations)}
-    for (not <- new_nota_opt) {end_command(); notation(not); notations(id)=not}
+      if (use_notations) (nota_opt.fold(id)(getOperator), nota_opt)
+      else (id, None)
+    write("symbol ");
+    sym_ident(newid)
+    for (a <- args) {
+      space(); arg(a, block = true, notations)
+    }
+    for (ty <- ty) {
+      colon(); term(ty, notations)
+    }
+    for (tm <- body) {
+      colon_equal(); term(tm, notations)
+    }
+    for (not <- new_nota_opt) {
+      end_command(); notation(not); notations(id) = not
+    }
+  }
 
   /** Writes the $lp command <$arg>c<$arge> on $this, possibly updating the
    *  <$arg>notations<$arge> map.

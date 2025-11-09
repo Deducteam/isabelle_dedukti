@@ -1,6 +1,5 @@
 /** Translation of Isabelle (proof)terms into the lambda-Pi calculus **/
 
-
 package isabelle.dedukti
 
 import isabelle.Export_Theory.{No_Syntax, Prefix}
@@ -49,8 +48,7 @@ object Prelude {
 
   // An Isabelle object can be uniquely identified from its id (module
   // name dot name) and its kind (class, type, const, etc.).
-
-  //The following scaladoc contains commands used throughout.
+  
   /**
    * Making an $isa object name unique by specifying its kind.
    * @param id the qualified identifier of the object (modulename.name)
@@ -257,15 +255,14 @@ object Prelude {
    * a simple type proposition to the type of its proofs.
    */
   val epsD: Syntax.Command = Syntax.DefableDecl(epsId, epsTy, not = Some(epsN))
-
-  // Tools for implicit arguments will be in comments in case they become usable again.
   
-  // Typing context (for implicit arguments)
-  /* var global_types: Map[Syntax.Ident, Syntax.Typ] = Map(
+  /** Typing context. <code><$metc>global_types<$metce>(<$argc>id<$argce>)</code> is used to know
+   *  the amount and types of arguments needed to eta-expand <$arg>id<$arge>. */
+  var global_types: Map[Syntax.Ident, Syntax.Typ] = Map(
     typeId -> Syntax.TYPE,
     etaId -> Syntax.arrow(typeT, Syntax.TYPE),
     epsId -> epsTy
-  ) */
+  )
 
 }
 
@@ -313,11 +310,11 @@ object Translate {
 
   /* binders */
   
-  def bound_type_argument(name: String): Syntax.BoundArg = // += impl: Boolean = false
-    Syntax.BoundArg(Some(var_ident(name)), typeT/*, impl*/)
+  def bound_type_argument(name: String, impl: Boolean = false): Syntax.BoundArg =
+    Syntax.BoundArg(Some(var_ident(name)), typeT, impl)
   
-  def bound_term_argument(name: String, ty: Term.Typ): Syntax.BoundArg = // += impl: Boolean = false
-    Syntax.BoundArg(Some(var_ident(name)), eta(typ(ty))/*, impl*/)
+  def bound_term_argument(name: String, ty: Term.Typ, impl: Boolean = false): Syntax.BoundArg =
+    Syntax.BoundArg(Some(var_ident(name)), eta(typ(ty)), impl)
 
   def bound_proof_argument(name: String, tm: Term.Term, bounds: Bounds): Syntax.BoundArg =
     Syntax.BoundArg(Some(var_ident(name)), eps(term(tm, bounds)))
@@ -333,7 +330,7 @@ object Translate {
      * @return the context updated with the new variable */
     def add_trm(tm: String): Bounds = copy(trm = tm :: trm)
     /** Adds a mapping between a proof variable and a de Bruijn index
-     * @param tm the name of the variable
+     * @param pf the name of the variable
      * @return the context updated with the new variable */
     def add_prf(pf: String): Bounds = copy(prf = pf :: prf)
 
@@ -360,8 +357,8 @@ object Translate {
         Syntax.Var(var_ident(a))
       case Term.Type(c, args) =>
         val id_c = ref_type_ident(c)
-        //val impl = try implArgsMap(id_c) catch { case _ : Throwable => Nil }
-        Syntax.appls(Syntax.Symb(id_c), args.map(typ)/*, impl*/)
+        val impl = implArgsMap.getOrElse(id_c,Nil)
+        Syntax.appls(Syntax.Symb(id_c), args.map(typ), impl)
       case Term.TVar(xi, _) => error("Illegal schematic type variable " + xi.toString)
     }
 
@@ -382,8 +379,8 @@ object Translate {
     tm match {
       case Term.Const(c, typargs) =>
         val id_c = ref_const_ident(c)
-        //val impl = try implArgsMap(id_c) catch { case _ : Throwable => Nil }
-        Syntax.appls(Syntax.Symb(id_c), typargs.map(typ)/*, impl*/)
+        val impl = implArgsMap.getOrElse(id_c,Nil)
+        Syntax.appls(Syntax.Symb(id_c), typargs.map(typ), impl)
       case Term.Free(x, _) =>
         Syntax.Var(var_ident(x))
       case Term.Var(xi, _) => error("Illegal schematic variable " + xi.toString)
@@ -440,20 +437,16 @@ object Translate {
         proof(b, bounds, prfb => cont(Syntax.Appl(prfa, prfb)))
       case axm: Term.PAxm =>
         val id = ref_axiom_ident(axm.name)
-        //val impl = try implArgsMap(id) catch { case _ : Throwable => Nil }
-        cont(Syntax.appls(Syntax.Symb(id), axm.types.map(typ)/*, impl*/))
+        val impl = implArgsMap.getOrElse(id,Nil)
+        cont(Syntax.appls(Syntax.Symb(id), axm.types.map(typ), impl))
       case thm: Term.PThm =>
         val head = if (!thm.thm_name.is_empty) ref_thm_ident(thm.thm_name.name) else {
-          namesMap get (full_name("proof_"+thm.serial.toString, "")) match {
-            case None => {
-              // println("proof "+thm.serial+" is badly identified from theory "+thm.theory_name+thm.types.foldLeft(""){case (s,ty) => s+" "+ty.toString})
-              add_proof_ident(thm.serial,current_module)
-            }
-            case Some(s) => 
-              ref_proof_ident(thm.serial)
-          }
+          if (namesMap contains full_name("proof_"+thm.serial.toString, "")) ref_proof_ident(thm.serial)
+          else
+            // println("proof "+thm.serial+" is badly identified from theory "+thm.theory_name+thm.types.foldLeft(""){case (s,ty) => s+" "+ty.toString})
+            add_proof_ident(thm.serial, current_module)
         }
-        val impl = try implArgsMap(head) catch { case _ : Throwable => Nil }
+        val impl = implArgsMap.getOrElse(head,Nil)
         cont(Syntax.appls(Syntax.Symb(head), thm.types.map(typ), impl))
       case _ => error("Bad proof term encountered:\n" + prf)
     }
@@ -472,10 +465,10 @@ object Translate {
       case Syntax.TYPE => false
       case Syntax.Symb(id) => id == ident
       case Syntax.Var(id)  => id == ident
-      case Syntax.Appl(t1, t2/*, _*/) => lambda_contains(t1, ident) || lambda_contains(t2, ident)
-      case Syntax.Abst(Syntax.BoundArg(arg, ty/*, _*/), t) =>
+      case Syntax.Appl(t1, t2, _) => lambda_contains(t1, ident) || lambda_contains(t2, ident)
+      case Syntax.Abst(Syntax.BoundArg(arg, ty, _), t) =>
         !arg.contains(ident) && (lambda_contains(ty, ident) || lambda_contains(t, ident))
-      case Syntax.Prod(Syntax.BoundArg(arg, ty/*, _*/), t) =>
+      case Syntax.Prod(Syntax.BoundArg(arg, ty, _), t) =>
         !arg.contains(ident) && (lambda_contains(ty, ident) || lambda_contains(t, ident))
     }
 
@@ -491,13 +484,13 @@ object Translate {
       case Syntax.TYPE => tm
       case Syntax.Symb(id) => if (id == ident) value else tm
       case Syntax.Var(id) => if (id == ident) value else tm
-      case Syntax.Appl(t1, t2/*, b*/) => Syntax.Appl(lambda_replace(t1, ident, value), lambda_replace(t2, ident, value), b)
-      case Syntax.Abst(Syntax.BoundArg(arg, ty/*, b*/), t) =>
-        Syntax.Abst(Syntax.BoundArg(arg, lambda_replace(ty, ident, value)/*, b*/),
+      case Syntax.Appl(t1, t2, b) => Syntax.Appl(lambda_replace(t1, ident, value), lambda_replace(t2, ident, value), b)
+      case Syntax.Abst(Syntax.BoundArg(arg, ty, b), t) =>
+        Syntax.Abst(Syntax.BoundArg(arg, lambda_replace(ty, ident, value), b),
           if (arg.fold(false)(arg => arg == ident)) t
           else lambda_replace(t, ident, value))
-      case Syntax.Prod(Syntax.BoundArg(arg, ty/*, b*/), t) =>
-        Syntax.Prod(Syntax.BoundArg(arg, lambda_replace(ty, ident, value)/*, b*/),
+      case Syntax.Prod(Syntax.BoundArg(arg, ty, b), t) =>
+        Syntax.Prod(Syntax.BoundArg(arg, lambda_replace(ty, ident, value), b),
           if (arg.fold(false)(arg => arg == ident)) t
           else lambda_replace(t, ident, value))
     }
@@ -505,8 +498,8 @@ object Translate {
   /**  applies <$met><u>[[lambda_replace]]</u><$mete> in the type of <$arg>arg<$arge>*/
   def lambda_replace_arg(arg: Syntax.BoundArg, ident: Syntax.Ident, value: Syntax.Term): Syntax.BoundArg =
     arg match {
-      case Syntax.BoundArg(arg, ty/*, b*/) =>
-        Syntax.BoundArg(arg, lambda_replace(ty, ident, value)/*, b*/)
+      case Syntax.BoundArg(arg, ty, b) =>
+        Syntax.BoundArg(arg, lambda_replace(ty, ident, value), b)
     }
 
   /** Applies eta-contraction inside all subterms of a $dklp term.
@@ -515,29 +508,27 @@ object Translate {
    *         <$lpc>λ x, t x <$lpce> are replaced by t as long as x does not appear in t.*/
   def eta_contract(tm: Syntax.Term) : Syntax.Term =
     tm match {
-      case Syntax.Abst(Syntax.BoundArg(Some(id), ty/*, false*/), tm2) =>
+      case Syntax.Abst(Syntax.BoundArg(Some(id), ty, false), tm2) =>
         eta_contract(tm2) match {
-          case Syntax.Appl(tm1, Syntax.Var(id2)/*, _*/)
+          case Syntax.Appl(tm1, Syntax.Var(id2), _)
             if id == id2 && !lambda_contains(tm1, id) => eta_contract(tm1)
-          case tm2 => Syntax.Abst(Syntax.BoundArg(Some(id), eta_contract(ty)/*, implicit_arg = false*/), tm2)
+          case tm2 => Syntax.Abst(Syntax.BoundArg(Some(id), eta_contract(ty)), tm2)
         }
 
-      case Syntax.Abst(Syntax.BoundArg(id, ty/*, impl*/), tm2) =>
-        Syntax.Abst(Syntax.BoundArg(id, eta_contract(ty)/*, impl*/), eta_contract(tm2))
+      case Syntax.Abst(Syntax.BoundArg(id, ty, impl), tm2) =>
+        Syntax.Abst(Syntax.BoundArg(id, eta_contract(ty), impl), eta_contract(tm2))
 
-      case Syntax.Prod(Syntax.BoundArg(id, ty/*, impl*/), tm2) =>
-        Syntax.Prod(Syntax.BoundArg(id, eta_contract(ty)/*, impl*/), eta_contract(tm2))
+      case Syntax.Prod(Syntax.BoundArg(id, ty, impl), tm2) =>
+        Syntax.Prod(Syntax.BoundArg(id, eta_contract(ty), impl), eta_contract(tm2))
 
-      case Syntax.Appl(t1, t2/*, impl*/) => Syntax.Appl(eta_contract(t1), eta_contract(t2)/*, impl*/)
+      case Syntax.Appl(t1, t2, impl) => Syntax.Appl(eta_contract(t1), eta_contract(t2), impl)
       case _ => tm
     }
 
   /** Mutable objects of type A. <br>
   * Simply contains a variable
   * <$arg>value<$arge> of type A. */
-  case class Mut[A](var value: A) {
-    def deepcopy() = Mut(value)
-  }
+  case class Mut[A](var value: A) {}
 
   /** The way it is used, for now, is the following:
    * if ?1 is a letter, then let ?2 be the next letter in the alphabet (with z -> a),
@@ -572,14 +563,14 @@ object Translate {
   def alpha_escape(argnames: List[Syntax.BoundArg], ret_ty: Syntax.Typ) : (List[Syntax.BoundArg], Syntax.Typ) =
     argnames match {
       case Nil => (Nil, ret_ty)
-      case (arg @ Syntax.BoundArg(None, ty/*, impl*/)) :: tl => {
+      case (arg @ Syntax.BoundArg(None, ty, impl)) :: tl => {
         val (lst, new_ret_ty) = alpha_escape(tl, ret_ty)
         (arg :: lst, new_ret_ty)
       }
-      case Syntax.BoundArg(Some(name), ty/*, impl*/) :: tl => {
+      case Syntax.BoundArg(Some(name), ty, impl) :: tl => {
         val new_name = "£" + name
         val (lst, new_ret_ty) = alpha_escape(tl.map(lambda_replace_arg(_, name, Syntax.Var(new_name))), lambda_replace(ret_ty, name, Syntax.Var(new_name)))
-        (Syntax.BoundArg(Some(new_name), ty/*, impl*/) :: lst, new_ret_ty)
+        (Syntax.BoundArg(Some(new_name), ty, impl) :: lst, new_ret_ty)
       }
     }
 
@@ -615,21 +606,21 @@ object Translate {
    * @see [[eta_expand]] */
   def name_args_of_list(known_argnames: List[Syntax.BoundArg], spine: List[Syntax.Term], ctxt: Map[String, Syntax.Typ], name_ref: Mut[String], ret_type: Syntax.Typ) : List[Syntax.BoundArg] = {
     (known_argnames, spine) match {
-      case (Syntax.BoundArg(id, _/*, _*/) :: tl, tm :: spine) => {
+      case (Syntax.BoundArg(id, _, _) :: tl, tm :: spine) => {
         val real_id = id.getOrElse("")
         val replaced = tl.map(lambda_replace_arg(_, real_id, tm))
         name_args_of_list(replaced, spine, ctxt, name_ref, lambda_replace(ret_type, real_id, tm))
       }
-      case (Syntax.BoundArg(Some(name), ty/*, impl*/) :: tl, Nil) => {
-        val exp_ty = eta_expand(ty, ctxt, name_ref.deepcopy)
-        val res = Syntax.BoundArg(Some(name), exp_ty/*, impl*/)
+      case (Syntax.BoundArg(Some(name), ty, impl) :: tl, Nil) => {
+        val exp_ty = eta_expand(ty, ctxt, Mut(name_ref.value))
+        val res = Syntax.BoundArg(Some(name), exp_ty, impl)
         if (name(0) != '£') error("Invariant broken")
         res :: name_args_of_list(tl, Nil, ctxt + (name -> exp_ty), name_ref, ret_type)
       }
-      case (Syntax.BoundArg(None, ty/*, impl*/) :: tl, Nil) => {
+      case (Syntax.BoundArg(None, ty, impl) :: tl, Nil) => {
         val name = name_ref.value
         val exp_ty = eta_expand(ty, ctxt, Mut(name))
-        val res = Syntax.BoundArg(Some(name), exp_ty/*, impl*/)
+        val res = Syntax.BoundArg(Some(name), exp_ty, impl)
         name_ref.value = update_name(name)
         res :: name_args_of_list(tl, Nil, ctxt + (name -> exp_ty), name_ref, ret_type)
       } 
@@ -650,25 +641,13 @@ object Translate {
       }
     }
 
-  // Modifed to also include lambda abstraction
-  /** <b>TODO:Is it okay that I modified it? Also, it was not used anywhere</b><br>
-   * <code><$met>appls_args<$mete>(<$arg>tm<$arge>, List(<$arg>x1<$arge>,
-   *  ..., <$arg>xn<$arge>))</code> is <$lpc>λ x1 ... xn, tm x1 ... xn 
-   *  
-   *  @param tm the term to expand
-   *  @param args the list of named arguments to use
-   *              
-   *  @return the eta-expansion of <$arg>tm<$arge> using
-   *          <$arg>args<$arge> as arguments
-   */
+  /*
+  // Apply a list of arguments, given as lambda arguments
   def appls_args(tm: Syntax.Term, args: List[Syntax.BoundArg]): Syntax.Term = {
-    args match {
-      case (arg @ Syntax.BoundArg(Some(id),_))::tl =>
-        Syntax.Abst(arg,appls_args(Syntax.Appl(tm,Syntax.Var(id)),tl))
-      case Nil => tm
-      case _ => error("oops")
-    }
-  }
+    val pure_args = args.map { case Syntax.BoundArg(Some(name), _, _) => Syntax.Var(name) case _ => error("oops") }
+    val impl_list = args.map { case Syntax.BoundArg(_, _, impl) => impl }
+    Syntax.appls(tm, pure_args, impl_list
+   */
 
 
   // Drop the first abstractions when there are arguments already, also replacing the abst argname with the argument proper
@@ -684,29 +663,32 @@ object Translate {
   //     case (Nil, _ :: _) => Nil
   //   }
 
+  def test(u: Int): Int = u
+  
+  //def test2(u:Int): Int = test(u)
 
   /** Particular case of <$met><u>[[eta_expand]]</u><$mete> when t
    *  is an application or is a function symbol/variable.
    */
   def eta_expand_appl(t: Syntax.Term, ctxt: Map[String, Syntax.Typ], name_ref: Mut[String]): Syntax.Term = {
     val (head, spine) = Syntax.destruct_appls(t)
-    val expanded_args = spine.map(eta_expand(_,ctxt, name_ref.deepcopy)) //{ case (arg, impl) => (eta_expand(arg, ctxt, name_ref.deepcopy, impl) }
-    //val spine_args = expanded_args.map(_._1)
+    val expanded_args = spine.map{ case (arg, impl) => (eta_expand(arg, ctxt, Mut(name_ref.value), impl) }
+    val spine_args = expanded_args.map(_._1)
     head match {
       case Syntax.Symb(id) =>
-        val named_args = name_args(global_types(id), /*spine_args*/expanded_args, ctxt, name_ref)
-        val applied1 = expanded_args.foldLeft(head)(Syntax.Appl) //{ case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
-        val abstracted = appls_args(applied1,named_args)
+        val named_args = name_args(global_types(id), spine_args, ctxt, name_ref)
+        val applied1 = expanded_args.foldLeft(head){ case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
+        val abstracted = named_args.foldRight(applied)(Syntax.Abst.apply)
         abstracted
 
       case Syntax.Var(id) =>
-        val named_args = name_args(ctxt(id), /*spine_args*/expanded_args, ctxt, name_ref)
-        val applied1 = expanded_args.foldLeft(head)(Syntax.Appl) //{ case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
-        val abstracted = appls_args(applied1,named_args)
+        val named_args = name_args(ctxt(id), spine_args, ctxt, name_ref)
+        val applied1 = expanded_args.foldLeft(head){ case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
+        val abstracted = named_args.foldRight(applied)(Syntax.Abst.apply)
         abstracted
 
       case _ =>
-        expanded_args.foldLeft(eta_expand(head, ctxt, name_ref))(Syntax.appl)//{ case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
+        expanded_args.foldLeft(eta_expand(head, ctxt, name_ref)){ case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
     }
   }
 
@@ -727,20 +709,20 @@ object Translate {
       case Syntax.TYPE =>
         tm
 
-      case Syntax.Symb(_) | Syntax.Var(_) | Syntax.Appl(_, _/*, _*/) =>
+      case Syntax.Symb(_) | Syntax.Var(_) | Syntax.Appl(_, _, _) =>
         eta_expand_appl(tm, ctxt, name_ref)
 
-      case Syntax.Abst(Syntax.BoundArg(Some(name), ty/*, impl*/), t) =>
-        Syntax.Abst(Syntax.BoundArg(Some(name), eta_expand(ty, ctxt, name_ref.deepcopy/*, impl*/), eta_expand(t, ctxt + (name -> ty), name_ref))
+      case Syntax.Abst(Syntax.BoundArg(Some(name), ty, impl), t) =>
+        Syntax.Abst(Syntax.BoundArg(Some(name), eta_expand(ty, ctxt, Mut(name_ref.value)), impl), eta_expand(t, ctxt + (name -> ty), name_ref))
 
-      case Syntax.Abst(Syntax.BoundArg(None, ty/*, impl*/), t) =>
-        Syntax.Abst(Syntax.BoundArg(None, eta_expand(ty, ctxt, name_ref.deepcopy/*, impl*/), eta_expand(t, ctxt, name_ref))
+      case Syntax.Abst(Syntax.BoundArg(None, ty, impl), t) =>
+        Syntax.Abst(Syntax.BoundArg(None, eta_expand(ty, ctxt, Mut(name_ref.value)), impl), eta_expand(t, ctxt, name_ref))
 
-      case Syntax.Prod(Syntax.BoundArg(Some(name), ty/*, impl*/), t) =>
-        Syntax.Prod(Syntax.BoundArg(Some(name), eta_expand(ty, ctxt, name_ref.deepcopy/*, impl*/), eta_expand(t, ctxt + (name -> ty), name_ref))
+      case Syntax.Prod(Syntax.BoundArg(Some(name), ty, impl), t) =>
+        Syntax.Prod(Syntax.BoundArg(Some(name), eta_expand(ty, ctxt, Mut(name_ref.value)), impl), eta_expand(t, ctxt + (name -> ty), name_ref))
 
-      case Syntax.Prod(Syntax.BoundArg(None, ty/*, impl*/), t) =>
-        Syntax.Prod(Syntax.BoundArg(None, eta_expand(ty, ctxt, name_ref.deepcopy/*, impl*/), eta_expand(t, ctxt, name_ref))
+      case Syntax.Prod(Syntax.BoundArg(None, ty, impl), t) =>
+        Syntax.Prod(Syntax.BoundArg(None, eta_expand(ty, ctxt, Mut(name_ref.value)), impl), eta_expand(t, ctxt, name_ref))
     }
   }
   
@@ -780,8 +762,8 @@ object Translate {
    */
   def fetch_head_args(tm: Syntax.Term, ty: Syntax.Term) : (List[Syntax.BoundArg], Syntax.Term, Syntax.Term) =
     (tm, ty) match {
-      case (Syntax.Abst(arg @ Syntax.BoundArg(_, arg_ty/*, false*/), tm0),
-        Syntax.Appl(Syntax.Symb("eta"), Syntax.Appl(Syntax.Appl(Syntax.Symb("fun"), arg_ty2/*, false*/), ret_ty/*, false*/)/*, false*/))
+      case (Syntax.Abst(arg @ Syntax.BoundArg(_, arg_ty, false), tm0),
+        Syntax.Appl(Syntax.Symb("eta"), Syntax.Appl(Syntax.Appl(Syntax.Symb("fun"), arg_ty2, false), ret_ty, false), false))
       if arg_ty == eta(arg_ty2) => {
         val (lst, tm1, ty1) = fetch_head_args(tm0, eta(ret_ty))
         (arg :: lst, tm1, ty1)
@@ -863,7 +845,7 @@ object Translate {
     case _ => error("oops")
   }
 
-  // var implArgsMap: Map[String, List[Boolean]] = Map()
+  var implArgsMap: Map[String, List[Boolean]] = Map()
 
   /* type classes */
 
@@ -881,7 +863,7 @@ object Translate {
     val out_type = eta(Syntax.Symb(propId))
     val class_type = Syntax.arrow(typeT,out_type)
     val id_c = add_class_ident(c,module)
-    // implArgsMap  += id_c -> List(false)
+    implArgsMap  += id_c -> List(false)
     global_types += id_c -> class_type
     d match {
       case None => Syntax.Declaration(id_c,List(),class_type)
@@ -907,7 +889,7 @@ object Translate {
   def type_decl(module: String, c: String, args: List[String], rhs: Option[Term.Typ], not: Export_Theory.Syntax): Syntax.Command = {
     val full_ty = Syntax.arrows(List.fill(args.length)(typeT), typeT)
     val id_c = add_type_ident(c,module)
-    //implArgsMap  += id_c -> List.fill(args.length)(false)
+    implArgsMap  += id_c -> List.fill(args.length)(false)
     global_types += id_c -> full_ty
 
     rhs match {
@@ -931,7 +913,7 @@ object Translate {
       case Term.Type(_, args) => args.exists(type_contains_arg(_, arg))
       case Term.TVar(_, _) => error("False assertion")
     }
-
+  
   /** checks if a type variable appears in an $isa type as a domain type
    * 
    * @param ty the type to search into
@@ -941,40 +923,42 @@ object Translate {
   @tailrec
   def type_contains_arg_as_arg(ty: Term.Typ, arg: String): Boolean =
     ty match {
-      case Term.Type(Pure_Thy.FUN, List(arg1, arg2)) => type_contains_arg(arg1, arg) || type_contains_arg_as_arg(arg2, arg)
-      case Term.Type(_, _) => false  // Can maybe be more intelligent
-      case Term.TFree(_, _) => false
       case Term.TVar(_, _) => error("False assertion")
+      case Term.Type(Pure_Thy.FUN, List(arg1, arg2)) => type_contains_arg(arg1, arg) || type_contains_arg_as_arg(arg2, arg)
+      case _ => false
     }
 
-  /*
+  /** Which type arguments of a constant can be implicit.
+   * 
+   * @param typargs the name of the type variables
+   *                appearing in the type of the constant
+   * @param ty the $isa type of the constant
+   * @return a list of booleans, true for implicit type constants and false otherwise
+   */
   def const_implicit_args(typargs: List[String], ty: Term.Typ): List[Boolean] = {
-    var canStillBeImplicit = true  // No implicit arg after a non-implicit one
+    var canStillBeImplicit = true // No implicit arg after a non-implicit one
     typargs.map(arg => {
       canStillBeImplicit &&= type_contains_arg_as_arg(ty, arg)
       canStillBeImplicit
     })
   }
-  */
   
-  /** <code><$metc>bound_type_arguments<$metce>(<$argc>args<$argce>) =
-   *  <$argc>args<$argce>.<$metc>map<$metce>(<$metc><u>[[bound_type_argument]]</u><$metce>)</code> */
-  def bound_type_arguments(args: List[String]/* , impl: List[Boolean]*/): List[Syntax.BoundArg] =
+  /** list of bound type arguments, names given by <$arg>args<$arge>
+   *  and implicitness given by <$arg>impl<$arge> */
+  def bound_type_arguments(args: List[String], impl: List[Boolean]): List[Syntax.BoundArg] =
     args.map(bound_type_argument)
-    /*
     (args, impl) match {
       case (Nil, Nil) => Nil
-      case (arg :: args, impl :: impls) => bound_type_argument(arg/*, impl*/) :: bound_type_arguments(args, impls)
+      case (arg :: args, impl :: impls) => bound_type_argument(arg, impl) :: bound_type_arguments(args, impls)
       case (Nil, _) => isabelle.error("Implicit list too long.")
       case (_, Nil) => isabelle.error("Implicit list too short.")
     }
-    */
 
   /** Declaration of an $isa constant in $dklp
    *
    * @param module the module where the constant is defined
    * @param c      the name of the constant
-   * @param args   the list of names of the type variables appearing in the constant's type
+   * @param typargs   the list of names of the type variables appearing in the constant's type
    * @param rhs    the optional definition of the constant, can be
    *               <code>None</code>, in case of an axiomatic constant (equality, for example)
    * @param not    the $isa notation for this constant
@@ -982,9 +966,9 @@ object Translate {
    */
   def const_decl(module: String, c: String, typargs: List[String], ty: Term.Typ, rhs: Option[Term.Term], not: Export_Theory.Syntax): Syntax.Command = {
     val id_c = add_const_ident(c,module)
-    //val impl = const_implicit_args(typargs, ty)
-    //implArgsMap += id_c -> impl
-    val bound_args = bound_type_arguments(typargs/*, impl*/)
+    val impl = const_implicit_args(typargs, ty)
+    implArgsMap += id_c -> impl
+    val bound_args = bound_type_arguments(typargs, impl)
     val full_ty = bound_args.foldRight(eta(typ(ty)))(Syntax.Prod.apply)
     val contracted_ty = eta_expand(eta_contract(full_ty))
     global_types += id_c -> contracted_ty
@@ -1019,7 +1003,7 @@ object Translate {
     val full_ty = args.foldRight(eps(term(prop.term, Bounds())))(Syntax.Prod.apply)
     val contracted_ty = eta_expand(eta_contract(full_ty))
 
-    //implArgsMap  += s -> List.fill(prop.typargs.length)(false) // Only those are applied immediately
+    implArgsMap  += s -> List.fill(prop.typargs.length)(false) // Only those are applied immediately
     global_types += s -> contracted_ty
 
     try prf_opt match {
@@ -1035,7 +1019,7 @@ object Translate {
         Syntax.Theorem(s, new_args, final_ty, contracted)
       }
     }
-    catch { case e : Throwable => e.printStackTrace
+    catch { case e : Throwable => e.printStackTrace()
       error("oops in " + quote(s)) }
 //    catch { case ERROR(msg) => error(msg + "\nin " + quote(s)) }
   }

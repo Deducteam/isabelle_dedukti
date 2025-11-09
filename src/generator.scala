@@ -64,6 +64,7 @@ object Generator {
     options: Options,
     session: String,
     //target_theory: String, TODO: It is not used right?
+    //                             Should I do it? it would be easily done
     recursive: Boolean,
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
