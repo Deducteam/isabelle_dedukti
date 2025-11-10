@@ -80,12 +80,12 @@ object Dkcheck {
    * <$arg>session<$arge>, itself excluded, until reaching the
    * <$str>"Pure"<$stre> session.
    */
-  class Session_iterator (private var session : String) extends Iterator[String] {
+  class Session_iterator (private var session : String, full_stru: isabelle.Sessions.Structure) extends Iterator[String] {
     override def hasNext: Boolean =
       session != "Pure"
-    
+
     override def next(): String = {
-      session = Rootfile.get_ancestor(session)
+      session = Rootfile.get_ancestor(session,full_stru)
       session
     }
   }
@@ -106,9 +106,10 @@ object Dkcheck {
     ): Unit = {
 
     val full_stru = Sessions.load_structure(options, dirs = dirs)
+    val anc = Rootfile.get_ancestor(session, options, dirs)
 
     // theory graph
-    val theory_graph = Rootfile.graph(options, session, progress, dirs, verbose)
+    val theory_graph = Rootfile.graph(options, session, anc, progress, dirs, verbose)
     // if (verbose) progress.echo("graph: " +theory_graph)
     val theories : List[Document.Node.Name] = theory_graph.topological_order
     // if (verbose) progress.echo("Session graph top ordered: " + theories)
@@ -186,7 +187,7 @@ object Dkcheck {
     bw2.write("-Q ../../../logic DkLogic\n")
     bw2.write("-Q ../../"+anc+"/dkcheck "+anc+"\n")
     //
-    Session_iterator(session).foreach(bw2.write("-Q ../../"+_+"/dkcheck"+_+"\n"))
+    Session_iterator(session,full_stru).foreach(anc => bw2.write("-Q ../../"+anc+"/dkcheck "+anc+"\n"))
     bw2.write("-Q . "+session+"\n")
     for (theory <- theories) {
       bw2.write(Prelude.mod_name(theory.toString) + ".v\n")

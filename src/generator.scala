@@ -92,7 +92,7 @@ object Generator {
             Name.make_graph(List(((Name("Pure",Thy_Header.PURE),()),List())))
           } else error("the session has no parent")
         case Some(anc) =>
-          generator(options, anc, target_theory, recursive, progress, dirs, outdir, use_notations, eta_expand, verbose, translate = recursive)
+          generator(options, anc/*, target_theory*/, recursive, progress, dirs, outdir, use_notations, eta_expand, verbose, translate = recursive)
           Rootfile.graph(options, session, anc, progress, dirs, verbose)
         
       }

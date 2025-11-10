@@ -431,13 +431,12 @@ object Exporter {
             }
 
             /** function writing all the proofs in prfs,
-             *  also declaring all theorems in thms once 
+             *  also declaring all theorems in thms once
              *  their [[max_serial]] has been reached
-             *  
+             *
              * @param prfs proofs to handle
              * @param thms remaining theorems
              */
-            @tailrec
             def write_proofs(prfs: List[Long], thms: List[Entity[Thm]]) : Unit =
               thms match {
                 case thm :: thms =>

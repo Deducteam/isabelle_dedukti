@@ -672,19 +672,19 @@ object Translate {
    */
   def eta_expand_appl(t: Syntax.Term, ctxt: Map[String, Syntax.Typ], name_ref: Mut[String]): Syntax.Term = {
     val (head, spine) = Syntax.destruct_appls(t)
-    val expanded_args = spine.map{ case (arg, impl) => (eta_expand(arg, ctxt, Mut(name_ref.value), impl) }
+    val expanded_args = spine.map{ case (arg, impl) => (eta_expand(arg, ctxt, Mut(name_ref.value)), impl) }
     val spine_args = expanded_args.map(_._1)
     head match {
       case Syntax.Symb(id) =>
         val named_args = name_args(global_types(id), spine_args, ctxt, name_ref)
         val applied1 = expanded_args.foldLeft(head){ case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
-        val abstracted = named_args.foldRight(applied)(Syntax.Abst.apply)
+        val abstracted = named_args.foldRight(applied1)(Syntax.Abst.apply)
         abstracted
 
       case Syntax.Var(id) =>
         val named_args = name_args(ctxt(id), spine_args, ctxt, name_ref)
         val applied1 = expanded_args.foldLeft(head){ case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
-        val abstracted = named_args.foldRight(applied)(Syntax.Abst.apply)
+        val abstracted = named_args.foldRight(applied1)(Syntax.Abst.apply)
         abstracted
 
       case _ =>
@@ -897,7 +897,7 @@ object Translate {
         Syntax.Declaration(id_c, Nil, full_ty, notation_decl(not))
       case Some(rhs) => {
         val translated_rhs = typ(rhs)
-        val full_tm : Syntax.Term = args.map(bound_type_argument).foldRight(translated_rhs)(Syntax.Abst.apply)
+        val full_tm : Syntax.Term = args.map(bound_type_argument(_)).foldRight(translated_rhs)(Syntax.Abst.apply)
         val (new_args, contracted, ty) = fetch_head_args(eta_expand(eta_contract(full_tm)), full_ty)
         Syntax.Definition(id_c, new_args, Some(ty), contracted, notation_decl(not))
       }
@@ -946,7 +946,6 @@ object Translate {
   /** list of bound type arguments, names given by <$arg>args<$arge>
    *  and implicitness given by <$arg>impl<$arge> */
   def bound_type_arguments(args: List[String], impl: List[Boolean]): List[Syntax.BoundArg] =
-    args.map(bound_type_argument)
     (args, impl) match {
       case (Nil, Nil) => Nil
       case (arg :: args, impl :: impls) => bound_type_argument(arg, impl) :: bound_type_arguments(args, impls)
@@ -997,7 +996,7 @@ object Translate {
    */
   def stmt_decl(s: String, prop: Export_Theory.Prop, prf_opt: Option[Term.Proof]): Syntax.Command = {
     val args =
-      prop.typargs.map(_._1).map(bound_type_argument) :::
+      prop.typargs.map(_._1).map(bound_type_argument(_)) :::
       prop.args.map(arg => bound_term_argument(arg._1, arg._2))
 
     val full_ty = args.foldRight(eps(term(prop.term, Bounds())))(Syntax.Prod.apply)

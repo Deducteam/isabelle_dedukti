@@ -93,7 +93,7 @@ object Syntax {
   @tailrec
   def appls(head: Term, spine: List[Term], impl: List[Boolean]): Term =
     (spine, impl) match {
-      case (_, Nil) => spine.foldLeft(head)(Appl)
+      case (_, Nil) => spine.foldLeft(head)(Appl(_,_,false))
       case (arg :: spine, impl :: impls) => appls(Appl(head, arg, impl), spine, impls)
       case _ => isabelle.error("Missing implicit argument")
     }

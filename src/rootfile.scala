@@ -51,7 +51,7 @@ import scala.io.Source
 object Rootfile {
   
   /** Get the ancestor of an $isa session */
-  def get_ancestor(session : String) : String = {
+  def get_ancestor(session : String, full_stru: isabelle.Sessions.Structure) : String = {
     val selected_sessions =
       full_stru.selection(Sessions.Selection(sessions = List[String](session)))
     val info = selected_sessions(session)
@@ -59,6 +59,11 @@ object Rootfile {
       case Some(x) => x
       case _ => error("the session does not have any parent")
     }
+  }
+  /** Get the ancestor of an $isa session */
+  def get_ancestor(session: String, options: Options, dirs : List[Path]): String = {
+    val full_stru = Sessions.load_structure(options, dirs = dirs)
+    get_ancestor(session, full_stru)
   }
 
   /** theory graph of an $isa session
@@ -69,13 +74,12 @@ object Rootfile {
   def graph(
     options: Options,
     session: String,
+    anc: String,
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
     verbose: Boolean = false,
     ): Name.Graph[Unit] = {
-    
-    val anc = get_ancestor(session)
-    
+
     var theory_graph =
       if (session == "Pure") {
         (Document.Node.Name.make_graph(List(((Document.Node.Name("Pure", theory = Thy_Header.PURE), ()),List[Document.Node.Name]()))))
@@ -125,14 +129,7 @@ object Rootfile {
     verbose: Boolean = false,
     ): Unit = {
 
-    val full_stru = Sessions.load_structure(options, dirs = dirs)
-    val selected_sessions =
-      full_stru.selection(Sessions.Selection(sessions = List[String](session)))
-    val info = selected_sessions(session)
-    val anc = info.parent match{
-      case Some(x) => x
-      case _ => error("the session does not have any parent")
-    }
+    val anc = get_ancestor(session, options, dirs)
     // theory graph
     val theory_graph = graph(options, session, anc, progress, dirs, verbose)
     // if (verbose) progress.echo("graph: " +theory_graph)
