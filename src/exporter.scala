@@ -451,7 +451,14 @@ object Exporter {
               writer.command(cmd, notations)
             }
 
-            /** function writing all the proofs in prfs,
+            /** function writing the declaration of a lemma for an intermediary proof */
+            def write_proof(prf: Long): Unit = {
+              if (verbose) progress.echo("  proof "+prf)
+              val cmd = decl_proof(prf,theory_name)
+              writer.command(cmd,notations)
+            }
+
+            /** function writing all the proofs in prfs as intermediary lemmas,
              *  also declaring all theorems in thms once
              *  their [[max_serial]] has been reached
              *
@@ -462,9 +469,9 @@ object Exporter {
               thms match {
                 case thm :: thms =>
                   write_proofs_body(prfs,thm,thms,max_serial(thm))
-                case _ => write_proofs_body(prfs,null,Nil,Long.MaxValue)
+                case _ => for (prf <- prfs) {write_proof(prf)}
               }
-              
+
             @tailrec
             def write_proofs_body(prfs: List[Long], thm: Entity[Thm], thms: List[Entity[Thm]], thm_prf: Long): Unit =
               prfs match {
@@ -473,10 +480,13 @@ object Exporter {
                     // all proofs <= thm_prf have been handled already
                     decl_thm(thm)
                     write_proofs(prfs2,thms)
+                    thms match {
+                      case thm :: thms =>
+                        write_proofs_body(prfs,thm,thms,max_serial(thm))
+                      case _ => for (prf <- prfs) {write_proof(prf)}
+                    }
                   } else {
-                    if (verbose) progress.echo("  proof "+prf)
-                    val cmd = decl_proof(prf,theory_name)
-                    writer.command(cmd,notations)
+                    write_proof(prf)
                     write_proofs_body(prfs2,thm,thms,thm_prf)
                   }
                 case _ =>
@@ -489,7 +499,7 @@ object Exporter {
             write_proofs(prfs, theory.thms)
             progress.echo("End writing "+mod_name_theory+".dk")
           }
-          progress.echo("End readingaxioms theory "+theory_name)
+          progress.echo("End reading theory "+theory_name)
         }
         sh.write(" "+mod_name_session+".dk\n")
         sh.close()
