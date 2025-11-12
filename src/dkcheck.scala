@@ -195,7 +195,7 @@ object Dkcheck {
   }
 
   // Isabelle tool wrapper and CLI handler
-  val cmd_name = "dedukti_check"
+  val cmd_name = "get_CoqProject"
   /** $isa tool to generate a _CoqProject from the command line
    * @see <$met><u>[[dk_check]]</u><$mete>
    */
