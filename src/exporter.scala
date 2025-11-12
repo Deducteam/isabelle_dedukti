@@ -509,7 +509,7 @@ object Exporter {
           }
           progress.echo("End reading theory "+theory_name)
         }
-        sh.write(" "+mod_name_session+".dk\n")
+        sh.write(" "+mod_name_session+extension+"\n")
         sh.close()
         progress.echo("End writing "+mod_name_session+extension)
       }
