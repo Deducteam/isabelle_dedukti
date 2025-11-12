@@ -149,6 +149,8 @@ object Exporter {
     def new_Writer(writer: Writer): Abstract_Writer =
       if (to_lp) new LP_Writer(use_notations,writer)
       else new DK_Writer(writer)
+      
+    val extension: String = if (to_lp) ".lp" else ".dk" 
 
     /** from an $isa equality axiom <$isac>Pure.eq[eqtys] lhs rhs<$isace>
      * where <code>lhs = <$isac>c[tys] x1 .. xn<$isace></code> with tys and xj variables,
@@ -201,8 +203,8 @@ object Exporter {
     /** Opens for writing a .dk.part file associated to a session or theory,
      *  which, when closed, is copied to the corresponding .dk file
      */
-    def new_dk_part_writer(name: String) =
-      new Part_Writer(Path.explode(outdir+Prelude.mod_name(name)+".dk"))
+    def new_part_writer(name: String) =
+      new Part_Writer(Path.explode(outdir+Prelude.mod_name(name)+extension))
 
     /** Reads the proof of theorem <code><span style="color:#FFC0CB;">serial</span></code>
      *  if there is one and returns a command declaring it as a lemma or axiom 
@@ -297,29 +299,29 @@ object Exporter {
         case Some(anc) =>
           sh.write("bash dkcheck_session_"+Prelude.mod_name(anc)+".sh\n")
           // write orphan proofs
-          using (new_dk_part_writer(mod_name_orphans)) { part_writer =>
-            progress.echo("Start writing "+mod_name_orphans+".dk")
+          using (new_part_writer(mod_name_orphans)) { part_writer =>
+            progress.echo("Start writing "+mod_name_orphans+extension)
             val orphan_writer = new_Writer(part_writer)
             orphan_writer.require("session_"+anc)
             for (cmd <- orphan_commands) {
               orphan_writer.command(cmd,notations)
             }
-            progress.echo("End writing "+mod_name_orphans+".dk")
+            progress.echo("End writing "+mod_name_orphans+extension)
           }
         case _ =>
           sh.write("bash dkcheck_STTfa.sh\n")
       }
       sh.write("dk check -e --eta")
       parent match {
-        case Some(anc) => sh.write(" "+mod_name_orphans+".dk")
+        case Some(anc) => sh.write(" "+mod_name_orphans+extension)
         case _ =>
       }
 
       /* Open a dk file S for the session, then translate each theory of the
        * session in a dk file T, and simply import module T in S
        */
-      using(new_dk_part_writer(mod_name_session)) { part_writer1 =>
-        progress.echo("Start writing "+mod_name_session+".dk")
+      using(new_part_writer(mod_name_session)) { part_writer1 =>
+        progress.echo("Start writing "+mod_name_session+extension)
         val session_writer = new_Writer(part_writer1)
 
         for (thy <- thys) {
@@ -330,10 +332,10 @@ object Exporter {
           session_writer.require(theory_name)
           val mod_name_theory = Prelude.mod_name(theory_name)
           
-          sh.write(" "+mod_name_theory+".dk")
-          using(new_dk_part_writer(mod_name_theory)) { part_writer2 =>
+          sh.write(" "+mod_name_theory+extension)
+          using(new_part_writer(mod_name_theory)) { part_writer2 =>
             val writer = new_Writer(part_writer2)
-            progress.echo("Start writing "+mod_name_theory+".dk")
+            progress.echo("Start writing "+mod_name_theory+extension)
             writer.comment("Theory "+theory_name)
             // write module dependencies
             if (parent.isDefined) writer.require(mod_name_orphans)
@@ -501,13 +503,13 @@ object Exporter {
             // all proofs in increasing order
             val prfs = map_theory_proofs(theory_name).toList
             write_proofs(prfs, theory.thms)
-            progress.echo("End writing "+mod_name_theory+".dk")
+            progress.echo("End writing "+mod_name_theory+extension)
           }
           progress.echo("End reading theory "+theory_name)
         }
         sh.write(" "+mod_name_session+".dk\n")
         sh.close()
-        progress.echo("End writing "+mod_name_session+".dk")
+        progress.echo("End writing "+mod_name_session+extension)
       }
       progress.echo("End translating session "+session)
     }
