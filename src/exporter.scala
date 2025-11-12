@@ -200,8 +200,8 @@ object Exporter {
     val thys = theory_graph.topological_order
     val theory_names = thys.map(node_name => node_name.toString)
 
-    /** Opens for writing a .dk.part file associated to a session or theory,
-     *  which, when closed, is copied to the corresponding .dk file
+    /** Opens for writing a .dk.part or .lp.part file associated to a session or theory,
+     *  which, when closed, is copied to the corresponding .dk or .lp file
      */
     def new_part_writer(name: String) =
       new Part_Writer(Path.explode(outdir+Prelude.mod_name(name)+extension))
@@ -290,14 +290,15 @@ object Exporter {
       val mod_name_session = "session_"+Prelude.mod_name(session)
 
       // set up generation of shell script to check Dedukti files
-      val filename = "dkcheck_"+mod_name_session+".sh"
+      val checkstr : String = (if (to_lp) "lpcheck_" else "dkcheck_")
+      val filename = checkstr +mod_name_session+".sh"
       progress.echo("Start writing "+filename)
       val file = new File(outdir+filename)
       val sh = new BufferedWriter(new FileWriter(file))
       sh.write("#!/bin/sh\n")
       parent match {
         case Some(anc) =>
-          sh.write("bash dkcheck_session_"+Prelude.mod_name(anc)+".sh\n")
+          sh.write("bash "+checkstr+"session_"+Prelude.mod_name(anc)+".sh\n")
           // write orphan proofs
           using (new_part_writer(mod_name_orphans)) { part_writer =>
             progress.echo("Start writing "+mod_name_orphans+extension)
@@ -309,9 +310,10 @@ object Exporter {
             progress.echo("End writing "+mod_name_orphans+extension)
           }
         case _ =>
-          sh.write("bash dkcheck_STTfa.sh\n")
+          sh.write("bash "+checkstr+"STTfa.sh\n")
       }
-      sh.write("dk check -e --eta")
+      if (to_lp) sh.write("lambdapi check -c -w -v0")
+      else sh.write("dk check -e --eta")
       parent match {
         case Some(anc) => sh.write(" "+mod_name_orphans+extension)
         case _ =>
