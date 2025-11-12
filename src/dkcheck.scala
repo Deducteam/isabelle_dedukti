@@ -2,14 +2,14 @@
 
 package isabelle.dedukti
 
-import isabelle._
+import isabelle.*
 
 import scala.collection.mutable
-import scala.util.control.Breaks._
-import java.io._
+import scala.util.control.Breaks.*
+import java.io.*
 import java.nio.file.Files
 import java.nio.file.Paths
-import sys.process._
+import sys.process.*
 import scala.language.postfixOps
 import scala.io.Source
 
@@ -106,7 +106,7 @@ object Dkcheck {
     ): Unit = {
 
     val full_stru = Sessions.load_structure(options, dirs = dirs)
-    val anc = Rootfile.get_ancestor(session, options, dirs)
+    val anc = Rootfile.get_ancestor(session, full_stru)
 
     // theory graph
     val theory_graph = Rootfile.graph(options, session, anc, progress, dirs, verbose)
@@ -186,7 +186,6 @@ object Dkcheck {
     bw2.write("-Q ../../../rocq IsaRocq\n")
     bw2.write("-Q ../../../logic DkLogic\n")
     bw2.write("-Q ../../"+anc+"/dkcheck "+anc+"\n")
-    //
     Session_iterator(session,full_stru).foreach(anc => bw2.write("-Q ../../"+anc+"/dkcheck "+anc+"\n"))
     bw2.write("-Q . "+session+"\n")
     for (theory <- theories) {

@@ -3,7 +3,7 @@
 package isabelle.dedukti
 
 import scala.annotation.tailrec
-import isabelle._
+import isabelle.*
 
 /** <!-- Some macros for colors and common references.
  *       Pasted at the start of every object.
@@ -93,9 +93,10 @@ object Syntax {
   @tailrec
   def appls(head: Term, spine: List[Term], impl: List[Boolean]): Term =
     (spine, impl) match {
-      case (_, Nil) => spine.foldLeft(head)(Appl(_,_,false))
+      case (Nil, impl) if impl.exists(identity) => isabelle.error("Missing implicit argument")
+      case (Nil, _) => head
       case (arg :: spine, impl :: impls) => appls(Appl(head, arg, impl), spine, impls)
-      case _ => isabelle.error("Missing implicit argument")
+      case (spine, Nil) => spine.foldLeft(head)(Appl(_, _))
     }
 
   /** <code><$met>arrows<$mete>([<$arg>T1<$arge>, ..., <$arg>Tn<$arge>], <$arg>tm<$arge>)</code>
@@ -118,7 +119,7 @@ object Syntax {
    * @see <$met><u>[[Exporter.head_args]]</u><$mete> for $isa terms
    */
   @tailrec
-  def destruct_appls(t: Term, args: List[(Term,Boolean)] = Nil): (Term, List[(Term,Boolean)]) =
+  def destruct_appls(t: Term, args: List[(Term, Boolean)] = Nil): (Term, List[(Term, Boolean)]) =
     t match {
       case Syntax.Appl(t1, t2, b) => destruct_appls(t1, args = (t2, b) :: args)
       case t => (t, args)

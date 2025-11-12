@@ -2,14 +2,14 @@
 
 package isabelle.dedukti
 
-import isabelle._
+import isabelle.*
 
 import scala.collection.mutable
-import scala.util.control.Breaks._
-import java.io._
+import scala.util.control.Breaks.*
+import java.io.*
 import java.nio.file.Files
 import java.nio.file.Paths
-import sys.process._
+import sys.process.*
 import scala.language.postfixOps
 import scala.io.Source
 
@@ -50,6 +50,7 @@ import scala.io.Source
  * @define lpce /span></code
  */
 object Generator {
+
   /** reads an $isa Session and all its parents
    *  and calls <$met><u>[[Exporter.exporter]]</u><$metc>
    * 
@@ -69,7 +70,7 @@ object Generator {
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
     outdir: String = "",
-    use_notations: Boolean = false,
+    use_notations: Boolean = true,
     eta_expand: Boolean = false,
     verbose: Boolean = false,
     translate: Boolean = true
@@ -88,7 +89,7 @@ object Generator {
       parent match {
         case None =>
           if (session == "Pure") {
-            import Document.Node._
+            import Document.Node.*
             Name.make_graph(List(((Name("Pure",Thy_Header.PURE),()),List())))
           } else error("the session has no parent")
         case Some(anc) =>

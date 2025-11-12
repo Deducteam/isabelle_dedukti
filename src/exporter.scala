@@ -159,7 +159,7 @@ object Exporter {
         case App(App(Cst(id, _), _), _) if id != "Pure.eq" =>
           if (verbose) progress.echo("axiom " + a.name + ": cannot extract definition because it is headed by " + id + " instead of Pure.eq")
           None
-        case App(App(Cst(id, eqtys), lhs), rhs) =>
+        case App(App(Cst(_, eqtys), lhs), rhs) =>
           head_args(lhs) match {
             case (Cst(n, tys), args) if !(tys.forall(is_TFree) && args.forall(is_Free_or_TYPE)) =>
               if (verbose) progress.echo("axiom " + a.name + ": cannot extract definition because it is not applied to free variables\n  axiom: " + a.the_content.prop.term.toString + "\n  type arguments: " + tys.toString + "\n  term arguments: " + args.toString)
@@ -296,7 +296,9 @@ object Exporter {
             progress.echo("Start writing "+mod_name_orphans+".dk")
             val orphan_writer = new DK_Writer(part_writer)
             orphan_writer.require("session_"+anc)
-            orphan_writer.commands(orphan_commands,notations)
+            for (cmd <- orphan_commands) {
+              orphan_writer.command(cmd,notations)
+            }
             progress.echo("End writing "+mod_name_orphans+".dk")
           }
         case _ =>
@@ -367,62 +369,81 @@ object Exporter {
             }
             // ordering on entities
             def le[A<:Content[A]](e1:Entity[A], e2:Entity[A]) = e1.serial <= e2.serial
-            // Store declarations of defined classes and constants and definitional lemmas
-            val defined_classes_decls = mutable.Queue[Syntax.Command]()
-            val defined_constants_decls = mutable.Queue[Syntax.Command]()
-            val definitional_lemmas_decls = mutable.Queue[Syntax.Command]()
             // write declarations related to undefined classes
             if (verbose) progress.echo("Undefined classes")
             writer.nl()
             writer.comment("Undefined classes")
             for (a <- theory.classes.sortWith(le)) {
-              if (verbose) progress.echo("  "+a.toString+" "+a.serial)
-              val def_opt = map_cst_dfn.get(a.name+"_class")
-              val cmd = Translate.class_decl(theory_name, a.name, def_opt)
-              if (def_opt.isEmpty) writer.command(cmd,notations)
-              else defined_classes_decls += cmd
+              if (!(map_cst_dfn contains (a.name+"_class"))) {
+                  if (verbose) progress.echo("  "+a.toString+" "+a.serial)
+                  val cmd = Translate.class_decl(theory_name, a.name, None)
+                  writer.command(cmd,notations)
+              }
             }
             // write declarations related to undefined constants
             writer.nl()
             writer.comment("Undefined constants")
             for (c <- theory.consts.sortWith(le)) {
-              if (verbose) progress.echo("  "+c.toString+" "+c.serial)
-              //skip constants corresponding to classes
-              // TODO: from the previous comment,
-              //       is everything not coming from a class named ..._Class ?
-              if (c.name.endsWith("_Class")) {
-                val def_opt = map_cst_dfn.get(c.name)
-                val cmd = Translate.const_decl(theory_name, c.name, c.the_content.typargs, c.the_content.typ, def_opt, c.the_content.syntax)
-                if (def_opt.isEmpty) writer.command(cmd, notations)
-                else defined_constants_decls += cmd
+              // skip constants corresponding to classes
+              if (!c.name.endsWith("_class") && !map_cst_dfn.contains(c.name)) {
+                if (verbose) progress.echo("  " + c.toString + " " + c.serial)
+                val cmd = Translate.const_decl(theory_name, c.name, c.the_content.typargs, c.the_content.typ, None, c.the_content.syntax)
+                writer.command(cmd, notations)
               }
             }
             // write declarations related to defined constants
             writer.nl()
             writer.comment("Defined constants")
-            writer.commands(defined_constants_decls,notations)
+            for (c <- theory.consts.sortWith(le)) {
+              // skip constants corresponding to classes
+              if (!c.name.endsWith("_class")) {
+                map_cst_dfn.get(c.name) match {
+                  case None =>
+                  case Some(dfn) =>
+                    if (verbose) progress.echo("  " + c.toString + " " + c.serial)
+                    val cmd = Translate.const_decl(theory_name, c.name, c.the_content.typargs, c.the_content.typ, Some(dfn), c.the_content.syntax)
+                    writer.command(cmd, notations)
+                }
+              }
+            }
             // write declarations related to defined classes
             if (verbose) progress.echo("Defined classes")
             writer.nl()
             writer.comment("Defined classes")
-            writer.commands(defined_classes_decls,notations)
+            for (a <- theory.classes.sortWith(le)) {
+              map_cst_dfn.get(a.name+"_class") match {
+                case Some(d) =>
+                  if (verbose) progress.echo("  "+a.toString+" "+a.serial+" := "+d.toString)
+                  val cmd = Translate.class_decl(theory_name, a.name, Some(d))
+                  writer.command(cmd,notations)
+                case None =>
+              }
+            }
             // write declarations related to non-definitional axioms
             writer.nl()
             writer.comment("Axioms")
             for (a <- theory.axioms.sortWith(le)) {
-              if (verbose) progress.echo("  "+a.toString+" "+a.serial)
-              val def_opt = map_axm_eqtyp.get(a.name).map{
-                case (eqtys,lhs) => Appt(PAxm("Pure.reflexive",eqtys),lhs)
+              if (!map_axm_eqtyp.contains(a.name)) {
+                if (verbose) progress.echo("  " + a.toString + " " + a.serial)
+                val cmd = Translate.stmt_decl(Prelude.add_axiom_ident(a.name, theory_name), a.the_content.prop, None)
+                writer.command(cmd, notations)
               }
-              val cmd = Translate.stmt_decl(Prelude.add_axiom_ident(a.name,theory_name), a.the_content.prop, def_opt)
-              if (def_opt.isEmpty) writer.command(cmd,notations)
-              else definitional_lemmas_decls += cmd
             }
-            // write declarations related to definitional axioms
+            // write declarations related to definitional lemmas
             writer.nl()
             writer.comment("Definitional theorems")
-            writer.commands(definitional_lemmas_decls,notations)
-            
+            for (a <- theory.axioms.sortWith(le)) {
+              map_axm_eqtyp.get(a.name) match {
+                case None =>
+                case Some(eqtys,lhs) =>
+                  if (verbose) progress.echo("  "+a.toString+" "+a.serial)
+                  val p = a.the_content.prop
+                  val prf = Appt(PAxm("Pure.reflexive",eqtys),lhs)
+                  //println("proof of "+a.name+": "+prf.toString)
+                  val cmd = Translate.stmt_decl(Prelude.add_axiom_ident(a.name,theory_name), a.the_content.prop, Some(prf))
+                  writer.command(cmd,notations)
+              }
+            }
             /** function writing a declaration related to a theorem */
             def decl_thm(thm : Entity[Thm]): Unit = {
               if (verbose) progress.echo("  "+thm.toString+" "+thm.serial)
@@ -468,7 +489,7 @@ object Exporter {
             write_proofs(prfs, theory.thms)
             progress.echo("End writing "+mod_name_theory+".dk")
           }
-          progress.echo("End reading theory "+theory_name)
+          progress.echo("End readingaxioms theory "+theory_name)
         }
         sh.write(" "+mod_name_session+".dk\n")
         sh.close()

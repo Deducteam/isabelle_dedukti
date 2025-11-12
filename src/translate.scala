@@ -3,7 +3,7 @@
 package isabelle.dedukti
 
 import isabelle.Export_Theory.{No_Syntax, Prefix}
-import isabelle._
+import isabelle.*
 
 import scala.collection.mutable
 import scala.annotation.tailrec
@@ -90,7 +90,6 @@ object Prelude {
   
   var current_module: String = "STTfa"
   var map_theory_session: Map[String, String] = Map("STTfa" -> "Pure")
-  
   def set_current_module(m: String): Unit = { current_module = m }
   def set_theory_session(t: String, s: String): Unit = {map_theory_session += t -> s}
   
@@ -111,7 +110,7 @@ object Prelude {
       case id =>
         val cut = id.split("[.]", 2)
         val (prefix, radical) = if (cut.length == 1) ("", cut(0)) else (cut(0), cut(1))
-        //because dedukti does not accept names with dots
+        // because Dedukti does not accept names with dots
         var translated_id = radical.replace(".","_")
         if (kind == "var") translated_id += "_"
         if (namesSet(translated_id)) translated_id += "_" + kind
@@ -646,7 +645,8 @@ object Translate {
   def appls_args(tm: Syntax.Term, args: List[Syntax.BoundArg]): Syntax.Term = {
     val pure_args = args.map { case Syntax.BoundArg(Some(name), _, _) => Syntax.Var(name) case _ => error("oops") }
     val impl_list = args.map { case Syntax.BoundArg(_, _, impl) => impl }
-    Syntax.appls(tm, pure_args, impl_list
+    Syntax.appls(tm, pure_args, impl_list)
+  }
    */
 
 
@@ -663,32 +663,30 @@ object Translate {
   //     case (Nil, _ :: _) => Nil
   //   }
 
-  def test(u: Int): Int = u
-  
-  //def test2(u:Int): Int = test(u)
-
   /** Particular case of <$met><u>[[eta_expand]]</u><$mete> when t
    *  is an application or is a function symbol/variable.
    */
   def eta_expand_appl(t: Syntax.Term, ctxt: Map[String, Syntax.Typ], name_ref: Mut[String]): Syntax.Term = {
     val (head, spine) = Syntax.destruct_appls(t)
-    val expanded_args = spine.map{ case (arg, impl) => (eta_expand(arg, ctxt, Mut(name_ref.value)), impl) }
+    val expanded_args = spine.map { case (arg, impl) => (eta_expand(arg, ctxt, Mut(name_ref.value)), impl) }
     val spine_args = expanded_args.map(_._1)
     head match {
       case Syntax.Symb(id) =>
         val named_args = name_args(global_types(id), spine_args, ctxt, name_ref)
-        val applied1 = expanded_args.foldLeft(head){ case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
-        val abstracted = named_args.foldRight(applied1)(Syntax.Abst.apply)
+        val applied1 = expanded_args.foldLeft(head) { case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
+        val applied = named_args.foldLeft(applied1) { case (tm, Syntax.BoundArg(Some(name), _, impl)) => Syntax.Appl(tm, Syntax.Var(name), impl) case _ => error("oops") }
+        val abstracted = named_args.foldRight(applied)(Syntax.Abst.apply)
         abstracted
 
       case Syntax.Var(id) =>
         val named_args = name_args(ctxt(id), spine_args, ctxt, name_ref)
-        val applied1 = expanded_args.foldLeft(head){ case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
-        val abstracted = named_args.foldRight(applied1)(Syntax.Abst.apply)
+        val applied1 = expanded_args.foldLeft(head) { case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
+        val applied = named_args.foldLeft(applied1) { case (tm, Syntax.BoundArg(Some(name), _, impl)) => Syntax.Appl(tm, Syntax.Var(name), impl) case _ => error("oops") }
+        val abstracted = named_args.foldRight(applied)(Syntax.Abst.apply)
         abstracted
 
       case _ =>
-        expanded_args.foldLeft(eta_expand(head, ctxt, name_ref)){ case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
+        expanded_args.foldLeft(eta_expand(head, ctxt, name_ref)) { case (tm, (arg, impl)) => Syntax.Appl(tm, arg, impl) }
     }
   }
 

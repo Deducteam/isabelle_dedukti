@@ -7,7 +7,6 @@ import isabelle.dedukti.Syntax.*
 
 import java.io.{BufferedWriter, FileOutputStream, OutputStreamWriter, Writer}
 import java.nio.file.{Files, StandardCopyOption}
-import scala.collection.mutable
 import scala.collection.mutable.Map as MutableMap
 
 /** Opens a path.part file for writing and then copy it to path.
@@ -84,44 +83,50 @@ trait Ident_Writer {
  * @define lpce /span></code
  */
 abstract class Abstract_Writer(root: String, writer: Writer) extends Ident_Writer {
-  def write(c: Char):   Unit = writer.write(c)
+  def write(c: Char): Unit = writer.write(c)
+
   def write(s: String): Unit = writer.write(s)
 
-  def space() : Unit = write(' ')
+  def space(): Unit = write(' ')
+
   /** Write a newline character */
-  def nl()    : Unit = write('\n')
+  def nl(): Unit = write('\n')
 
   /** Write a left parenthesis */
-  def lpar()  : Unit = write('(')
+  def lpar(): Unit = write('(')
+
   /** Write a right parenthesis */
-  def rpar()  : Unit = write(')')
-  def colon() : Unit = write(" : ")
-  
+  def rpar(): Unit = write(')')
+
+  def colon(): Unit = write(" : ")
+
   /** enclose the result of body inside parentheses */
-  def block(body: => Unit): Unit = { lpar(); body; rpar() }
+  def block(body: => Unit): Unit = {
+    lpar(); body; rpar()
+  }
 
   /** To be used while in the middle of writing a term.
-   *  Does <$arg>body<$arge>, but may enclose the results inside parentheses depending
-   *  on priorities and associativity of notations. Can be used without notations (like in $dk)
-   *  by having a default notation for arrows for example 
-   * 
-   * @param curNot the $lp notation of the current symbol
-   * @param prevNot the $lp notation of the previous symbol
-   * @param right used if <$arg>curNot<$arge> and <$arg>prevNot<$arge> are the same infix notation,
-   *              is true if we are on the right of the previous symbol.
-   *              Default: <code>false</code>
+   * Does <$arg>body<$arge>, but may enclose the results inside parentheses depending
+   * on priorities and associativity of notations. Can be used without notations (like in $dk)
+   * by having a default notation for arrows for example
+   *
+   * @param curNot   the $lp notation of the current symbol
+   * @param prevNot  the $lp notation of the previous symbol
+   * @param right    used if <$arg>curNot<$arge> and <$arg>prevNot<$arge> are the same infix notation,
+   *                 is true if we are on the right of the previous symbol.
+   *                 Default: <code>false</code>
    * @param force_no input true to force non-parenthesising, for example when simply
    *                 writing one symbol. Default: <code>false</code>
-   * @param body a writing command
+   * @param body     a writing command
    */
   def block_if(
-    curNot: Syntax.Notation,
-    prevNot: Syntax.Notation,
-    right: Boolean = false,
-    force_no: Boolean = false)(
-    body: => Unit
-  ): Unit = {
-    val prio1: Double = getPriority (curNot).getOrElse(isabelle.error("NotImplemented"))
+                curNot: Syntax.Notation,
+                prevNot: Syntax.Notation,
+                right: Boolean = false,
+                force_no: Boolean = false)(
+                body: => Unit
+              ): Unit = {
+    val prio1: Double = getPriority(curNot).getOrElse(isabelle.error("NotImplemented"))
     val prio2: Double = getPriority(prevNot).getOrElse(isabelle.error("NotImplemented"))
 
     val doBlock = curNot match {
@@ -129,7 +134,7 @@ abstract class Abstract_Writer(root: String, writer: Writer) extends Ident_Write
       case _ if prio1 > prio2 => false
       case _ if curNot != prevNot => true
       case Prefix(_, _) => true
-      case Infix (_, _) => true
+      case Infix(_, _) => true
       case InfixL(_, _) => right
       case InfixR(_, _) => !right
       case Quantifier(_) => isabelle.error("NotImplemented")
@@ -153,14 +158,14 @@ abstract class Abstract_Writer(root: String, writer: Writer) extends Ident_Write
   def sym_qident(a: String): Unit = {
     write(root + Prelude.mod_name(Prelude.module_of(a)) + "." + escape_if_needed(a))
   }
-  
+
   def term(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation],
            prevNot: Notation = justHadPars, no_impl: Boolean = false, right: Boolean = false): Unit
 
   /** Write on <code>this</code> an argument and its type
    *
-   * @param a the $dklp argument to write
-   * @param block true if it needs to be parenthesised
+   * @param a         the $dklp argument to write
+   * @param block     true if it needs to be parenthesised
    * @param notations a map between identifiers and their notation
    */
   def arg(a: Syntax.BoundArg, block: Boolean, notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit = {
@@ -187,9 +192,8 @@ abstract class Abstract_Writer(root: String, writer: Writer) extends Ident_Write
   }
 
   def comment(c: String): Unit
+
   def command(c: Syntax.Command, notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit
-  def commands(q: mutable.Queue[Syntax.Command], notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit =
-    for (cmd <- q) {command(cmd,notations)}
 }
 
 /** <!-- Some macros for colors and common references.
@@ -365,11 +369,11 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
         (not, spine) match {
           case (Syntax.Quantifier(_), _) => isabelle.error("NotImplemented")
           case (Syntax.Prefix(op, _), List(arg)) if !(no_impl && contains_impl_arg) =>
-            block_if(not, prevNot, right)({
+            block_if(not, prevNot, right){
               sym_qident(op)
               space()
               term(arg, notations, not, no_impl)
-            })
+            }
           case (Syntax.Infix(_, _) | Syntax.InfixL(_, _) | Syntax.InfixR(_, _), List(arg1, arg2)) if !(no_impl && contains_impl_arg) =>
             block_if(not, prevNot, right){
               term(arg1, notations, not, no_impl)
@@ -411,7 +415,7 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
 
   /** Particular case of <$met><u>[[term]]</u><$mete>. */
   def term_notation(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation],
-           prevNot: Notation, no_impl: Boolean = false, right: Boolean): Unit =
+           prevNot: Notation, no_impl: Boolean, right: Boolean): Unit =
     t match {
       case Syntax.TYPE =>
         write("TYPE")
@@ -444,7 +448,7 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
 
   /** Particular case of <$met><u>[[term]]</u><$mete>. */
   def term_no_notation(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation],
-                       prevNot: Notation, no_impl: Boolean = false, right: Boolean): Unit =
+                       prevNot: Notation, no_impl: Boolean, right: Boolean): Unit =
     t match {
       case Syntax.TYPE =>
         write("TYPE")
@@ -471,7 +475,6 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
       case Syntax.Prod(Syntax.BoundArg(None, ty1, false), ty2) =>
         val not = arrNotation
         block_if(not, prevNot, right) {
-          val op = getOperator(not)
           term(ty1, notations, not)
           arrow()
           term(ty2, notations, not, right = true)
@@ -630,7 +633,7 @@ class DK_Writer(writer: Writer) extends Abstract_Writer("", writer) {
   def ar_pi()  : Unit = write(" -> ")
   def ar_rew() : Unit = write(" --> ")
 
-  def term(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation] = mutable.Map(),
+  def term(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation] = MutableMap(),
            prevNot: Notation = justHadPars, no_impl: Boolean = false, right: Boolean = false): Unit =
     t match {
       case Syntax.TYPE =>
@@ -665,7 +668,7 @@ class DK_Writer(writer: Writer) extends Abstract_Writer("", writer) {
 
   def command(
     c: Syntax.Command,
-    notations: MutableMap[Syntax.Ident, Syntax.Notation] = mutable.Map()
+    notations: MutableMap[Syntax.Ident, Syntax.Notation] = MutableMap()
   ): Unit = {
     c match {
       case Syntax.Declaration(id, args, ty, _) =>

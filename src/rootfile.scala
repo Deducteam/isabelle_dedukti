@@ -3,7 +3,6 @@
 package isabelle.dedukti
 
 import isabelle.*
-import isabelle.Document.Node.Name
 
 import scala.collection.mutable
 import scala.util.control.Breaks.*
@@ -78,7 +77,7 @@ object Rootfile {
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
     verbose: Boolean = false,
-    ): Name.Graph[Unit] = {
+    ): Document.Node.Name.Graph[Unit] = {
 
     var theory_graph =
       if (session == "Pure") {
