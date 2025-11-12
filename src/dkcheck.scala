@@ -17,8 +17,8 @@ import scala.io.Source
  *       Pasted at the start of every object.
  *       Documentation:
  *       $dklp: reference dk/lp (purple)
- *       $dk: reference dedukti (purple)
- *       $lp: reference lambdapi (purple)
+ *       $dk: reference Dedukti (purple)
+ *       $lp: reference Lambdapi (purple)
  *       $isa: reference Isabelle (yellow)
  *       <$met>metname<$mete>: a scala method (orange,code)
  *       <$metc>metname<$metce>: a scala method inside code (orange)
@@ -26,11 +26,11 @@ import scala.io.Source
  *       <$arg>argname<$arge>: a scala argument (pink,code)
  *       <$argc>argname<$argce>: a scala argument inside code (pink)
  *       <$str>string<$stre>: a scala string (dark green)
- *       <$lpc>code<$lpce>: some lambdapi code (light blue,code)
+ *       <$lpc>code<$lpce>: some Lambdapi code (light blue,code)
  *       -->
  * @define dklp <span style="color:#9932CC;">dk/lp</span>
- * @define dk <span style="color:#9932CC;">dedukti</span>
- * @define lp <span style="color:#9932CC;">lambdapi</span>
+ * @define dk <span style="color:#9932CC;">Dedukti</span>
+ * @define lp <span style="color:#9932CC;">Lambdapi</span>
  * @define isa <span style="color:#FFFF00">Isabelle</span>
  * @define met code><span style="color:#FFA500;"
  * @define metc span style="color:#FFA500;"

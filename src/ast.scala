@@ -1,4 +1,4 @@
-/** Abstract syntax suitable for both Dedukti (2.7) and lambdapi calculus **/
+/** Abstract syntax suitable for both Dedukti (2.7) and Lambdapi **/
 
 package isabelle.dedukti
 
@@ -9,18 +9,18 @@ import isabelle.*
  *       Pasted at the start of every object.
  *       Documentation:
  *       $dklp: reference dk/lp (purple)
- *       $dk: reference dedukti (purple)
- *       $lp: reference lambdapi (purple)
+ *       $dk: reference Dedukti (purple)
+ *       $lp: reference Lambdapi (purple)
  *       $isa: reference Isabelle (yellow)
  *       <$met>metname<$mete>: a scala method (orange,code)
  *       <$type>typname<$typee>: a scala type (dark orange,bold,code)
  *       <$arg>argname<$arge>: a scala argument (pink,code)
  *       <$str>string<$stre>: a scala string (dark green)
- *       <$lpc>code<$lpce>: some lambdapi code (light blue,code)
+ *       <$lpc>code<$lpce>: some Lambdapi code (light blue,code)
  *       -->
  * @define dklp <span style="color:#9932CC;">dk/lp</span>
- * @define dk <span style="color:#9932CC;">dedukti</span>
- * @define lp <span style="color:#9932CC;">lambdapi</span>
+ * @define dk <span style="color:#9932CC;">Dedukti</span>
+ * @define lp <span style="color:#9932CC;">Lambdapi</span>
  * @define isa <span style="color:#FFFF00">Isabelle</span>
  * @define met code><span style="color:#FFA500;"
  * @define mete /span></code

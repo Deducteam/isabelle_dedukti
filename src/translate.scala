@@ -12,8 +12,8 @@ import scala.annotation.tailrec
  *       Pasted at the start of every object.
  *       Documentation:
  *       $dklp: reference dk/lp (purple)
- *       $dk: reference dedukti (purple)
- *       $lp: reference lambdapi (purple)
+ *       $dk: reference Dedukti (purple)
+ *       $lp: reference Lambdapi (purple)
  *       $isa: reference Isabelle (yellow)
  *       <$met>metname<$mete>: a scala method (orange,code)
  *       <$metc>metname<$metce>: a scala method inside code (orange)
@@ -21,11 +21,11 @@ import scala.annotation.tailrec
  *       <$arg>argname<$arge>: a scala argument (pink,code)
  *       <$argc>argname<$argce>: a scala argument inside code (pink)
  *       <$str>string<$stre>: a scala string (dark green)
- *       <$lpc>code<$lpce>: some lambdapi code (light blue,code)
+ *       <$lpc>code<$lpce>: some Lambdapi code (light blue,code)
  *       -->
  * @define dklp <span style="color:#9932CC;">dk/lp</span>
- * @define dk <span style="color:#9932CC;">dedukti</span>
- * @define lp <span style="color:#9932CC;">lambdapi</span>
+ * @define dk <span style="color:#9932CC;">Dedukti</span>
+ * @define lp <span style="color:#9932CC;">Lambdapi</span>
  * @define isa <span style="color:#FFFF00">Isabelle</span>
  * @define met code><span style="color:#FFA500;"
  * @define metc span style="color:#FFA500;"
@@ -269,8 +269,8 @@ object Prelude {
  *       Pasted at the start of every object.
  *       Documentation:
  *       $dklp: reference dk/lp (purple)
- *       $dk: reference dedukti (purple)
- *       $lp: reference lambdapi (purple)
+ *       $dk: reference Dedukti (purple)
+ *       $lp: reference Lambdapi (purple)
  *       $isa: reference Isabelle (yellow)
  *       <$met>metname<$mete>: a scala method (orange,code)
  *       <$metc>metname<$metce>: a scala method inside code (orange)
@@ -278,12 +278,12 @@ object Prelude {
  *       <$arg>argname<$arge>: a scala argument (pink,code)
  *       <$argc>argname<$argce>: a scala argument inside code (pink)
  *       <$str>string<$stre>: a scala string (dark green)
- *       <$lpc>code<$lpce>: some lambdapi code (light blue,code)
+ *       <$lpc>code<$lpce>: some Lambdapi code (light blue,code)
  *       <$isac>code<$isace>: some isabelle code (red,code)
  *       -->
  * @define dklp <span style="color:#9932CC;">dk/lp</span>
- * @define dk <span style="color:#9932CC;">dedukti</span>
- * @define lp <span style="color:#9932CC;">lambdapi</span>
+ * @define dk <span style="color:#9932CC;">Dedukti</span>
+ * @define lp <span style="color:#9932CC;">Lambdapi</span>
  * @define isa <span style="color:#FFFF00">Isabelle</span>
  * @define met code><span style="color:#FFA500;"
  * @define metc span style="color:#FFA500;"
@@ -733,20 +733,6 @@ object Translate {
     if (global_eta_expand) eta_expand(tm, Map(), Mut("€a")) else tm
   }
 
-  /** <code><$arg>ba1<$arge>==<$arg>ba2<$arge></code><br>
-   *  <b>TODO: Why is it not just equality? Do I not understand case classes correctly? </b>
-   */
-  def compatible_bound_args(ba1: Syntax.BoundArg, ba2: Syntax.BoundArg): Boolean =
-    (ba1, ba2) match {
-      case (Syntax.BoundArg(id1, ty1, impl1), Syntax.BoundArg(id2, ty2, impl2)) =>
-        val id = (id1, id2) match {
-          case (Some(a), Some(b)) => a == b
-          case (None, Some(_)) => false
-          case _ => true
-        }
-        id && ty1 == ty2 && impl1 == impl2
-    }
-
   /** Pop all compatible {abstraction, product} arguments and return their list and the remaining terms 
    *
    * @param tm the $dklp term to search into
@@ -773,7 +759,7 @@ object Translate {
         (arg :: lst, tm1, ty1)
       }
       case (Syntax.Abst(arg, tm0), Syntax.Prod(arg2, ty0))
-        if compatible_bound_args(arg, arg2) => {
+        if arg==arg2 => {
         val (lst, tm1, ty1) = fetch_head_args(tm0, ty0)
         (arg :: lst, tm1, ty1)
       }

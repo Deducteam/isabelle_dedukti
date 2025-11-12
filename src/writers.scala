@@ -27,7 +27,7 @@ class Part_Writer(file: Path) extends Writer {
   }
 }
 
-/** Tools to write <span style="color:#9932CC;">lambdapi</span> identifiers */
+/** Tools to write <span style="color:#9932CC;">Lambdapi</span> identifiers */
 trait Ident_Writer {
   val reserved: Set[String]
 
@@ -52,8 +52,8 @@ trait Ident_Writer {
  *       Pasted at the start of every object.
  *       Documentation:
  *       $dklp: reference dk/lp (purple)
- *       $dk: reference dedukti (purple)
- *       $lp: reference lambdapi (purple)
+ *       $dk: reference Dedukti (purple)
+ *       $lp: reference Lambdapi (purple)
  *       $isa: reference Isabelle (yellow)
  *       <$met>metname<$mete>: a scala method (orange,code)
  *       <$metc>metname<$metce>: a scala method inside code (orange)
@@ -61,11 +61,11 @@ trait Ident_Writer {
  *       <$arg>argname<$arge>: a scala argument (pink,code)
  *       <$argc>argname<$argce>: a scala argument inside code (pink)
  *       <$str>string<$stre>: a scala string (dark green)
- *       <$lpc>code<$lpce>: some lambdapi code (light blue,code)
+ *       <$lpc>code<$lpce>: some Lambdapi code (light blue,code)
  *       -->
  * @define dklp <span style="color:#9932CC;">dk/lp</span>
- * @define dk <span style="color:#9932CC;">dedukti</span>
- * @define lp <span style="color:#9932CC;">lambdapi</span>
+ * @define dk <span style="color:#9932CC;">Dedukti</span>
+ * @define lp <span style="color:#9932CC;">Lambdapi</span>
  * @define isa <span style="color:#FFFF00">Isabelle</span>
  * @define met code><span style="color:#FFA500;"
  * @define metc span style="color:#FFA500;"
@@ -194,14 +194,16 @@ abstract class Abstract_Writer(root: String, writer: Writer) extends Ident_Write
   def comment(c: String): Unit
 
   def command(c: Syntax.Command, notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit
+
+  def require(module:String) : Unit
 }
 
 /** <!-- Some macros for colors and common references.
  *       Pasted at the start of every object.
  *       Documentation:
  *       $dklp: reference dk/lp (purple)
- *       $dk: reference dedukti (purple)
- *       $lp: reference lambdapi (purple)
+ *       $dk: reference Dedukti (purple)
+ *       $lp: reference Lambdapi (purple)
  *       $isa: reference Isabelle (yellow)
  *       $this: references the object itself (code)
  *       <$met>metname<$mete>: a scala method (orange,code)
@@ -210,11 +212,11 @@ abstract class Abstract_Writer(root: String, writer: Writer) extends Ident_Write
  *       <$arg>argname<$arge>: a scala argument (pink,code)
  *       <$argc>argname<$argce>: a scala argument inside code (pink)
  *       <$str>string<$stre>: a scala string (dark green)
- *       <$lpc>code<$lpce>: some lambdapi code (light blue,code)
+ *       <$lpc>code<$lpce>: some Lambdapi code (light blue,code)
  *       -->
  * @define dklp <span style="color:#9932CC;">dk/lp</span>
- * @define dk <span style="color:#9932CC;">dedukti</span>
- * @define lp <span style="color:#9932CC;">lambdapi</span>
+ * @define dk <span style="color:#9932CC;">Dedukti</span>
+ * @define lp <span style="color:#9932CC;">Lambdapi</span>
  * @define isa <span style="color:#FFFF00">Isabelle</span>
  * @define this <code>this</code>
  * @define met code><span style="color:#FFA500;"
@@ -318,13 +320,13 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
     )
 
   /** true if <$arg>ident<$arge> is non-empty and does not contain
-   *  characters that require escaping for lambdapi */
+   *  characters that require escaping for Lambdapi */
   def is_regular_identifier(ident: String): Boolean =
     ident.nonEmpty &&
       ident.forall(c => !" ,;\r\t\n(){}[]:.`\"".contains(c))
 
   /** Manually escape the name given to unnamed lambda abstraction arguments which doesn't
-   *  fit lambdapi's rules, even when escaping.
+   *  fit Lambdapi's rules, even when escaping.
    */
   override def escape(ident: String): String = {
     val pattern = """:(\d+)""".r

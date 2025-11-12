@@ -6,7 +6,7 @@ import isabelle.*
 import isabelle.Term.{Const as Cst, Proof as Prf, *}
 import isabelle.Export_Theory.*
 
-import java.io.*
+import java.io.{Writer,*}
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.util.control.Breaks.*
@@ -15,8 +15,8 @@ import scala.util.control.Breaks.*
  *       Pasted at the start of every object.
  *       Documentation:
  *       $dklp: reference dk/lp (purple)
- *       $dk: reference dedukti (purple)
- *       $lp: reference lambdapi (purple)
+ *       $dk: reference Dedukti (purple)
+ *       $lp: reference Lambdapi (purple)
  *       $isa: reference Isabelle (yellow)
  *       <$met>metname<$mete>: a scala method (orange,code)
  *       <$metc>metname<$metce>: a scala method inside code (orange)
@@ -24,12 +24,12 @@ import scala.util.control.Breaks.*
  *       <$arg>argname<$arge>: a scala argument (pink,code)
  *       <$argc>argname<$argce>: a scala argument inside code (pink)
  *       <$str>string<$stre>: a scala string (dark green)
- *       <$lpc>code<$lpce>: some lambdapi code (light blue,code)
+ *       <$lpc>code<$lpce>: some Lambdapi code (light blue,code)
  *       <$isac>code<$isace>: some isabelle code (red,code)
  *       -->
  * @define dklp <span style="color:#9932CC;">dk/lp</span>
- * @define dk <span style="color:#9932CC;">dedukti</span>
- * @define lp <span style="color:#9932CC;">lambdapi</span>
+ * @define dk <span style="color:#9932CC;">Dedukti</span>
+ * @define lp <span style="color:#9932CC;">Lambdapi</span>
  * @define isa <span style="color:#FFFF00">Isabelle</span>
  * @define met code><span style="color:#FFA500;"
  * @define metc span style="color:#FFA500;"
@@ -139,11 +139,16 @@ object Exporter {
     term_cache: Term.Cache = Term.Cache.make(),
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
-    use_notations: Boolean = false,
+    to_lp: Boolean = true,
+    use_notations: Boolean = true,
     eta_expand: Boolean = false,
     verbose: Boolean = false,
     outdir: String = "",
   ): Unit = {
+
+    def new_Writer(writer: Writer): Abstract_Writer =
+      if (to_lp) new LP_Writer(use_notations,writer)
+      else new DK_Writer(writer)
 
     /** from an $isa equality axiom <$isac>Pure.eq[eqtys] lhs rhs<$isace>
      * where <code>lhs = <$isac>c[tys] x1 .. xn<$isace></code> with tys and xj variables,
@@ -282,7 +287,7 @@ object Exporter {
       /** name of the module for this session */
       val mod_name_session = "session_"+Prelude.mod_name(session)
 
-      // set up generation of shell script to check dedukti files
+      // set up generation of shell script to check Dedukti files
       val filename = "dkcheck_"+mod_name_session+".sh"
       progress.echo("Start writing "+filename)
       val file = new File(outdir+filename)
@@ -294,7 +299,7 @@ object Exporter {
           // write orphan proofs
           using (new_dk_part_writer(mod_name_orphans)) { part_writer =>
             progress.echo("Start writing "+mod_name_orphans+".dk")
-            val orphan_writer = new DK_Writer(part_writer)
+            val orphan_writer = new_Writer(part_writer)
             orphan_writer.require("session_"+anc)
             for (cmd <- orphan_commands) {
               orphan_writer.command(cmd,notations)
@@ -315,7 +320,7 @@ object Exporter {
        */
       using(new_dk_part_writer(mod_name_session)) { part_writer1 =>
         progress.echo("Start writing "+mod_name_session+".dk")
-        val session_writer = new DK_Writer(part_writer1)
+        val session_writer = new_Writer(part_writer1)
 
         for (thy <- thys) {
           val theory_name = thy.toString
@@ -327,7 +332,7 @@ object Exporter {
           
           sh.write(" "+mod_name_theory+".dk")
           using(new_dk_part_writer(mod_name_theory)) { part_writer2 =>
-            val writer = new DK_Writer(part_writer2)
+            val writer = new_Writer(part_writer2)
             progress.echo("Start writing "+mod_name_theory+".dk")
             writer.comment("Theory "+theory_name)
             // write module dependencies
