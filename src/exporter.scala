@@ -484,7 +484,6 @@ object Exporter {
                   if (prf > thm_prf) {
                     // all proofs <= thm_prf have been handled already
                     decl_thm(thm)
-                    write_proofs(prfs2,thms)
                     thms match {
                       case thm :: thms =>
                         write_proofs_body(prfs,thm,thms,max_serial(thm))
