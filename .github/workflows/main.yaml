@@ -68,7 +68,7 @@ jobs:
           cd examples
           mkdir HOL_Groups_wp
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle build -b -d. HOL_Groups_wp
-          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dedukti_session -d. -r HOL_Groups_wp
+          ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle dk_translate -k -d. -r HOL_Groups_wp
           eval $(opam env)
           bash dkcheck_session_HOL_Groups_wp.sh
 #          mkdir -p kocheck
