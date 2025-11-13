@@ -717,5 +717,5 @@ class DK_Writer(writer: Writer) extends Abstract_Writer("", writer) {
     dot()
     nl()
   }
-
+  
 }

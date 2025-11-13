@@ -69,9 +69,9 @@ object Prelude {
   var namesSet: Set[String] = Set()
 
   /** Replaces dots with underscore in a name, as $dk does not accept
-   * dots in a name. <$met>test<$mete>
+   * dots in a name.
    * @param m the name to modify
-   * @return the name with each '.' replaced with '_' */
+   * @return the name with each '.' and '-' replaced with '_' */
   def mod_name(m: String): String = m.replace(".", "_").replace("-", "_")
 
   /** map translated name -> module */

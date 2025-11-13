@@ -4,7 +4,7 @@
 default help:
 	@echo usage: make [-j JOBS] [target] [VAR=VAL] ...
 	@echo targets: build, dk, dko, v, dep, vo, session, sessions, clean-[target,all]
-	@echo variables: ISADK_DIR, ISADK_OPT, ISADB_DIR, ROOT_DIR, SESSION, SESSIONS
+	@echo variables: ISADK_DIR, ISADK_OPT, ISADB_DIR, ROOT_DIR, SESSION, SESSIONS, OUT_DIR
 
 TIME = /usr/bin/time -f %e
 
@@ -25,7 +25,7 @@ clean-v: rm-v clean-vo clean-dep
 
 .PHONY: rm-v
 rm-v:
-	find . -maxdepth 1 -name '*.v' -a ! -name Isabelle.v -delete
+	find $(OUT_DIR) -maxdepth 1 -name '*.v' -a ! -name Isabelle.v -delete
 
 ############# dependencies of Coq files ##############
 
@@ -43,7 +43,7 @@ dep:
 
 .PHONY: clean-dep
 clean-dep:
-	-rm -f $(COQ_MAKEFILE) $(COQ_MAKEFILE).conf $(VDFILE)
+	-rm -f $(OUT_DIR)/$(COQ_MAKEFILE) $(OUT_DIR)/$(COQ_MAKEFILE).conf $(OUT_DIR)/$(VDFILE)
 
 ############# verification of Coq files ##############
 
@@ -56,25 +56,27 @@ clean-vo: rm-vo rm-glob rm-aux rm-caches
 
 .PHONY: rm-vo
 rm-vo:
-	find . -maxdepth 1 -name '*.vo*' -delete
+	find $(OUT_DIR) -maxdepth 1 -name '*.vo*' -delete
 
 .PHONY: rm-glob
 rm-glob:
-	find . -maxdepth 1 -name '*.glob' -delete
+	find $(OUT_DIR) -maxdepth 1 -name '*.glob' -delete
 
 .PHONY: rm-aux
 rm-aux:
-	find . -maxdepth 1 -name '.*.aux' -delete
+	find $(OUT_DIR) -maxdepth 1 -name '.*.aux' -delete
 
 .PHONY: rm-caches
 rm-caches:
-	rm -f .lia.cache .nia.cache
+	rm -f $(OUT_DIR)/.lia.cache $(OUT_DIR)/.nia.cache
 
 ############# generation of Isabelle proofs ##############
 
 ISADB_DIR =
 ROOT_DIR = .
+OUT_DIR = ./output
 SESSION = HOL_Nat_wp
+MOD_NAME_SESSION = session_$(subst .,_,$(subst -,_,$(SESSION)))
 
 .PHONY: build
 build: $(ISADB_DIR)/$(SESSION).db
@@ -91,54 +93,76 @@ clean-build:
 ############# generation of Dedukti files ##############
 
 .PHONY: dk
-dk: session_$(SESSION).dk
+dk: $(OUT_DIR)/$(MOD_NAME_SESSION).dk
 
-session_%.dk:
-	isabelle dedukti_session -d$(ROOT_DIR) $(ISADK_OPT) -r $*
+$(OUT_DIR)/$(MOD_NAME_SESSION).dk:
+	isabelle dk_translate -k -d$(ROOT_DIR) -D$(OUT_DIR) $(ISADK_OPT) -r $(SESSION)
 
 .PHONY: clean-dk
 clean-dk: rm-dk rm-sh rm-dko clean-v
 
 .PHONY: rm-dk
 rm-dk:
-	find . -maxdepth 1 -name '*.dk' -a ! -name STTfa.dk -delete
-
-.PHONY: rm-sh
-rm-sh:
-	find . -maxdepth 1 -name '*.sh' -a ! -name dkcheck_STTfa.sh -delete
+	find $(OUT_DIR) -maxdepth 1 -name '*.dk' -a ! -name STTfa.dk -delete
 
 ############# verification of Dedukti files ##############
 
-.PHONY:dko
-dko: session_$(SESSION).dko
+ifeq ($(INCLUDE_DKO_MK),1)
+include dkcheck_$(SESSION).mk
+endif
 
-session_%.dko: session_%.dk
-	bash dkcheck_session_$*.sh
+.PHONY:dko
+dko: $(OUT_DIR)/$(MOD_NAME_SESSION).dko
+ifneq ($(INCLUDE_DKO_MK),1)
+	$(MAKE) INCLUDE_DKO_MK=1 $@
+endif
+
+%.dko: %.dk
+	dk check -e --eta $<
 
 .PHONY: clean-dko
 clean-dko: rm-dko
 
 .PHONY: rm-dko
 rm-dko:
-	find . -maxdepth 1 -name '*.dko' -delete
+	find $(OUT_DIR) -maxdepth 1 -name '*.dko' -delete
 
 ############# generation of Lambdapi files ##############
 
+.PHONY: lp
+lp: $(OUT_DIR)/$(MOD_NAME_SESSION).lp
+
+$(OUT_DIR)/$(MOD_NAME_SESSION).lp:
+	isabelle dk_translate -d$(ROOT_DIR) -D$(OUT_DIR) $(ISADK_OPT) -r $(SESSION)
+
 .PHONY: clean-lp
-clean-lp: rm-lp rm-lpo
+clean-lp: rm-lp rm-lpo clean-v
 
 .PHONY: rm-lp
 rm-lp:
-	find . -maxdepth 1 -name '*.lp' -a ! -name STTfa.lp -delete
+	find $(OUT_DIR) -maxdepth 1 -name '*.lp' -a ! -name STTfa.lp -delete
 
 ############# verification of Lambdapi files ##############
+
+ifeq ($(INCLUDE_LPO_MK),1)
+include lpcheck_$(SESSION).mk
+endif
+
+.PHONY:lpo
+lpo: $(OUT_DIR)/$(MOD_NAME_SESSION).lpo
+ifneq ($(INCLUDE_LPO_MK),1)
+	$(MAKE) INCLUDE_LPO_MK=1 $@
+endif
+
+%.lpo: %.lp
+	lambdapi check -c -w -v0 $<
 
 .PHONY: clean-lpo
 clean-lpo: rm-lpo
 
 .PHONY: rm-lpo
 rm-lpo:
-	find . -maxdepth 1 -name '*.lpo' -delete
+	find $(OUT_DIR) -maxdepth 1 -name '*.lpo' -delete
 
 ############# testing ##############
 

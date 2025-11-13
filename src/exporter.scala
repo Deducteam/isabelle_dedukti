@@ -146,20 +146,25 @@ object Exporter {
     outdir: String = "",
   ): Unit = {
 
+    /** depending on variable <code>to_lp</code>, opens an [[LP_Writer]] or a [[DK_Writer]] */
     def new_Writer(writer: Writer): Abstract_Writer =
       if (to_lp) new LP_Writer(use_notations,writer)
       else new DK_Writer(writer)
-      
-    val extension: String = if (to_lp) ".lp" else ".dk" 
+
+    /** .lp or .dk depending on variable <code>to_lp</code> */
+    val extension: String = if (to_lp) ".lp" else ".dk"
+    /** .lpo or .dko depending on variable <code>to_lp</code> */
+    val exto: String = extension+"o"
 
     /** from an $isa equality axiom <$isac>Pure.eq[eqtys] lhs rhs<$isace>
      * where <code>lhs = <$isac>c[tys] x1 .. xn<$isace></code> with tys and xj variables,
      * returns <code>(c,dfn,eqtys,lhs)</code> where
-     * <code>dfn=<$isac>λ x1...λ xn. rhs<$isace></code> 
-     * 
+     * <code>dfn=<$isac>λ x1...λ xn. rhs<$isace></code>
+     *
      * @define isa <span style="color:#FFFF00">Isabelle</span>
      * @define isac code><span style="color:#D40606"
-     * @define isace /span></code*/
+     * @define isace /span></code
+     */
     def is_eq_axiom(a:Entity[Axiom]): Option[(String,Term,List[Typ],Term)] = {
       if (!(a.name.endsWith("_def") || a.name.endsWith("_def_raw"))) None
       else a.the_content.prop.term match {
@@ -289,36 +294,43 @@ object Exporter {
       /** name of the module for this session */
       val mod_name_session = "session_"+Prelude.mod_name(session)
 
-      // set up generation of shell script to check Dedukti files
+      // set up generation of makefile script to check Dedukti or Lambdapi files
       val checkstr : String = (if (to_lp) "lpcheck_" else "dkcheck_")
-      val filename = checkstr +mod_name_session+".sh"
+      val filename = checkstr + session + ".mk"
       progress.echo("Start writing "+filename)
       val file = new File(outdir+filename)
-      val sh = new BufferedWriter(new FileWriter(file))
-      sh.write("#!/bin/sh\n")
-      parent match {
+      val mk = new BufferedWriter(new FileWriter(file))
+      // Write orphan proofs + get the base dependencies
+      val base_deps: String = parent match {
         case Some(anc) =>
-          sh.write("bash "+checkstr+"session_"+Prelude.mod_name(anc)+".sh\n")
+          mk.write("include " + checkstr + anc + ".mk")
           // write orphan proofs
-          using (new_part_writer(mod_name_orphans)) { part_writer =>
-            progress.echo("Start writing "+mod_name_orphans+extension)
+          using(new_part_writer(mod_name_orphans)) { part_writer =>
+            progress.echo("Start writing " + mod_name_orphans + extension)
             val orphan_writer = new_Writer(part_writer)
-            orphan_writer.require("session_"+anc)
+            orphan_writer.require("session_" + anc)
             for (cmd <- orphan_commands) {
-              orphan_writer.command(cmd,notations)
+              orphan_writer.command(cmd, notations)
             }
-            progress.echo("End writing "+mod_name_orphans+extension)
+            progress.echo("End writing " + mod_name_orphans + extension)
           }
+          "$(OUTDIR)/session_" + Prelude.mod_name(anc) + exto + " $(OUTDIR)/" + mod_name_orphans + exto
         case _ =>
-          sh.write("bash "+checkstr+"STTfa.sh\n")
+          "STTfa" + exto
       }
-      if (to_lp) sh.write("lambdapi check -c -w -v0")
-      else sh.write("dk check -e --eta")
-      parent match {
-        case Some(anc) => sh.write(" "+mod_name_orphans+extension)
-        case _ =>
+      /** Write makefile dependencies, either from predecessors in the dependency graph or
+       *  from base dependencies in case of no predecessor
+       *
+       *  @param filename the file for which to write dependencies
+       *  @param predecessors the list of its predecessors in the dependency graph
+       */
+      def mk_deps(filename: String, predecessors: List[Document.Node.Name]): Unit = {
+        mk.write("\n$(OUTDIR)/" + filename + exto + " :")
+        if (predecessors.isEmpty) mk.write(base_deps)
+        else for (pred <- predecessors) mk.write(" $(OUTDIR)/" + Prelude.mod_name(pred.toString) + exto)
       }
 
+      mk_deps(mod_name_session,thys)
       /* Open a dk file S for the session, then translate each theory of the
        * session in a dk file T, and simply import module T in S
        */
@@ -334,7 +346,7 @@ object Exporter {
           session_writer.require(theory_name)
           val mod_name_theory = Prelude.mod_name(theory_name)
           
-          sh.write(" "+mod_name_theory+extension)
+          mk_deps(mod_name_theory, theory_graph.imm_preds(thy).toList)
           using(new_part_writer(mod_name_theory)) { part_writer2 =>
             val writer = new_Writer(part_writer2)
             progress.echo("Start writing "+mod_name_theory+extension)
@@ -509,8 +521,7 @@ object Exporter {
           }
           progress.echo("End reading theory "+theory_name)
         }
-        sh.write(" "+mod_name_session+extension+"\n")
-        sh.close()
+        mk.close()
         progress.echo("End writing "+mod_name_session+extension)
       }
       progress.echo("End translating session "+session)
