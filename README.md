@@ -2,7 +2,7 @@
 
 ## Dependencies
 
-* [Isabelle2024](https://isabelle.in.tum.de/website-Isabelle2024/dist/Isabelle2024_linux.tar.gz)
+* [Isabelle2025](https://isabelle.in.tum.de/website-Isabelle2025/dist/Isabelle2025_linux.tar.gz)
 
 * one dk file checker among:
 
@@ -18,9 +18,9 @@
 
   * **Isabelle**
 
-      - Download [Isabelle2024](https://isabelle.in.tum.de/website-Isabelle2024/dist/Isabelle2024_linux.tar.gz)
+      - Download [Isabelle2025](https://isabelle.in.tum.de/website-Isabelle2025/dist/Isabelle2025_linux.tar.gz)
 
-      - Unpack and run `Isabelle2024/bin/isabelle jedit` at least
+      - Unpack and run `Isabelle2025/bin/isabelle jedit` at least
         once, to ensure that everything works (e.g. see Documentation
         panel with Examples).
 
@@ -92,7 +92,7 @@
     If something goes wrong, you may delete the databases (which means the proof terms will be rebuilt anew) located somewhere like:
 
     ```bash
-    $ISABELLE_HOME_USER/Isabelle2024/heaps/polyml-$something/log/
+    $ISABELLE_HOME_USER/Isabelle2025/heaps/polyml-$something/log/
     ```
 
 ## How to make Isabelle record proofs?
@@ -153,7 +153,7 @@ To translate other sessions, follow these steps:
   - make sure that the parent session also exports proofs (otherwise, Isabelle generates unfinished proofs which cannot be translated to Dedukti)
 - run the above commands
 
-Remark: to visualize theory dependencies in HOL, you can look at the [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2024/dist/library/HOL/HOL/session_graph.pdf).
+Remark: to visualize theory dependencies in HOL, you can look at the [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2025/dist/library/HOL/HOL/session_graph.pdf).
 
 ## Translation to Coq
 
