@@ -122,17 +122,11 @@ rm-dk:
 
 ############# verification of Dedukti files ##############
 
-ifeq ($(INCLUDE_DKO_MK),1)
-include $(OUT_DIR)/dkcheck_$(FULL_SESSION).mk
-
-$(OUT_DIR)/dkcheck_$(FULL_SESSION).mk: $(OUT_DIR)/$(MOD_NAME_SESSION).dk
-endif
+include $(wildcard $(OUT_DIR)/dkcheck_*.mk)
 
 .PHONY:dko
-dko: $(OUT_DIR)/$(MOD_NAME_SESSION).dko
-ifneq ($(INCLUDE_DKO_MK),1)
-	$(MAKE) INCLUDE_DKO_MK=1 $@
-endif
+dko: $(OUT_DIR)/$(MOD_NAME_SESSION).dk
+	$(MAKE) $(OUT_DIR)/$(MOD_NAME_SESSION).dko
 
 %.dko: %.dk
 	dk check -e --eta $<
@@ -161,6 +155,7 @@ clean-lp: rm-lp rm-lpomk rm-lpo clean-v
 .PHONY: rm-lp
 rm-lp:
 	rm -f $(filter-out ./STTfa.lp,$(wildcard $(OUT_DIR)/*.lp))
+	rm -f $(OUT_DIR)/lambdapi.pkg
 
 .PHONY: rm-lpomk
 rm-lpomk:
@@ -189,6 +184,10 @@ rm-lpo:
 .PHONY: allgroupslp
 allgroupslp: clean-build clean-lp
 	$(MAKE) SESSION=Groups lpo
+
+.PHONY: allnatlp
+allnatlp: clean-build clean-lp
+	$(MAKE) SESSION=Nat lpo
 
 .PHONY: session
 session:
