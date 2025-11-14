@@ -32,8 +32,6 @@ jobs:
         run: |
           wget -q https://isabelle.in.tum.de/website-Isabelle${{ matrix.isabelle-version }}/dist/Isabelle${{ matrix.isabelle-version }}_linux.tar.gz
           tar -xzf Isabelle${{ matrix.isabelle-version }}_linux.tar.gz -C ~
-      - name: run isabelle/jedit
-
       - name: Build isabelle_dedukti
         run: |
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle components -u .
