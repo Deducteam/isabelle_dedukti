@@ -57,6 +57,7 @@ jobs:
           cargo install --path kocheck
       - name: Generate and check lp output for HOL_Groups
         run: |
+          eval $(opam env)
           cd examples
           export PATH=$PATH:~/Isabelle${{ matrix.isabelle-version }}/bin
           make ISADB_DIR

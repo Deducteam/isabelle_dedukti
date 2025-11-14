@@ -110,8 +110,11 @@ clean-build:
 .PHONY: dk
 dk: $(OUT_DIR)/$(MOD_NAME_SESSION).dk
 
-$(OUT_DIR)/$(MOD_NAME_SESSION).dk: $(ISADB_DIR)/$(FULL_SESSION).db
+$(OUT_DIR)/$(MOD_NAME_SESSION).dk: $(ISADB_DIR)/$(FULL_SESSION).db $(OUT_DIR)/STTfa.dk
 	isabelle dk_translate -k -d$(ROOT_DIR) -D$(OUT_DIR) $(ISADK_OPT) -r $(FULL_SESSION)
+
+$(OUT_DIR)/STTfa.dk:
+	cp -f STTfa.dk $(OUT_DIR)
 
 .PHONY: clean-dk
 clean-dk: rm-dk rm-sh rm-dko clean-v
