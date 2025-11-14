@@ -300,10 +300,12 @@ object Exporter {
       progress.echo("Start writing "+filename)
       val file = new File(outdir+filename)
       val mk = new BufferedWriter(new FileWriter(file))
-      // Write orphan proofs + get the base dependencies
+      // get the base dependencies
       val base_deps: String = parent match {
         case Some(anc) =>
-          mk.write("include " + checkstr + anc + ".mk")
+          // if there is an ancestor, include its makefile
+          mk.write("include $(OUT_DIR)/" + checkstr + anc + ".mk\n")
+          mk.write("$(OUT_DIR)/" + mod_name_orphans + exto + " : $(OUT_DIR)/session_" + Prelude.mod_name(anc) + exto)
           // write orphan proofs
           using(new_part_writer(mod_name_orphans)) { part_writer =>
             progress.echo("Start writing " + mod_name_orphans + extension)
@@ -314,9 +316,9 @@ object Exporter {
             }
             progress.echo("End writing " + mod_name_orphans + extension)
           }
-          "$(OUTDIR)/session_" + Prelude.mod_name(anc) + exto + " $(OUTDIR)/" + mod_name_orphans + exto
+          " $(OUT_DIR)/session_" + Prelude.mod_name(anc) + exto + " $(OUT_DIR)/" + mod_name_orphans + exto
         case _ =>
-          "STTfa" + exto
+          " STTfa" + exto
       }
       /** Write makefile dependencies, either from predecessors in the dependency graph or
        *  from base dependencies in case of no predecessor
@@ -325,9 +327,9 @@ object Exporter {
        *  @param predecessors the list of its predecessors in the dependency graph
        */
       def mk_deps(filename: String, predecessors: List[Document.Node.Name]): Unit = {
-        mk.write("\n$(OUTDIR)/" + filename + exto + " :")
+        mk.write("\n$(OUT_DIR)/" + filename + exto + " :")
         if (predecessors.isEmpty) mk.write(base_deps)
-        else for (pred <- predecessors) mk.write(" $(OUTDIR)/" + Prelude.mod_name(pred.toString) + exto)
+        else for (pred <- predecessors) mk.write(" $(OUT_DIR)/" + Prelude.mod_name(pred.toString) + exto)
       }
 
       mk_deps(mod_name_session,thys)

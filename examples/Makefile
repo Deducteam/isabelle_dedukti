@@ -72,31 +72,46 @@ rm-caches:
 
 ############# generation of Isabelle proofs ##############
 
-ISADB_DIR =
+# Find the directory in which .db files are stored for each session
+# Once done, is stored in the file ISADB_DIR to not have to invoke isabelle getenv each time 
+.PHONY: ISADB_DIR
+ISADB_DIR:
+	$(eval ISADB_DIR := $(wildcard $(shell isabelle getenv -b ISABELLE_HOME_USER)/heaps/polyml-*/log))
+	@if test -n $(ISADB_DIR);\
+	then echo ISADB_DIR found: $(ISADB_DIR); \
+		echo $(ISADB_DIR) > $@;\
+	else echo failed fetching ISADB_DIR; fi
+
+.PHONY: clean-ISADB_DIR
+clean-ISADB_DIR:
+	rm -f ISADB_DIR
+
+ISADB_DIR = $(shell if test -f ISADB_DIR; then cat ISADB_DIR; fi)
 ROOT_DIR = .
 OUT_DIR = ./output
-SESSION = HOL_Nat_wp
-MOD_NAME_SESSION = session_$(subst .,_,$(subst -,_,$(SESSION)))
+SESSION = Nat
+FULL_SESSION = HOL_$(SESSION)_wp
+MOD_NAME_SESSION = session_$(subst .,_,$(subst -,_,$(FULL_SESSION)))
 
 .PHONY: build
-build: $(ISADB_DIR)/$(SESSION).db
+build: $(ISADB_DIR)/$(FULL_SESSION).db
 
-$(ISADB_DIR)/%.db: $(ROOT_DIR)/ROOT $(SESSION)
+$(ISADB_DIR)/%.db: $(ROOT_DIR)/ROOT $(FULL_SESSION)
 	isabelle build -b -d$(ROOT_DIR) $*
 
-$(SESSION):
+$(FULL_SESSION):
 	mkdir -p $@
 
 clean-build:
-	rm -f $(ISADB_DIR)/$(SESSION).db
+	rm -f $(ISADB_DIR)/$(FULL_SESSION).db
 
 ############# generation of Dedukti files ##############
 
 .PHONY: dk
 dk: $(OUT_DIR)/$(MOD_NAME_SESSION).dk
 
-$(OUT_DIR)/$(MOD_NAME_SESSION).dk:
-	isabelle dk_translate -k -d$(ROOT_DIR) -D$(OUT_DIR) $(ISADK_OPT) -r $(SESSION)
+$(OUT_DIR)/$(MOD_NAME_SESSION).dk: $(ISADB_DIR)/$(FULL_SESSION).db
+	isabelle dk_translate -k -d$(ROOT_DIR) -D$(OUT_DIR) $(ISADK_OPT) -r $(FULL_SESSION)
 
 .PHONY: clean-dk
 clean-dk: rm-dk rm-sh rm-dko clean-v
@@ -108,7 +123,9 @@ rm-dk:
 ############# verification of Dedukti files ##############
 
 ifeq ($(INCLUDE_DKO_MK),1)
-include dkcheck_$(SESSION).mk
+include $(OUT_DIR)/dkcheck_$(FULL_SESSION).mk
+
+$(OUT_DIR)/dkcheck_$(FULL_SESSION).mk: $(OUT_DIR)/$(MOD_NAME_SESSION).dk
 endif
 
 .PHONY:dko
@@ -132,27 +149,31 @@ rm-dko:
 .PHONY: lp
 lp: $(OUT_DIR)/$(MOD_NAME_SESSION).lp
 
-$(OUT_DIR)/$(MOD_NAME_SESSION).lp:
-	isabelle dk_translate -d$(ROOT_DIR) -D$(OUT_DIR) $(ISADK_OPT) -r $(SESSION)
+$(OUT_DIR)/$(MOD_NAME_SESSION).lp: $(ISADB_DIR)/$(FULL_SESSION).db
+	isabelle dk_translate -d$(ROOT_DIR) -D$(OUT_DIR) $(ISADK_OPT) -r $(FULL_SESSION)
 
 .PHONY: clean-lp
-clean-lp: rm-lp rm-lpo clean-v
+clean-lp: rm-lp rm-lpomk rm-lpo clean-v
 
 .PHONY: rm-lp
 rm-lp:
 	find $(OUT_DIR) -maxdepth 1 -name '*.lp' -a ! -name STTfa.lp -delete
 
+.PHONY rm-lpomk
+rm-lpomk:
+	find $(OUT_DIR) -maxdepth 1 -name 'lpcheck_*.mk' -delete
+
 ############# verification of Lambdapi files ##############
 
 ifeq ($(INCLUDE_LPO_MK),1)
-include lpcheck_$(SESSION).mk
+include $(OUT_DIR)/lpcheck_$(FULL_SESSION).mk
+
+$(OUT_DIR)/lpcheck_$(FULL_SESSION).mk: $(OUT_DIR)/$(MOD_NAME_SESSION).lp
 endif
 
 .PHONY:lpo
-lpo: $(OUT_DIR)/$(MOD_NAME_SESSION).lpo
-ifneq ($(INCLUDE_LPO_MK),1)
-	$(MAKE) INCLUDE_LPO_MK=1 $@
-endif
+lpo: 
+	$(MAKE) INCLUDE_LPO_MK=1 $(OUT_DIR)/$(MOD_NAME_SESSION).lpo
 
 %.lpo: %.lp
 	lambdapi check -c -w -v0 $<
@@ -166,19 +187,23 @@ rm-lpo:
 
 ############# testing ##############
 
+.PHONY: allgroupslp
+allgroupslp: clean-build clean-lp
+	$(MAKE) SESSION=Groups lpo
+
 .PHONY: session
 session:
-	@echo $(MAKE) build SESSION=$(SESSION)
+	@echo $(MAKE) build SESSION=$(FULL_SESSION)
 	$(TIME) $(MAKE) build > /dev/null
-	@echo $(MAKE) dk SESSION=$(SESSION)
+	@echo $(MAKE) dk SESSION=$(FULL_SESSION)
 	$(TIME) $(MAKE) dk > /dev/null
-	@echo $(MAKE) dko SESSION=$(SESSION)
+	@echo $(MAKE) dko SESSION=$(FULL_SESSION)
 	$(TIME) $(MAKE) dko > /dev/null
-	@echo $(MAKE) v SESSION=$(SESSION)
+	@echo $(MAKE) v SESSION=$(FULL_SESSION)
 	$(TIME) $(MAKE) v > /dev/null
-	@echo $(MAKE) dep SESSION=$(SESSION)
+	@echo $(MAKE) dep SESSION=$(FULL_SESSION)
 	$(TIME) $(MAKE) dep > /dev/null
-	@echo $(MAKE) vo SESSION=$(SESSION)
+	@echo $(MAKE) vo SESSION=$(FULL_SESSION)
 	$(TIME) $(MAKE) vo > /dev/null
 
 .PHONY: clean-session
