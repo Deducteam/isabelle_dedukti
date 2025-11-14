@@ -303,8 +303,7 @@ object Exporter {
       // get the base dependencies
       val base_deps: String = parent match {
         case Some(anc) =>
-          // if there is an ancestor, include its makefile
-          mk.write("include $(OUT_DIR)/" + checkstr + anc + ".mk\n")
+          // Dependency of the orphan file
           mk.write("$(OUT_DIR)/" + mod_name_orphans + exto + " : $(OUT_DIR)/session_" + Prelude.mod_name(anc) + exto)
           // write orphan proofs
           using(new_part_writer(mod_name_orphans)) { part_writer =>
@@ -318,7 +317,7 @@ object Exporter {
           }
           " $(OUT_DIR)/session_" + Prelude.mod_name(anc) + exto + " $(OUT_DIR)/" + mod_name_orphans + exto
         case _ =>
-          " STTfa" + exto
+          " $(OUT_DIR)/STTfa" + exto
       }
       /** Write makefile dependencies, either from predecessors in the dependency graph or
        *  from base dependencies in case of no predecessor
@@ -355,6 +354,7 @@ object Exporter {
             writer.comment("Theory "+theory_name)
             // write module dependencies
             if (parent.isDefined) writer.require(mod_name_orphans)
+            else writer.require("STTfa")
             for (node_name <- theory_graph.imm_preds(thy)) {
               writer.require(node_name.toString)
             }

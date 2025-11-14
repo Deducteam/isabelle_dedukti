@@ -149,31 +149,30 @@ rm-dko:
 .PHONY: lp
 lp: $(OUT_DIR)/$(MOD_NAME_SESSION).lp
 
-$(OUT_DIR)/$(MOD_NAME_SESSION).lp: $(ISADB_DIR)/$(FULL_SESSION).db
+$(OUT_DIR)/$(MOD_NAME_SESSION).lp: $(ISADB_DIR)/$(FULL_SESSION).db $(OUT_DIR)/STTfa.lp
 	isabelle dk_translate -d$(ROOT_DIR) -D$(OUT_DIR) $(ISADK_OPT) -r $(FULL_SESSION)
+
+$(OUT_DIR)/STTfa.lp:
+	cp -f STTfa.lp ../lambdapi.pkg $(OUT_DIR)
 
 .PHONY: clean-lp
 clean-lp: rm-lp rm-lpomk rm-lpo clean-v
 
 .PHONY: rm-lp
 rm-lp:
-	find $(OUT_DIR) -maxdepth 1 -name '*.lp' -a ! -name STTfa.lp -delete
+	rm -f $(filter-out ./STTfa.lp,$(wildcard $(OUT_DIR)/*.lp))
 
-.PHONY rm-lpomk
+.PHONY: rm-lpomk
 rm-lpomk:
 	find $(OUT_DIR) -maxdepth 1 -name 'lpcheck_*.mk' -delete
 
 ############# verification of Lambdapi files ##############
 
-ifeq ($(INCLUDE_LPO_MK),1)
-include $(OUT_DIR)/lpcheck_$(FULL_SESSION).mk
-
-$(OUT_DIR)/lpcheck_$(FULL_SESSION).mk: $(OUT_DIR)/$(MOD_NAME_SESSION).lp
-endif
+include $(wildcard $(OUT_DIR)/lpcheck_*.mk)
 
 .PHONY:lpo
-lpo: 
-	$(MAKE) INCLUDE_LPO_MK=1 $(OUT_DIR)/$(MOD_NAME_SESSION).lpo
+lpo: $(OUT_DIR)/$(MOD_NAME_SESSION).lp
+	$(MAKE) $(OUT_DIR)/$(MOD_NAME_SESSION).lpo
 
 %.lpo: %.lp
 	lambdapi check -c -w -v0 $<
