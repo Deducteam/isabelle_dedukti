@@ -168,28 +168,7 @@ abstract class Abstract_Writer(root: String, writer: Writer) extends Ident_Write
    * @param block     true if it needs to be parenthesised
    * @param notations a map between identifiers and their notation
    */
-  def arg(a: Syntax.BoundArg, block: Boolean, notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit = {
-    if (block) {
-      if (a.implicit_arg) {
-        write("[")
-      } else {
-        lpar()
-      }
-    }
-    a.id match {
-      case Some(id) => var_ident(id)
-      case None => write('_')
-    }
-    colon()
-    term(a.typ, notations)
-    if (block) {
-      if (a.implicit_arg) {
-        write("]")
-      } else {
-        rpar()
-      }
-    }
-  }
+  def arg(a: Syntax.BoundArg, block: Boolean, notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit
 
   def comment(c: String): Unit
 
@@ -502,6 +481,20 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
     else
       term_no_notation(t, notations, prevNot, no_impl, right)
 
+  
+  def arg(a: Syntax.BoundArg, block: Boolean, notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit = {
+    if (a.implicit_arg) write("[")
+    else if (block) lpar()
+    a.id match {
+      case Some(id) => var_ident(id)
+      case None => write('_')
+    }
+    colon()
+    term(a.typ, notations)
+    if (a.implicit_arg) write("]")
+    else if (block) rpar()
+  }
+
   /** comment + new line */
   def comment(c: String): Unit = {
     write("// " + c)
@@ -662,6 +655,17 @@ class DK_Writer(writer: Writer) extends Abstract_Writer("", writer) {
       case Syntax.Prod(a, t) =>
         block_if(absNotation, prevNot, right) { arg(a, block = false, notations); ar_pi() ; term(t) }
     }
+    
+  def arg(a: Syntax.BoundArg, block: Boolean, notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit = {
+    if (block) lpar()
+    a.id match {
+      case Some(id) => var_ident(id)
+      case None => write('_')
+    }
+    colon()
+    term(a.typ, notations)
+    if (block) rpar()
+  }
 
   def comment(c: String): Unit = {
     write("(; " + c + " ;)")
