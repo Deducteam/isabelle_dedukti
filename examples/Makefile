@@ -133,7 +133,7 @@ dko: $(OUT_DIR)/$(MOD_NAME_SESSION).dk
 	$(MAKE) $(OUT_DIR)/$(MOD_NAME_SESSION).dko
 
 %.dko: %.dk
-	dk check -e --eta $<
+	dk check -I $(OUT_DIR) -e --eta $<
 
 .PHONY: clean-dko
 clean-dko: rm-dko
