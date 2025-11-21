@@ -58,7 +58,6 @@ jobs:
       - name: Set ISADB_DIR
 #         there is an empty isabelle build in the middle, just so the directory ISADB_DIR is created.
         run: |
-          eval $(opam env)
           export PATH=$PATH:~/Isabelle${{ matrix.isabelle-version }}/bin
           isabelle build
           make -C examples ISADB_DIR 
