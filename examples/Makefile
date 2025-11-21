@@ -77,11 +77,21 @@ rm-caches:
 .PHONY: ISADB_DIR
 ISADB_DIR:
 	$(eval ISADB_DIR := $(wildcard $(shell isabelle getenv -b ISABELLE_HOME_USER)/heaps/polyml-*/log))
-# test if it does indeed contain a result 
-	@if test $(findstring log,$(ISADB_DIR));\
-	then echo ISADB_DIR found: $(ISADB_DIR); \
-		echo $(ISADB_DIR) > $@;\
-	else echo failed fetching ISADB_DIR; fi
+# test if it does indeed contain a result, and only one
+	@case "$(ISADB_DIR)" in\
+		*\ *)\
+			echo "error: multiple log directories found";\
+			exit 1\
+			;;\
+		*log)\
+			echo ISADB_DIR found: $(ISADB_DIR);\
+			echo $(ISADB_DIR) > $@\
+			;;\
+		*)\
+			echo "error: failed fetching ISADB_DIR";\
+			exit 1\
+			;;\
+	esac
 
 .PHONY: clean-ISADB_DIR
 clean-ISADB_DIR:
