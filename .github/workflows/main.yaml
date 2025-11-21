@@ -55,15 +55,18 @@ jobs:
           git clone https://github.com/01mf02/kontroli-rs.git
           cd ~/kontroli-rs
           cargo install --path kocheck
-      - name: Generate and check lp output for HOL_Groups
+      - name: Set ISADB_DIR
 #         there is an empty isabelle build in the middle, just so the directory ISADB_DIR is created.
         run: |
           eval $(opam env)
-          cd examples
           export PATH=$PATH:~/Isabelle${{ matrix.isabelle-version }}/bin
           isabelle build
-          make ISADB_DIR
-          make SESSION=Groups lpo
+          make -C examples ISADB_DIR 
+      - name: Generate and check lp output for HOL_Groups
+        run: |
+          eval $(opam env)
+          export PATH=$PATH:~/Isabelle${{ matrix.isabelle-version }}/bin
+          make -C examples SESSION=Groups lpo
       - name: Check dk output for HOL_Groups
         run: |
           eval $(opam env)
