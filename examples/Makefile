@@ -102,6 +102,8 @@ ROOT_DIR = .
 OUT_DIR = ./output
 SESSION = Nat
 FULL_SESSION = HOL_$(SESSION)_wp
+# dk does not allow . and - in module names, they are replaced
+# by _ in file names
 MOD_NAME_SESSION = session_$(subst .,_,$(subst -,_,$(FULL_SESSION)))
 
 .PHONY: build
