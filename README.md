@@ -186,7 +186,7 @@ Performance on a machine with 32 processors i9-13950HX and 64 Go RAM
 
 There is room for many important improvements. Makarius Wenzel is working on improving the export of proof terms in Isabelle. The generation of dk files is not modular. No term sharing is currently used in dk and v files.
 
-# Description of each file in src/ (in dependancy order)
+## Description of each scala file in the src directory (in dependancy order)
 - ast.scala: Syntax of dk/lp terms, notations and commands in scala (Only those that are needed)
 - translate.scala: Functions to translate Isabelle objects to the syntax from ast.scala
 - writers.scala: Functions to read objects in the syntax from ast.scala and write them to dk or lp files in the correct manner
