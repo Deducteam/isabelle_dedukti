@@ -123,7 +123,7 @@ clean-build:
 dk: $(OUT_DIR)/$(MOD_NAME_SESSION).dk
 
 $(OUT_DIR)/$(MOD_NAME_SESSION).dk: $(ISADB_DIR)/$(SESSION).db $(OUT_DIR)/STTfa.dk
-	isabelle dedukti_translate -k -d$(ROOT_DIR) -D$(OUT_DIR) $(ISADK_OPT) -r $(SESSION)
+	isabelle dedukti_generate -k -d$(ROOT_DIR) -D$(OUT_DIR) $(ISADK_OPT) -r $(SESSION)
 
 $(OUT_DIR)/STTfa.dk:
 	cp -f STTfa.dk $(OUT_DIR)
@@ -159,7 +159,7 @@ rm-dko:
 lp: $(OUT_DIR)/$(MOD_NAME_SESSION).lp
 
 $(OUT_DIR)/$(MOD_NAME_SESSION).lp: $(ISADB_DIR)/$(SESSION).db $(OUT_DIR)/STTfa.lp
-	isabelle dedukti_translate -d$(ROOT_DIR) -D$(OUT_DIR) $(ISADK_OPT) -r $(SESSION)
+	isabelle dedukti_generate -d$(ROOT_DIR) -D$(OUT_DIR) $(ISADK_OPT) -r $(SESSION)
 
 $(OUT_DIR)/STTfa.lp:
 	cp -f STTfa.lp ../lambdapi.pkg $(OUT_DIR)

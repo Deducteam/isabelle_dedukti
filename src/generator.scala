@@ -163,7 +163,7 @@ object Generator {
   }
 
   // Isabelle tool wrapper and CLI handler
-  val cmd_name = "dedukti_translate"
+  val cmd_name = "dedukti_generate"
   /** $isa tool to translate an $isa Session from the command line
    * @see <$met><u>[[generator]]</u><$mete>
    */
