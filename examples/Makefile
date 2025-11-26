@@ -100,31 +100,30 @@ clean-ISADB_DIR:
 ISADB_DIR = $(shell if test -f ISADB_DIR; then cat ISADB_DIR; fi)
 ROOT_DIR = .
 OUT_DIR = ./output
-SESSION = Nat
-FULL_SESSION = HOL_$(SESSION)_wp
+SESSION = HOL_Nat_wp
 # dk does not allow . and - in module names, they are replaced
 # by _ in file names
-MOD_NAME_SESSION = session_$(subst .,_,$(subst -,_,$(FULL_SESSION)))
+MOD_NAME_SESSION = session_$(subst .,_,$(subst -,_,$(SESSION)))
 
 .PHONY: build
-build: $(ISADB_DIR)/$(FULL_SESSION).db
+build: $(ISADB_DIR)/$(SESSION).db
 
-$(ISADB_DIR)/%.db: $(ROOT_DIR)/ROOT $(FULL_SESSION)
+$(ISADB_DIR)/%.db: $(ROOT_DIR)/ROOT $(SESSION)
 	isabelle build -b -d$(ROOT_DIR) $*
 
-$(FULL_SESSION):
+$(SESSION):
 	mkdir -p $@
 
 clean-build:
-	rm -f $(ISADB_DIR)/$(FULL_SESSION).db
+	rm -f $(ISADB_DIR)/$(SESSION).db
 
 ############# generation of Dedukti files ##############
 
 .PHONY: dk
 dk: $(OUT_DIR)/$(MOD_NAME_SESSION).dk
 
-$(OUT_DIR)/$(MOD_NAME_SESSION).dk: $(ISADB_DIR)/$(FULL_SESSION).db $(OUT_DIR)/STTfa.dk
-	isabelle dk_translate -k -d$(ROOT_DIR) -D$(OUT_DIR) $(ISADK_OPT) -r $(FULL_SESSION)
+$(OUT_DIR)/$(MOD_NAME_SESSION).dk: $(ISADB_DIR)/$(SESSION).db $(OUT_DIR)/STTfa.dk
+	isabelle dedukti_translate -k -d$(ROOT_DIR) -D$(OUT_DIR) $(ISADK_OPT) -r $(SESSION)
 
 $(OUT_DIR)/STTfa.dk:
 	cp -f STTfa.dk $(OUT_DIR)
@@ -159,8 +158,8 @@ rm-dko:
 .PHONY: lp
 lp: $(OUT_DIR)/$(MOD_NAME_SESSION).lp
 
-$(OUT_DIR)/$(MOD_NAME_SESSION).lp: $(ISADB_DIR)/$(FULL_SESSION).db $(OUT_DIR)/STTfa.lp
-	isabelle dk_translate -d$(ROOT_DIR) -D$(OUT_DIR) $(ISADK_OPT) -r $(FULL_SESSION)
+$(OUT_DIR)/$(MOD_NAME_SESSION).lp: $(ISADB_DIR)/$(SESSION).db $(OUT_DIR)/STTfa.lp
+	isabelle dedukti_translate -d$(ROOT_DIR) -D$(OUT_DIR) $(ISADK_OPT) -r $(SESSION)
 
 $(OUT_DIR)/STTfa.lp:
 	cp -f STTfa.lp ../lambdapi.pkg $(OUT_DIR)
@@ -207,17 +206,17 @@ allnatlp: clean-build clean-lp
 
 .PHONY: session
 session:
-	@echo $(MAKE) build SESSION=$(FULL_SESSION)
+	@echo $(MAKE) build SESSION=$(SESSION)
 	$(TIME) $(MAKE) build > /dev/null
-	@echo $(MAKE) dk SESSION=$(FULL_SESSION)
+	@echo $(MAKE) dk SESSION=$(SESSION)
 	$(TIME) $(MAKE) dk > /dev/null
-	@echo $(MAKE) dko SESSION=$(FULL_SESSION)
+	@echo $(MAKE) dko SESSION=$(SESSION)
 	$(TIME) $(MAKE) dko > /dev/null
-	@echo $(MAKE) v SESSION=$(FULL_SESSION)
+	@echo $(MAKE) v SESSION=$(SESSION)
 	$(TIME) $(MAKE) v > /dev/null
-	@echo $(MAKE) dep SESSION=$(FULL_SESSION)
+	@echo $(MAKE) dep SESSION=$(SESSION)
 	$(TIME) $(MAKE) dep > /dev/null
-	@echo $(MAKE) vo SESSION=$(FULL_SESSION)
+	@echo $(MAKE) vo SESSION=$(SESSION)
 	$(TIME) $(MAKE) vo > /dev/null
 
 .PHONY: clean-session

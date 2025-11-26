@@ -60,18 +60,18 @@ jobs:
         run: |
           export PATH=$PATH:~/Isabelle${{ matrix.isabelle-version }}/bin
           isabelle build
-          make -C examples ISADB_DIR 
+          make -C examples ISADB_DIR
       - name: Generate and check lp output for HOL_Groups
         run: |
           eval $(opam env)
           export PATH=$PATH:~/Isabelle${{ matrix.isabelle-version }}/bin
-          make -C examples SESSION=Groups lpo
+          make -C examples SESSION=HOL_Groups_wp lpo
       - name: Check dk output for HOL_Groups
         run: |
           eval $(opam env)
           cd examples
           export PATH=$PATH:~/Isabelle${{ matrix.isabelle-version }}/bin
-          make SESSION=Groups dko
+          make SESSION=HOL_Groups_wp dko
 #          mkdir -p kocheck
 #          ../../remove-requires.sh *.dk
 #          cd kocheck
