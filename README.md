@@ -186,15 +186,13 @@ Performance on a machine with 32 processors i9-13950HX and 64 Go RAM
 
 There is room for many important improvements. Makarius Wenzel is working on improving the export of proof terms in Isabelle. The generation of dk files is not modular. No term sharing is currently used in dk and v files.
 
-## Project structure
-
-- `ast.scala` provides an AST common to (a strict part of) Dedukti and Lambdapi
-- `translate.scala` provides functions to translate Isabelle to the common AST
-- `writers.scala` provides functions to generate Dedukti or Lambdapi code
-- `exporter.scala` provides the main function to export and translate a session
-- `generator.scala` provides the Isabelle command `dedukti_session`
-- `rootfile.scala` provides the Isabelle command `dedukti_root`
-- `dkcheck.scala` provides the Isabelle command `dedukti_check`
+# Description of each file in src/ (in dependancy order)
+- ast.scala: Syntax of dk/lp terms, notations and commands in scala (Only those that are needed)
+- translate.scala: Functions to translate Isabelle objects to the syntax from ast.scala
+- writers.scala: Functions to read objects in the syntax from ast.scala and write them to dk or lp files in the correct manner
+- exporter.scala: Exporter.exporter translates an Isabelle session to a dk or lp file
+- generator.scala: Generator.generator reads (and potentially translates) all parent sessions of an Isabelle session before translating that session with Exporter.exporter
+- tool.scala: exports Generator.generator as an Isabelle command for the command line (`isabelle dedukti_translate`)
 
 ## Browsing and modifying Isabelle sources
 
