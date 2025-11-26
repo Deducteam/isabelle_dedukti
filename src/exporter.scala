@@ -50,18 +50,32 @@ import scala.util.control.Breaks.*
  */
 object Exporter {
 
+  /** In $isa, Each theorem proof is a reference to an unnamed lemma proving the exact same
+   *  statement. This function replaces this lemma with its proof.
+   *
+   * @param proof the proof of the theorem
+   * @param name the name of the theorem
+   * @param theory_name the name of the theory currently translated
+   * @return the proof of lemma_xxxx, assuming that <$arg>proof<$arge> is simply a call to lemma_xxxx.
+   */
+  def remove_useless_proof(ses_cont: Export.Session_Context, proof: Term.Proof, name : String, theory_name: String,
+                          cache: Term.Cache): Term.Proof = proof match {
+    case PThm(serial,_,_,_) =>
+      read_proof(ses_cont, Thm_Id (serial, theory_name), other_cache = Some (cache)).fold{
+        error ("proof " + serial + " not found!")
+      } (_.proof)
+    case _ => error ("theorem " + name + " in theory " + theory_name + " is not directly equal to a useless lemma")
+  }
+
   /** Compute the biggest theorem serial occurring in
-   *  the proof of an $isa theorem. */
-  def max_serial(thm: Entity[Thm]): Long = {
-    def aux(p:Term.Proof) : Long = p match {
-      case PThm(serial,_,_,_) => serial
-      case Appt(p,_) => aux(p)
-      case AppP(p,q) => Math.max(aux(p), aux(q))
-      case Abst(_,_,b) => aux(b)
-      case AbsP(_,_,b) => aux(b)
-      case _ => 0
-    }
-    aux(thm.the_content.proof)
+   *  an $isa proof */
+  def max_serial(proof: Term.Proof): Long = proof match {
+    case PThm(serial,_,_,_) => serial
+    case Appt(p,_) => max_serial(p)
+    case AppP(p,q) => Math.max(max_serial(p), max_serial(q))
+    case Abst(_,_,b) => max_serial(b)
+    case AbsP(_,_,b) => max_serial(b)
+    case _ => 0
   }
 
   /** Recursively splits an $isa term between its head and its arguments.
@@ -407,7 +421,7 @@ object Exporter {
             writer.nl()
             writer.comment("Undefined constants")
             for (c <- theory.consts.sortWith(le)) {
-              // skip constants corresponding to classes
+              // skip constants corcacheresponding to classes
               if (!c.name.endsWith("_class") && !map_cst_dfn.contains(c.name)) {
                 if (verbose) progress.echo("  " + c.toString + " " + c.serial)
                 val cmd = Translate.const_decl(theory_name, c.name, c.the_content.typargs, c.the_content.typ, None, c.the_content.syntax)
@@ -467,10 +481,14 @@ object Exporter {
                   writer.command(cmd,notations)
               }
             }
-            /** function writing a declaration related to a theorem */
-            def decl_thm(thm : Entity[Thm]): Unit = {
-              if (verbose) progress.echo("  "+thm.toString+" "+thm.serial)
-              val cmd = Translate.stmt_decl(Prelude.add_thm_ident(thm.name,theory_name), thm.the_content.prop, Some(thm.the_content.proof))
+            /** function writing a declaration related to a theorem
+             *
+             *  @param name the name of the theorem
+             *  @param prop the proposition proved by the theorem
+             *  @param proof the proof of the theorem */
+            def decl_thm(name: String, prop: Prop, proof: Term.Proof): Unit = {
+              if (verbose) progress.echo("  "+ name)
+              val cmd = Translate.stmt_decl(Prelude.add_thm_ident(name,theory_name), prop, Some(proof))
               writer.command(cmd, notations)
             }
 
@@ -491,25 +509,31 @@ object Exporter {
             def write_proofs(prfs: List[Long], thms: List[Entity[Thm]]) : Unit =
               thms match {
                 case thm :: thms =>
-                  write_proofs_body(prfs,thm,thms,max_serial(thm))
+                  val theorem = thm.the_content
+                  val clean_proof = remove_useless_proof(ses_cont,theorem.proof,thm.name,theory_name,term_cache)
+                  write_proofs_body(prfs,thms,max_serial(clean_proof),thm.name,theorem.prop,clean_proof)
                 case _ => for (prf <- prfs) {write_proof(prf)}
               }
 
             @tailrec
-            def write_proofs_body(prfs: List[Long], thm: Entity[Thm], thms: List[Entity[Thm]], thm_prf: Long): Unit =
+            def write_proofs_body(prfs: List[Long], thms: List[Entity[Thm]],
+                                  thm_prf: Long, thm_name: String, thm_prop: Prop,
+                                  thm_proof: Term.Proof): Unit =
               prfs match {
                 case prf::prfs2 =>
                   if (prf > thm_prf) {
                     // all proofs <= thm_prf have been handled already
-                    decl_thm(thm)
+                    decl_thm(thm_name,thm_prop,thm_proof)
                     thms match {
                       case thm :: thms =>
-                        write_proofs_body(prfs,thm,thms,max_serial(thm))
+                        val theorem = thm.the_content
+                        val clean_proof = remove_useless_proof(ses_cont,theorem.proof,thm.name,theory_name,term_cache)
+                        write_proofs_body(prfs,thms,max_serial(clean_proof),thm.name,theorem.prop,clean_proof)
                       case _ => for (prf <- prfs) {write_proof(prf)}
                     }
                   } else {
                     write_proof(prf)
-                    write_proofs_body(prfs2,thm,thms,thm_prf)
+                    write_proofs_body(prfs2,thms,thm_prf,thm_name,thm_prop,thm_proof)
                   }
                 case _ =>
               }
