@@ -6,13 +6,9 @@ requirements = \
 sources = \
   src/exporter.scala \
   src/ast.scala \
-  src/tools.scala \
+  src/tool.scala \
   src/translate.scala \
   src/writers.scala \
-  src/generator.scala \
-  src/rootfile.scala \
-  src/dkcheck.scala
+  src/generator.scala
 services = \
-  isabelle.dedukti.RootfileTool \
-  isabelle.dedukti.GeneratorTool \
-  isabelle.dedukti.DkcheckTool
+  isabelle.dedukti.GeneratorTool

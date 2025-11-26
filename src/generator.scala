@@ -1,4 +1,4 @@
-/** Generator of dk or lp files for a whole session **/
+/** Generator of dk or lp files for a session and its parents **/
 
 package isabelle.dedukti
 
@@ -50,6 +50,55 @@ import scala.io.Source
  * @define lpce /span></code
  */
 object Generator {
+  /** theory graph of an $isa session
+   *
+   * @return a dependency graph where the nodes are the theories in the session that do not come
+   *         from an ancestor session
+   */
+  def graph(
+             options: Options,
+             session: String,
+             anc: String,
+             progress: Progress = new Progress(),
+             dirs: List[Path] = Nil,
+             verbose: Boolean = false,
+           ): Document.Node.Name.Graph[Unit] = {
+
+    var theory_graph =
+      if (session == "Pure") {
+        (Document.Node.Name.make_graph(List(((Document.Node.Name("Pure", theory = Thy_Header.PURE), ()),List[Document.Node.Name]()))))
+      } else {
+        val background = Sessions.background(options, anc, progress, dirs)
+        val session_info =
+          background.sessions_structure.get(session) match {
+            case Some(info) => info
+            case None => error("Bad session " + quote(session))
+          }
+        val resources = new Resources(background)
+        resources.session_dependencies(session_info, progress = progress).theory_graph
+      }
+    val anc_theories =
+      if (session == "Pure") {
+        List[String]()
+      } else {
+        val background = Sessions.background(options, "Pure", progress, dirs)
+        val session_info =
+          background.sessions_structure.get(anc) match {
+            case Some(info) => info
+            case None => error("Bad session " + quote(anc))
+          }
+        val resources = new Resources(background)
+        resources.session_dependencies(session_info, progress = progress).theories.map(x => x.theory)
+      }
+    // removing theories of the ancestor sessions.
+    for ((k,e) <- theory_graph.iterator) {
+      if (anc_theories.contains(k.theory) || (k.theory == "Pure" && session != "Pure")) {
+        // progress.echo("Removing "+k.theory)
+        theory_graph = theory_graph.del_node(k)
+      }
+    }
+    theory_graph
+  }
 
   /** reads an $isa Session and all its parents
    *  and calls <$met><u>[[Exporter.exporter]]</u><$metc>
@@ -95,7 +144,7 @@ object Generator {
           } else error("the session has no parent")
         case Some(anc) =>
           generator(options, anc/*, target_theory*/, recursive, progress, dirs, outdir, to_lp, use_notations, eta_expand, verbose, translate = recursive)
-          Rootfile.graph(options, session, anc, progress, dirs, verbose)
+          graph(options, session, anc, progress, dirs, verbose)
         
       }
 

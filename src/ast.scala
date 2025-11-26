@@ -37,7 +37,7 @@ object Syntax {
   /** A $dklp identifier. */
   type Ident = String
 
-/** $dklp terms. */
+  /** $dklp terms. */
   sealed abstract class Term
   /** Alias for $dklp terms, specifically used for types. */
   type Typ = Term

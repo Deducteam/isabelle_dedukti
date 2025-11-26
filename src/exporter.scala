@@ -1,9 +1,9 @@
-/** Generator of dk or lp file for a theory **/
+/** Generator of dk or lp file for a session **/
 
 package isabelle.dedukti
 
 import isabelle.*
-import isabelle.Term.{Const as Cst, Proof as Prf, *}
+import isabelle.Term.*
 import isabelle.Export_Theory.*
 
 import java.io.{Writer,*}
@@ -53,7 +53,7 @@ object Exporter {
   /** Compute the biggest theorem serial occurring in
    *  the proof of an $isa theorem. */
   def max_serial(thm: Entity[Thm]): Long = {
-    def aux(p:Prf) : Long = p match {
+    def aux(p:Term.Proof) : Long = p match {
       case PThm(serial,_,_,_) => serial
       case Appt(p,_) => aux(p)
       case AppP(p,q) => Math.max(aux(p), aux(q))
@@ -168,18 +168,18 @@ object Exporter {
     def is_eq_axiom(a:Entity[Axiom]): Option[(String,Term,List[Typ],Term)] = {
       if (!(a.name.endsWith("_def") || a.name.endsWith("_def_raw"))) None
       else a.the_content.prop.term match {
-        case App(App(Cst(id, _), _), _) if id != "Pure.eq" =>
+        case App(App(Term.Const(id, _), _), _) if id != "Pure.eq" =>
           if (verbose) progress.echo("axiom " + a.name + ": cannot extract definition because it is headed by " + id + " instead of Pure.eq")
           None
-        case App(App(Cst(_, eqtys), lhs), rhs) =>
+        case App(App(Term.Const(_, eqtys), lhs), rhs) =>
           head_args(lhs) match {
-            case (Cst(n, tys), args) if !(tys.forall(is_TFree) && args.forall(is_Free_or_TYPE)) =>
+            case (Term.Const(n, tys), args) if !(tys.forall(is_TFree) && args.forall(is_Free_or_TYPE)) =>
               if (verbose) progress.echo("axiom " + a.name + ": cannot extract definition because it is not applied to free variables\n  axiom: " + a.the_content.prop.term.toString + "\n  type arguments: " + tys.toString + "\n  term arguments: " + args.toString)
               None
-            case (h @ Cst(n, tys), args @ List(Term.Const(Pure_Thy.TYPE, List(TFree(_, Nil))))) =>
+            case (h @ Term.Const(n, tys), args @ List(Term.Const(Pure_Thy.TYPE, List(TFree(_, Nil))))) =>
               if (verbose) progress.echo("  head: " + h.toString + "\n  args: " + args.toString + "\n  rhs: " + rhs.toString)
               None
-            case (h @ Cst(n, tys), args) =>
+            case (h @ Term.Const(n, tys), args) =>
               if (verbose) progress.echo("  head: " + h.toString + "\n  args: " + args.toString + "\n  rhs: " + rhs.toString)
               // TODO: Modified this method quite a bit, especially here, please tell me if it is wrong
               //       I particularly removed a part that I believe was impossible to reach.
