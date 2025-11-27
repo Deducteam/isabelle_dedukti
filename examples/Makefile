@@ -173,6 +173,7 @@ clean-lp: rm-lp rm-lpomk rm-lpo clean-v
 
 .PHONY: rm-lp
 rm-lp:
+	rm -f $(filter-out ./STTfa.lp,$(wildcard $(OUT_DIR)/*.lp))
 	rm -f $(OUT_DIR)/lambdapi.pkg
 
 .PHONY: rm-lpomk
