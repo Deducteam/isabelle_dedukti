@@ -50,23 +50,6 @@ import scala.util.control.Breaks.*
  */
 object Exporter {
 
-  /** In $isa, Each theorem proof is a reference to an unnamed lemma proving the exact same
-   *  statement. This function replaces this lemma with its proof.
-   *
-   * @param proof the proof of the theorem
-   * @param name the name of the theorem
-   * @param theory_name the name of the theory currently translated
-   * @return the proof of lemma_xxxx, assuming that <$arg>proof<$arge> is simply a call to lemma_xxxx.
-   */
-  def remove_useless_proof(ses_cont: Export.Session_Context, proof: Term.Proof, name : String, theory_name: String,
-                          cache: Term.Cache): Term.Proof = proof match {
-    case PThm(serial,_,_,_) =>
-      read_proof(ses_cont, Thm_Id (serial, theory_name), other_cache = Some (cache)).fold{
-        error ("proof " + serial + " not found!")
-      } (_.proof)
-    case _ => error ("theorem " + name + " in theory " + theory_name + " is not directly equal to a useless lemma")
-  }
-
   /** Compute the biggest theorem serial occurring in
    *  an $isa proof */
   def max_serial(proof: Term.Proof): Long = proof match {
@@ -492,13 +475,45 @@ object Exporter {
               writer.command(cmd, notations)
             }
 
-            /** function writing the declaration of a lemma for an intermediary proof */
-            def write_proof(prf: Long): Unit = {
-              if (verbose) progress.echo("  proof "+prf)
-              val cmd = decl_proof(prf,theory_name)
-              writer.command(cmd,notations)
+            /** A set of serials of proofs to not write */
+            var useless_serials: Set[Long] = Set()
+            /** In $isa, Some theorem proofs are a reference to an unnamed lemma proving the exact same
+             * statement. This function replaces this lemma with its proof.
+             *
+             * @param proof       the proof of the theorem
+             * @param theory_name the name of the theory currently translated
+             * @return the proof of lemma_xxxx, assuming that <$arg>proof<$arge> is simply a call to lemma_xxxx.
+             *         also adds xxxx to the set of lemmas to ignore
+             * @define isa <span style="color:#FFFF00">Isabelle</span>
+             * @define arg code><span style="color:#FFC0CB;"
+             * @define arge /span></code
+             */
+            @tailrec
+            def remove_useless_proof(proof: Term.Proof, store: Option[Term.Proof] = None): Term.Proof = {
+              val newstore = store.orElse(Some(proof))
+              proof match {
+                case PThm(serial, _, _, _) =>
+                  useless_serials += serial
+                  read_proof(ses_cont, Thm_Id(serial, theory_name), other_cache = Some(term_cache)).fold {
+                    error("proof " + serial + " not found!")
+                  }(_.proof)
+                case Appt(rem, Free(_, _)) => remove_useless_proof(rem,newstore)
+                case _ => newstore.get
+              }
             }
 
+            /** function writing the declaration of a lemma for an intermediary proof */
+            def write_proof(prf: Long): Unit = {
+              if (useless_serials contains prf) {
+                if (verbose) progress.echo("  ignoring proof" + prf)
+              }
+              else {
+                if (verbose) progress.echo("  proof " + prf)
+                val cmd = decl_proof(prf, theory_name)
+                writer.command(cmd, notations)
+              }
+            }
+            
             /** function writing all the proofs in prfs as intermediary lemmas,
              *  also declaring all theorems in thms once
              *  their [[max_serial]] has been reached
@@ -510,7 +525,7 @@ object Exporter {
               thms match {
                 case thm :: thms =>
                   val theorem = thm.the_content
-                  val clean_proof = remove_useless_proof(ses_cont,theorem.proof,thm.name,theory_name,term_cache)
+                  val clean_proof = remove_useless_proof(theorem.proof)
                   write_proofs_body(prfs,thms,max_serial(clean_proof),thm.name,theorem.prop,clean_proof)
                 case _ => for (prf <- prfs) {write_proof(prf)}
               }
@@ -527,7 +542,7 @@ object Exporter {
                     thms match {
                       case thm :: thms =>
                         val theorem = thm.the_content
-                        val clean_proof = remove_useless_proof(ses_cont,theorem.proof,thm.name,theory_name,term_cache)
+                        val clean_proof = remove_useless_proof(theorem.proof)
                         write_proofs_body(prfs,thms,max_serial(clean_proof),thm.name,theorem.prop,clean_proof)
                       case _ => for (prf <- prfs) {write_proof(prf)}
                     }
