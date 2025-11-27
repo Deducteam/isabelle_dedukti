@@ -129,11 +129,15 @@ $(OUT_DIR)/STTfa.dk:
 	cp -f STTfa.dk $(OUT_DIR)
 
 .PHONY: clean-dk
-clean-dk: rm-dk rm-sh rm-dko clean-v
+clean-dk: rm-dk rm-dko clean-v
 
 .PHONY: rm-dk
 rm-dk:
-	find $(OUT_DIR) -maxdepth 1 -name '*.dk' -a ! -name STTfa.dk -delete
+	rm -f $(filter-out ./STTfa.dk,$(wildcard $(OUT_DIR)/*.dk))
+
+.PHONY: rm-dkomk
+rm-dkomk:
+	find $(OUT_DIR) -maxdepth 1 -name 'dkcheck_*.mk' -delete
 
 ############# verification of Dedukti files ##############
 
@@ -169,7 +173,6 @@ clean-lp: rm-lp rm-lpomk rm-lpo clean-v
 
 .PHONY: rm-lp
 rm-lp:
-	rm -f $(filter-out ./STTfa.lp,$(wildcard $(OUT_DIR)/*.lp))
 	rm -f $(OUT_DIR)/lambdapi.pkg
 
 .PHONY: rm-lpomk
