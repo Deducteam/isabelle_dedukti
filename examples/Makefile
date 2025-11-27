@@ -129,7 +129,7 @@ $(OUT_DIR)/STTfa.dk:
 	cp -f STTfa.dk $(OUT_DIR)
 
 .PHONY: clean-dk
-clean-dk: rm-dk rm-dko clean-v
+clean-dk: rm-dk rm-dko clean-v rm-dkomk
 
 .PHONY: rm-dk
 rm-dk:
