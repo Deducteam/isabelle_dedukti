@@ -208,16 +208,30 @@ object Exporter {
     def new_part_writer(name: String) =
       new Part_Writer(Path.explode(outdir+Prelude.mod_name(name)+extension))
 
-    /** Reads the proof of theorem <code><span style="color:#FFC0CB;">serial</span></code>
-     *  if there is one and returns a command declaring it as a lemma or axiom 
+    /** Reads the proof of a lemma and uses it
+     *
+     * @param serial the integer serial of the lemma
+     * @param f the function to apply to the proof and proposition
+     * @return the application of f to the proof numbered <$arg>serial<$arge> and to the
+     *         proposition it proves
+     * @throws isabelle.error if no proof can be found
+     * @define arg code><span style="color:#FFC0CB;"
+     * @define arge /span></code
      */
-    def decl_proof(serial: Long, theory_name: String): Syntax.Command = {
+    def use_proof[A](theory_name: String, serial: Long)(f: (Term.Proof,Prop) => A): A = {
       read_proof(ses_cont, Thm_Id(serial,theory_name), other_cache=Some(term_cache)) match {
         case Some(proof) =>
-          Translate.stmt_decl(Prelude.ref_proof_ident(serial), proof.prop, Some(proof.proof))
+          f(proof.proof,proof.prop)
         case None =>
           error("proof "+serial+" not found!")
       }
+    }
+
+    /** Reads the proof of theorem <code><span style="color:#FFC0CB;">serial</span></code>
+     *  if there is one and returns a command declaring it as a lemma or axiom 
+     */
+    def decl_proof(serial: Long, theory_name: String): Syntax.Command = use_proof(theory_name,serial){
+      case (proof,prop) => Translate.stmt_decl(Prelude.ref_proof_ident(serial),prop,Some(proof))
     }
 
     /** map theory_name -> set of proofs in increasing order */
@@ -404,7 +418,7 @@ object Exporter {
             writer.nl()
             writer.comment("Undefined constants")
             for (c <- theory.consts.sortWith(le)) {
-              // skip constants corcacheresponding to classes
+              // skip constants corresponding to classes
               if (!c.name.endsWith("_class") && !map_cst_dfn.contains(c.name)) {
                 if (verbose) progress.echo("  " + c.toString + " " + c.serial)
                 val cmd = Translate.const_decl(theory_name, c.name, c.the_content.typargs, c.the_content.typ, None, c.the_content.syntax)
@@ -464,59 +478,83 @@ object Exporter {
                   writer.command(cmd,notations)
               }
             }
+
+            /** count the proofs that are removed */
+            var n_proofs_rm: Int = 0
+            var n_proofs_total: Int = 0
+
             /** function writing a declaration related to a theorem
              *
              *  @param name the name of the theorem
              *  @param prop the proposition proved by the theorem
              *  @param proof the proof of the theorem */
             def decl_thm(name: String, prop: Prop, proof: Term.Proof): Unit = {
+              n_proofs_total += 1
               if (verbose) progress.echo("  "+ name)
               val cmd = Translate.stmt_decl(Prelude.add_thm_ident(name,theory_name), prop, Some(proof))
               writer.command(cmd, notations)
             }
 
-            /** A set of serials of proofs to not write */
-            var useless_serials: Set[Long] = Set()
+            /** map proof serial -> replacement.
+             * replacement is <code>Some(name)</code> if it is to be replaced by a theorem
+             * and <code>None</code> if it is to be erased. */
+            var replace_serial: Map[Long, Option[String]] = Map()
+            
             /** In $isa, Some theorem proofs are a reference to an unnamed lemma proving the exact same
-             * statement. This function replaces this lemma with its proof.
+             * statement. This function recursively inspects the proof of a theorem to delete all such useless lemmas
+             * by updating the replace_serial map
              *
-             * @param proof       the proof of the theorem
-             * @param theory_name the name of the theory currently translated
-             * @return the proof of lemma_xxxx, assuming that <$arg>proof<$arge> is simply a call to lemma_xxxx.
-             *         also adds xxxx to the set of lemmas to ignore
+             * @param name               the name of the theorem
+             * @param proof              the proof of the theorem
+             * @param encountered_lemmas all lemmas to replace by the theorem when they are called,
+             *                           where the last encountered (at the top of the list, the first one
+             *                           in the numbering order) will have its declaration replaced by the
+             *                           theorem's one
+             * @return true if no such lemma was found, indicating that the theorem should be stated on its own
              * @define isa <span style="color:#FFFF00">Isabelle</span>
              * @define arg code><span style="color:#FFC0CB;"
              * @define arge /span></code
              */
             @tailrec
-            def remove_useless_proof(proof: Term.Proof, store: Option[Term.Proof] = None): Term.Proof = {
-              val newstore = store.orElse(Some(proof))
-              proof match {
-                case PThm(serial, _, _, _) =>
-                  useless_serials += serial
-                  read_proof(ses_cont, Thm_Id(serial, theory_name), other_cache = Some(term_cache)).fold {
-                    error("proof " + serial + " not found!")
-                  }(_.proof)
-                case Appt(rem, Free(_, _)) => remove_useless_proof(rem,newstore)
-                case _ => newstore.get
+            def remove_useless_proofs(name: String, proof: Term.Proof,
+                                      encountered_lemmas: List[Long] = Nil): Boolean = proof match {
+              case PThm(serial, origin_theory, _, _) if origin_theory == theory_name & 
+                !Translate.replace_serial.contains(serial) =>
+                  Translate.replace_serial += serial -> name
+                  // otherwise scala does not recognise tail recursiveness
+                  val next_proof = use_proof(theory_name,serial){case (prf,_) => prf}
+                  remove_useless_proofs(name,next_proof,serial::encountered_lemmas)
+              case Appt(rem, Free(_, _)) => remove_useless_proofs(name,rem,encountered_lemmas)
+              case _ => encountered_lemmas match {
+                case final_lemma::remainder =>
+                  replace_serial += final_lemma -> Some(name)
+                  for (lemma <- remainder) replace_serial += lemma -> None
+                  false
+                case _ => true
+                }
               }
-            }
 
             /** function writing the declaration of a lemma for an intermediary proof */
             def write_proof(prf: Long): Unit = {
-              if (useless_serials contains prf) {
-                if (verbose) progress.echo("  ignoring proof" + prf)
-              }
-              else {
-                if (verbose) progress.echo("  proof " + prf)
-                val cmd = decl_proof(prf, theory_name)
-                writer.command(cmd, notations)
+              replace_serial.get(prf) match {
+                case Some(Some(thm_name)) => n_proofs_rm += 1
+                  use_proof(theory_name,prf){
+                  case (proof,prop) => decl_thm(thm_name,prop,proof)
+                }
+                case Some(None) =>
+                  n_proofs_rm += 1
+                  n_proofs_total += 1
+                  if (verbose) progress.echo("  ignoring proof" + prf)
+                case _ =>
+                  n_proofs_total += 1
+                  if (verbose) progress.echo("  proof " + prf)
+                  val cmd = decl_proof(prf, theory_name)
+                  writer.command(cmd, notations)
               }
             }
             
-            /** function writing all the proofs in prfs as intermediary lemmas,
-             *  also declaring all theorems in thms once
-             *  their [[max_serial]] has been reached
+            /** function writing all non-redundant proofs in prfs as intermediary lemmas,
+             *  also declaring all theorems in thms once their [[max_serial]] has been reached
              *
              * @param prfs proofs to handle
              * @param thms remaining theorems
@@ -525,8 +563,7 @@ object Exporter {
               thms match {
                 case thm :: thms =>
                   val theorem = thm.the_content
-                  val clean_proof = remove_useless_proof(theorem.proof)
-                  write_proofs_body(prfs,thms,max_serial(clean_proof),thm.name,theorem.prop,clean_proof)
+                  write_proofs_body(prfs,thms,max_serial(theorem.proof),thm.name,theorem.prop,theorem.proof)
                 case _ => for (prf <- prfs) {write_proof(prf)}
               }
 
@@ -542,8 +579,7 @@ object Exporter {
                     thms match {
                       case thm :: thms =>
                         val theorem = thm.the_content
-                        val clean_proof = remove_useless_proof(theorem.proof)
-                        write_proofs_body(prfs,thms,max_serial(clean_proof),thm.name,theorem.prop,clean_proof)
+                        write_proofs_body(prfs,thms,max_serial(theorem.proof),thm.name,theorem.prop,theorem.proof)
                       case _ => for (prf <- prfs) {write_proof(prf)}
                     }
                   } else {
@@ -555,10 +591,20 @@ object Exporter {
             // write declarations related to theorems
             writer.nl()
             writer.comment("Theorems")
-            // all proofs in increasing order
+            /** all proofs in increasing order */
             val prfs = map_theory_proofs(theory_name).toList
-            write_proofs(prfs, theory.thms)
+
+            /** remove all useless lemmas and keep the theorems that did not replace a lemma */
+            val thms = for (thm <- theory.thms if remove_useless_proofs(thm.name,thm.the_content.proof))
+              yield thm
+
+            write_proofs(prfs,thms)
             progress.echo("End writing "+mod_name_theory+extension)
+
+            val rm_percentage = ((10000*n_proofs_rm.toFloat)/n_proofs_total).round.toFloat/100
+            progress.echo(n_proofs_rm.toString + " proofs removed in theory " + theory_name +
+                          " out of " + n_proofs_total.toString + " (" + rm_percentage.toString +
+                          "%)")
           }
           progress.echo("End reading theory "+theory_name)
         }

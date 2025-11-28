@@ -130,7 +130,7 @@ object Prelude {
    * @param kind the kind of the object (class, type, const, etc.)
    * @return the translated name of the object. <br>
    *         Prints an error if the object cannot be found. */
-  def get_name(id: String, kind: String ): String = {
+  def get_name(id: String, kind: String): String = {
     namesMap get (full_name(id, kind)) match {
       case None => error ("id '"+full_name(id,kind)+"' not found")
       case Some(s) => s
@@ -403,6 +403,8 @@ object Translate {
   def eps(tm: Syntax.Term): Syntax.Term =
     Syntax.Appl(epsT, tm)
 
+  /** map to replace calls to useless unnamed proofs with theorem/lemma calls */
+  var replace_serial: Map[Long,String] = Map()
   /** Translates an $isa proof to a $dklp term
    *
    * @param prf the $isa proof to translate
@@ -439,12 +441,16 @@ object Translate {
         val impl = implArgsMap.getOrElse(id,Nil)
         cont(Syntax.appls(Syntax.Symb(id), axm.types.map(typ), impl))
       case thm: Term.PThm =>
-        val head = if (!thm.thm_name.is_empty) ref_thm_ident(thm.thm_name.name) else {
-          if (namesMap contains full_name("proof_"+thm.serial.toString, "")) ref_proof_ident(thm.serial)
-          else
-            // println("proof "+thm.serial+" is badly identified from theory "+thm.theory_name+thm.types.foldLeft(""){case (s,ty) => s+" "+ty.toString})
-            add_proof_ident(thm.serial, current_module)
-        }
+        val head = if (!thm.thm_name.is_empty) ref_thm_ident(thm.thm_name.name)
+          else replace_serial.get(thm.serial) match {
+            case Some(name) => ref_thm_ident(name)
+            case _ =>
+              if (namesMap contains full_name("proof_"+thm.serial.toString, "")) ref_proof_ident(thm.serial)
+              else {
+                // println("proof "+thm.serial+" is badly identified from theory "+thm.theory_name+thm.types.foldLeft(""){case (s,ty) => s+" "+ty.toString})
+                add_proof_ident(thm.serial, current_module)
+              }
+            }
         val impl = implArgsMap.getOrElse(head,Nil)
         cont(Syntax.appls(Syntax.Symb(head), thm.types.map(typ), impl))
       case _ => error("Bad proof term encountered:\n" + prf)
@@ -887,7 +893,6 @@ object Translate {
       }
     }
   }
-
 
   /* consts */
   /** true if the $isa type <$arg>ty<$arge> contains the variable named <$arg>arg<$arge> */
