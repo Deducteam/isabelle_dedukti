@@ -499,7 +499,16 @@ object Exporter {
              * replacement is <code>Some(name)</code> if it is to be replaced by a theorem
              * and <code>None</code> if it is to be erased. */
             var replace_serial: Map[Long, Option[String]] = Map()
-            
+
+            /** whether an Isabelle term is a free variable, possibly lambda-abstracted */
+            @tailrec
+            def is_abstract_free(term: Term):Boolean = term match {
+              case Abs(_,_,remainder) => is_abstract_free(remainder)
+              case App(remainder,Bound(_)) => is_abstract_free(remainder)
+              case Free(_,_) => true
+              case _ => false
+            }
+
             /** In $isa, Some theorem proofs are a reference to an unnamed lemma proving the exact same
              * statement. This function recursively inspects the proof of a theorem to delete all such useless lemmas
              * by updating the replace_serial map
@@ -518,14 +527,15 @@ object Exporter {
             @tailrec
             def remove_useless_proofs(name: String, proof: Term.Proof,
                                       encountered_lemmas: List[Long] = Nil): Boolean = proof match {
-              case PThm(serial, origin_theory, _, _) if origin_theory == theory_name & 
+              case PThm(serial, origin_theory, _, _) if origin_theory == theory_name &
                 !Translate.replace_serial.contains(serial) =>
                   Translate.replace_serial += serial -> name
                   // otherwise scala does not recognise tail recursiveness
                   val next_proof = use_proof(theory_name,serial){case (prf,_) => prf}
                   remove_useless_proofs(name,next_proof,serial::encountered_lemmas)
-              case Appt(rem, Free(_, _)) => remove_useless_proofs(name,rem,encountered_lemmas)
-              case _ => encountered_lemmas match {
+              case Appt(rem, arg) if is_abstract_free(arg) => remove_useless_proofs(name,rem,encountered_lemmas)
+              case _ =>
+                encountered_lemmas match {
                 case final_lemma::remainder =>
                   replace_serial += final_lemma -> Some(name)
                   for (lemma <- remainder) replace_serial += lemma -> None
