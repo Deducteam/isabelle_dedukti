@@ -2,14 +2,11 @@
 !STTfa.dk
 *.dko
 
-dkcheck_*.sh
-!dkcheck_STTfa.sh
-
 *.v
 !Isabelle.v
 
-coq.mk
-coq.mk.conf
+rocq.mk
+rocq.mk.conf
 
 *.glob
 *.vo
