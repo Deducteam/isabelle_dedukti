@@ -3,6 +3,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## December 2024
+
+- Update to Isabelle 2024 (Melanie Taprogge)
+
+## October 2024
+
+- Turn equational axioms defining type classes into definitions (Frédéric Blanqui)
+
+## July 2024
+
+- Add export to Rocq (Frédéric Blanqui)
+
 ## December 2023
 
 - Update to Isabelle 2023 and improvements (Akihisa Yamada)
