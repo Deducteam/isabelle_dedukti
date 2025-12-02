@@ -132,14 +132,14 @@ WARNING: the Lambdapi output is temporarily deactivated for it needs to be fixed
 To translate an already built session to Dedukti, do:
 
 ```bash
-isabelle dedukti_session -d $root_dir $session`
+isabelle dedukti_generate -d $root_dir $session`
 ```
 
 Dedukti files are generated in the current directory by default.
 
-Run `isabelle dedukti_session` with no argument to learn more about the available options.
+Run `isabelle dedukti_generate` with no argument to learn more about the available options.
 
-The command `isabelle dedukti_session` generates also a shell script to check the correctness of Dedukti files with `dk check`:
+The command `isabelle dedukti_generate` generates also a shell script to check the correctness of Dedukti files with `dk check`:
 ```bash
 bash dkcheck_$session.sh
 ```

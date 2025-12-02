@@ -2,6 +2,10 @@ on:
   pull_request:
     types: [opened, synchronize, edited, reopened]
   push:
+    paths:
+      - '.github/workflows/main.yml'
+      - 'src/*.scala'
+      - 'HOL.patch'
   workflow_dispatch:
 jobs:
   isabelle_dedukti:
