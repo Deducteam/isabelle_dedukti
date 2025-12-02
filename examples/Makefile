@@ -8,7 +8,7 @@ default help:
 
 TIME = /usr/bin/time -f %e
 
-############# generation of Coq files ##############
+############# generation of Rocq files ##############
 
 DK_FILES := $(wildcard *.dk)
 
@@ -27,29 +27,29 @@ clean-v: rm-v clean-vo clean-dep
 rm-v:
 	find $(OUT_DIR) -maxdepth 1 -name '*.v' -a ! -name Isabelle.v -delete
 
-############# dependencies of Coq files ##############
+############# dependencies of Rocq files ##############
 
-COQ_MAKEFILE := coq.mk
-MAKE_COQ := $(MAKE) -f $(COQ_MAKEFILE)
-VDFILE := .$(COQ_MAKEFILE).d
+ROCQ_MAKEFILE := rocq.mk
+MAKE_ROCQ := $(MAKE) -f $(ROCQ_MAKEFILE)
+VDFILE := .$(ROCQ_MAKEFILE).d
 
 .PHONY: dep
 dep:
-	coq_makefile -f _CoqProject -o $(COQ_MAKEFILE)
+	rocq makefile -f _CoqProject -o $(ROCQ_MAKEFILE)
 	# compute dependencies
-	+$(MAKE_COQ) $(VDFILE)
+	+$(MAKE_ROCQ) $(VDFILE)
 	# do not recompute dependencies
-	sed -i -e 's/^$$(VDFILE): _CoqProject $$(VFILES)/$$(VDFILE):/' $(COQ_MAKEFILE)
+	sed -i -e 's/^$$(VDFILE): _CoqProject $$(VFILES)/$$(VDFILE):/' $(ROCQ_MAKEFILE)
 
 .PHONY: clean-dep
 clean-dep:
-	-rm -f $(OUT_DIR)/$(COQ_MAKEFILE) $(OUT_DIR)/$(COQ_MAKEFILE).conf $(OUT_DIR)/$(VDFILE)
+	-rm -f $(OUT_DIR)/$(ROCQ_MAKEFILE) $(OUT_DIR)/$(ROCQ_MAKEFILE).conf $(OUT_DIR)/$(VDFILE)
 
-############# verification of Coq files ##############
+############# verification of Rocq files ##############
 
 .PHONY: vo
 vo:
-	+$(MAKE_COQ)
+	+$(MAKE_ROCQ)
 
 .PHONY: clean-vo
 clean-vo: rm-vo rm-glob rm-aux rm-caches
