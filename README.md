@@ -139,15 +139,10 @@ Dedukti files are generated in the current directory by default.
 
 Run `isabelle dedukti_generate` with no argument to learn more about the available options.
 
-The command `isabelle dedukti_generate` generates also a shell script to check the correctness of Dedukti files with `dk check`:
-```bash
-bash dkcheck_$session.sh
-```
-
-Sessions must be built and translated in the order of their dependencies (starting from builtin session Pure).
+Sessions must be built and translated in the order of their dependencies (starting from the session Pure).
 
 To translate other sessions, follow these steps:
-- add the relevant components to isabelle (for example, AFP),
+- add the relevant components to Isabelle (for example, AFP),
 - define the session:
   - specify the proof export options in your ROOT file
   - make sure that the parent session also exports proofs (otherwise, Isabelle generates unfinished proofs which cannot be translated to Dedukti)
@@ -155,9 +150,9 @@ To translate other sessions, follow these steps:
 
 Remark: to visualize theory dependencies in HOL, you can look at the [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2025/dist/library/HOL/HOL/session_graph.pdf).
 
-## Translation to Coq
+## Translation to Rocq
 
-The generated Dedukti files can be translated to Coq by using the Coq export function of Lambdapi. In the directory `examples/` a `Makefile` with various targets is provided to easily build, translate and check sessions. Do `make` to learn about the available targets and variables that must or can be set.
+The generated Dedukti files can be translated to Rocq by using the Rocq export function of Lambdapi. In the directory `examples/` a `Makefile` with various targets is provided to easily build, translate and check sessions. Do `make` to learn about the available targets and variables that must or can be set.
 
 ## Performances
 
