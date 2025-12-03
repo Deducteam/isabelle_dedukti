@@ -24,13 +24,11 @@
         once, to ensure that everything works (e.g. see Documentation
         panel with Examples).
 
-      - The command-line executable `isabelle` is subsequently used
-        without further qualification, in practice it works like this:
+      - In the following, the command-line executable `isabelle` is used
+        instead of the full `Isabelle2025/bin/isabelle`. To be able to use the short version one can:
 
-          + explicit executable path (relative or absolute) on the command-line
-
-          + or: insert the absolute path of the Isabelle `bin`
-            directory in `$PATH`
+          + insert the absolute path of the Isabelle `bin`
+            directory in `$PATH` ([how to add directories to the $PATH variable](https://gist.github.com/nex3/c395b2f8fd4b02068be37c961301caa7))
 
           + or: install references to the Isabelle executables in
             another directory mentioned in `$PATH`
@@ -58,6 +56,14 @@
         ```bash
         isabelle scala_build
         ```
+
+      - locate the directory where Isabelle databases are stored:
+        ```bash
+        cd $(path_to_isabelle_dedukti)/examples
+        make ISADB_DIR
+        ```
+
+    In the following, whenever `make` is evoked, it is considered to be done from the examples directory (or using `make -C $path_to_isabelle_dedukti/examples`)
 
   * **Patching the Isabelle/HOL library**
 
@@ -89,15 +95,24 @@
 
   * **Deleting the Isabelle databases**
 
-    If something goes wrong, you may delete the databases (which means the proof terms will be rebuilt anew) located somewhere like:
+    If something goes wrong, you may delete the databases (which means the proof terms will be rebuilt anew).
+    To delete the database for session $session, do:
 
     ```bash
-    $ISABELLE_HOME_USER/Isabelle2025/heaps/polyml-$something/log/
+    make SESSION=$session clean-build
     ```
+
+    To delete the database for each session in $sessions along with all files that have already been generated, do:
+
+    ```bash
+    make SESSIONS=$sessions clean-sessions
+    ```
+    
 
 ## How to make Isabelle record proofs?
 
-Isabelle theories are built within sessions, and sessions are defined in files named `ROOT`. A quick way to specify a `ROOT` file to Isabelle is with the `-d` option.
+Isabelle theories are built within sessions, and sessions to be translated by isabelle_dedukti must be defined in a file named `ROOT`.
+(By default, isabelle_dedukti looks at the examples directory for a ROOT file, so one can always add session definitions in examples/ROOT. Otherwise, if a user wishes to use their own ROOT file located in $root_dir, they should always add ROOT_DIR=$root_dir to `make` calls)
 
 To export proofs from Isabelle so that they can be translated to Dedukti or Lambdapi afterwards, users need to use the following options in the definition of their session:
 
@@ -116,26 +131,31 @@ session HOL_wp in HOL_wp = Pure +
   document_theories
     Tools.Code_Generator
 ```
+To build a session, Isabelle needs to have an associated directory, even if it is empty (the `in HOL_wp` above). If a user wishes to use a specific directory for that, it can be explicited through the make variable `SESSION_DIR`, otherwise it defaults to $(ROOT_DIR)/$(SESSION). If $(SESSION_DIR) does not exist, an empty directory will be created automatically. 
 
-Isabelle requires a dedicated directory for each session, specified by the `in HOL_wp` part above. Usually, it suffices to have an empty directory with the same name as the session.
-
-To actually export proof terms from Isabelle, assuming the `ROOT` file containing the session info is located in `$rootdir` and that the directory `$rootdir/$session` exists, do:
+To actually export proof terms from Isabelle, do:
 
 ```bash
-isabelle build -b -d $rootdir $session
+make SESSION=$session build
 ```
 
 ## Commands to translate Isabelle proofs to Dedukti and Lambdapi
 
-WARNING: the Lambdapi output is temporarily deactivated for it needs to be fixed.
-
-To translate an already built session to Dedukti, do:
+To translate a session to lamdbapi (or dedukti), do:
 
 ```bash
-isabelle dedukti_generate -d $root_dir $session`
+make SESSION=$session lp (or dk)
 ```
+This automatically builds the session if it is not already built
 
-Dedukti files are generated in the current directory by default.
+To check the resulting lambdapi (or dedukti) files do:
+
+```bash
+make SESSION=$session lpo (or dko)
+```
+This automatically generates the files if they do not exist
+
+The files are all generated in `examples/output` by default, but it can be modified through the make variable $OUT_DIR
 
 Run `isabelle dedukti_generate` with no argument to learn more about the available options.
 
