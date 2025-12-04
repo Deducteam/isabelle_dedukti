@@ -133,46 +133,26 @@ session HOL_wp in HOL_wp = Pure +
 ```
 To build a session, Isabelle needs to have an associated directory, even if it is empty (the `in HOL_wp` above). If a user wishes to use a specific directory for that, it can be explicited through the make variable `SESSION_DIR`, otherwise it defaults to $(ROOT_DIR)/$(SESSION). If $(SESSION_DIR) does not exist, an empty directory will be created automatically. 
 
-To actually export proof terms from Isabelle, do:
-
-```bash
-make SESSION=$session build
-```
-
 ## Commands to translate Isabelle proofs to Dedukti and Lambdapi
 
-To translate a session to lamdbapi (or dedukti), do:
+Here is a description of some make targets. For all of them, the target session must be specified by using `make SESSION=$session target`.
+None of these targets need another target to have been built before to be called, apart from ISADB_DIR.
 
-```bash
-make SESSION=$session lp (or dk)
-```
-This automatically builds the session if it is not already built
+ - build: makes Isabelle generate the proofs for the target session.
+ - lp: translates these proof to Lambdapi files
+ - lpo: checks the translated Lambdapi files
+ - v: translates the Lambdapi files to Rocq
+ - vo: checks the translated Rocq files
+ - dk: translates the proofs to Dedukti files
+ - dko: checks the translated Dedukti files
 
-To check the resulting lambdapi (or dedukti) files do:
-
-```bash
-make SESSION=$session lpo (or dko)
-```
-This automatically generates the files if they do not exist
-
-The files are all generated in `examples/output` by default, but it can be modified through the make variable $OUT_DIR
-
-Run `isabelle dedukti_generate` with no argument to learn more about the available options.
-
-Sessions must be built and translated in the order of their dependencies (starting from the session Pure).
-
-To translate other sessions, follow these steps:
+For the translation to work, follow these steps:
 - add the relevant components to Isabelle (for example, AFP),
 - define the session:
   - specify the proof export options in your ROOT file
   - make sure that the parent session also exports proofs (otherwise, Isabelle generates unfinished proofs which cannot be translated to Dedukti)
-- run the above commands
 
 Remark: to visualize theory dependencies in HOL, you can look at the [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2025/dist/library/HOL/HOL/session_graph.pdf).
-
-## Translation to Rocq
-
-The generated Dedukti files can be translated to Rocq by using the Rocq export function of Lambdapi. In the directory `examples/` a `Makefile` with various targets is provided to easily build, translate and check sessions. Do `make` to learn about the available targets and variables that must or can be set.
 
 ## Performances
 
