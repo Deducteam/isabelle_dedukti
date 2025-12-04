@@ -26,13 +26,24 @@ Axiom fun_ext : forall {A B : Type} {f g : A -> B}, (forall x, (f x) = (g x)) ->
 
 Axiom prop_ext : forall {P Q : Prop}, (P -> Q) -> (Q -> P) -> P = Q.
 
-Require Import ClassicalFacts Coq.Logic.ClassicalEpsilon.
+(* Basically, extend intros so that it tries these as possible reductions *)
+Tactic Notation "ext" ne_simple_intropattern_list(l) :=
+  let rec ext' continuation := continuation ||
+    (let H := fresh "internal" in match goal with
+      | |- forall _,_ => intro H
+      | _ => first [apply fun_ext | apply prop_ext] ; intro H end ;
+      ext' ltac:(revert H ; continuation))
+  in ext' ltac:(intros l).
+
+From Stdlib Require Import ClassicalFacts ClassicalEpsilon.
 
 Lemma prop_degen : forall P, P = True \/ P = False.
 Proof.
   apply prop_ext_em_degen.
-  unfold prop_extensionality. intros A B [AB BA]. apply prop_ext. exact AB. exact BA.
-  intro P. apply classic.
+  - unfold prop_extensionality. intros A B [AB BA]. apply prop_ext.
+    + exact AB.
+    + exact BA.
+  - intro P. apply classic.
 Qed.
 
 Definition ε : forall {A : Type'}, (type A -> Prop) -> type A := fun A P => epsilon (inhabits (el A)) P.
@@ -44,37 +55,37 @@ Proof. intro h. unfold ε. apply epsilon_spec. exact h. Qed.
 (* Pure. *)
 (****************************************************************************)
 
-Unset Automatic Proposition Inductives.
 Inductive itself_ (A:Type') : Type := unit.
 Definition itself (A:Type') := {| type := itself_ A; el := unit A |}.
 Canonical itself.
 
-Definition dummy : Type' := Prop'.
+Definition equal_intr : forall A : Prop, forall B : Prop, (A -> B) -> (B -> A) -> A = B := @prop_ext.
 
-Definition dummy_pattern : forall a : Type', a := el.
-
-Lemma equal_intr : forall A : Prop, forall B : Prop, (A -> B) -> (B -> A) -> @eq Prop A B.
-Proof. intros A B AB BA. apply prop_ext. apply AB. apply BA. Qed.
-
-Lemma equal_elim : forall A : Prop, forall B : Prop, (@eq Prop A B) -> A -> B.
-Proof. intros A B AB a. rewrite <- AB. exact a. Qed.
-
-Lemma abstract_rule : forall a : Type', forall b : Type', forall f : a -> b, forall g : a -> b, (all a (fun x : a => @eq b (f x) (g x))) -> @eq (a -> b) f g.
-Proof. intros A B f g h. apply fun_ext. apply h. Qed.
-
-Lemma combination : forall a : Type', forall b : Type', forall f : a -> b, forall g : a -> b, forall x : a, forall y : a, (@eq (a -> b) f g) -> (@eq a x y) -> @eq b (f x) (g y).
-Proof.  intros a b f g x y fg xy. rewrite fg, xy. reflexivity. Qed.
-
-Lemma conjunction_def : forall A : Prop, forall B : Prop, @eq Prop (and A B) (all Prop (fun C : Prop => (A -> B -> C) -> C)).
+Lemma equal_elim : forall A : Prop, forall B : Prop, A = B -> A -> B.
 Proof.
-  intros p q. apply prop_ext.
-  intros [hp hq]. intros r h. apply (h hp hq).
-  intro h. apply h. intros hp hq. split. exact hp. exact hq.
+  intros * ->. exact id.
 Qed.
 
-Definition term (a : Type') : a -> Prop := fun x : a => all Prop (fun A : Prop => A -> A).
+Definition abstract_rule : forall (a b : Type') (f g : a -> b),
+  (forall x : a, f x = g x) -> f = g := @fun_ext.
 
-Definition sort_constraint : forall a : Type', (itself a) -> Prop := fun a _ => term (itself a) (unit a).
+Lemma combination (a b : Type') (f g : a -> b) (x y : a) :
+  f = g -> x = y -> f x = g y.
+Proof.
+  intros * -> ->. reflexivity.
+Qed.
+
+Lemma conjunction_def A B : (A /\ B) = forall C, (A -> B -> C) -> C.
+Proof.
+  ext HAB.
+  - intros C HABC. exact (HABC (proj1 HAB) (proj2 HAB)).
+  - apply HAB. intros HA HB. split. exact HA. exact HB.
+Qed.
+
+(* every term is... a term *)
+Definition term (a : Type') : a -> Prop := fun _ => True.
+
+Definition sort_constraint a : (itself a) -> Prop := fun _ => True.
 
 Lemma sort_constraint_def : forall a : Type', @eq Prop (sort_constraint a (unit a)) (term (itself a) (unit a)).
 Proof. reflexivity. Qed.
@@ -85,54 +96,54 @@ Proof. reflexivity. Qed.
 
 Definition Trueprop : Prop -> Prop := fun P => P.
 
-Lemma impI : all Prop (fun P : Prop => all Prop (fun Q : Prop => ((Trueprop P) -> Trueprop Q) -> Trueprop (imp P Q))).
-Proof. intros P Q PQ. exact PQ. Qed.
+Lemma impI : forall P Q, ((Trueprop P) -> Trueprop Q) -> Trueprop (P -> Q).
+Proof. exact (fun _ _ => id). Qed.
 
-Lemma mp : all Prop (fun P : Prop => all Prop (fun Q : Prop => (Trueprop (imp P Q)) -> (Trueprop P) -> Trueprop Q)).
-Proof. intros P Q h hP. apply (h hP). Qed.
+Lemma mp : forall P Q, (Trueprop (P -> Q)) -> (Trueprop P) -> Trueprop Q.
+Proof. exact (fun _ _ => id). Qed.
 
-Lemma True_or_False : all Prop (fun P : Prop => Trueprop (or (@eq Prop P True) (@eq Prop P False))).
-Proof. intro P. apply prop_degen. Qed.
+Definition True_or_False : forall P, Trueprop (P = True \/ P = False) := prop_degen.
 
 (****************************************************************************)
 (* alignment of connectives *)
 
-Lemma True_def_raw : @eq Prop True (@eq (Prop -> Prop) (fun x : Prop => x) (fun x : Prop => x)).
-Proof. apply prop_ext. reflexivity. intros _; exact I. Qed.
+Lemma True_def_raw : True = ((fun x : Prop => x) = (fun x : Prop => x)).
+Proof. ext _ ; reflexivity. Qed.
 
-Lemma All_def_raw : forall a : Type', @eq ((a -> Prop) -> Prop) (@all a) (fun P : a -> Prop => @eq (a -> Prop) P (fun x : a => True)).
+Lemma All_def_raw : forall a : Type', (@all a) = (fun P : a -> Prop => P = (fun x : a => True)).
 Proof.
-  intro A. apply fun_ext; intro p. apply prop_ext.
-  intro h. apply fun_ext; intro x. apply prop_ext.
-  intros _. exact I. intros _. exact (h x).
-  intros e x. rewrite e. exact I.
+  ext A P H.
+  - ext a H'.
+    + exact I.
+    + exact (H a).
+  - rewrite H. exact (fun _ => I).
 Qed.
 
-Lemma Ex_def_raw : forall a : Type', @eq ((a -> Prop) -> Prop) (@ex a) (fun P : a -> Prop => @all Prop (fun Q : Prop => imp (@all a (fun x : a => imp (P x) Q)) Q)).
+Lemma Ex_def_raw : forall a : Type', (@ex a) = (fun P : a -> Prop => forall Q : Prop, (forall x : a, P x -> Q) -> Q).
 Proof.
-  intro A. apply fun_ext; intro p. apply prop_ext.
-  intros [x px] q pq. eapply pq. apply px.
-  intro h. apply h. intros x px. apply (ex_intro p x px).
+  ext A P H.
+  - destruct H as [y Hy]. exact (fun Q HQ => HQ y Hy).
+  - exact (H _ (ex_intro _)).
 Qed.
 
-Lemma False_def_raw : @eq Prop False (@all Prop (fun P : Prop => P)).
-Proof. apply prop_ext. intros b p. apply (False_rec p b). intro h. exact (h False). Qed.
+Lemma False_def_raw : False = (forall P : Prop, P).
+Proof. ext contra. destruct contra. exact (contra _). Qed.
 
-Lemma not_def_raw : @eq (Prop -> Prop) not (fun P : Prop => imp P False).
+Lemma not_def_raw : not = (fun P : Prop => P -> False).
 Proof. reflexivity. Qed.
 
-Lemma and_def_raw : @eq (Prop -> Prop -> Prop) and (fun P : Prop => fun Q : Prop => @all Prop (fun R : Prop => imp (imp P (imp Q R)) R)).
+Lemma and_def_raw : and = (fun P : Prop => fun Q : Prop => forall R : Prop, (P -> Q -> R) -> R).
 Proof.
-  apply fun_ext; intro p. apply fun_ext; intro q. apply prop_ext.
-  intros [hp hq]. intros r h. apply (h hp hq).
-  intro h. apply h. intros hp hq. split. exact hp. exact hq.
+  ext P Q HPQ.
+  - exact (fun _ HPQ' => and_ind HPQ' HPQ).
+  - apply HPQ. split ; assumption.
 Qed.
 
-Lemma or_def_raw : @eq (Prop -> Prop -> Prop) or (fun P : Prop => fun Q : Prop => @all Prop (fun R : Prop => imp (imp P R) (imp (imp Q R) R))).
+Lemma or_def_raw : or = (fun P : Prop => fun Q : Prop => forall R : Prop, (P -> R) -> (Q -> R) -> R).
 Proof.
-  apply fun_ext; intro p; apply fun_ext; intro q. apply prop_ext.
-  intros pq r pr qr. destruct pq. apply (pr H). apply (qr H).
-  intro h. apply h. intro hp. left. exact hp. intro hq. right. exact hq.
+  ext P Q HPQ.
+  - exact (fun _ HP HQ => or_ind HP HQ HPQ).
+  - exact (HPQ _ (@or_introl _ _) (@or_intror _ _)).
 Qed.
 
 (****************************************************************************)
