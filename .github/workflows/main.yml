@@ -37,11 +37,11 @@ jobs:
           # because github fails if downloading a file takes too much time and Isabelle2025 is big (1.1G instead of 0.66G for Isabelle2024)
           until wget -c https://isabelle.in.tum.de/website-Isabelle${{ matrix.isabelle-version }}/dist/Isabelle${{ matrix.isabelle-version }}_linux.tar.gz; do :; done
           tar -xzf Isabelle${{ matrix.isabelle-version }}_linux.tar.gz -C ~
-     - name: Create ~/.isabelle directory
+      - name: Create ~/.isabelle directory
         run: |
           export PATH=$PATH:~/Isabelle${{ matrix.isabelle-version }}/bin
           isabelle build
-     - name: Build isabelle_dedukti
+      - name: Build isabelle_dedukti
         run: |
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle components -u .
           ~/Isabelle${{ matrix.isabelle-version }}/bin/isabelle scala_build
