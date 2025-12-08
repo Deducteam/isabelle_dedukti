@@ -87,7 +87,7 @@
 
 ## How to make Isabelle record proofs?
 
-Isabelle theories are defined within Isabelle [sessions](https://isabelle.in.tum.de/website-Isabelle2021-1/dist/library/Doc/System/Sessions.html), and sessions must be defined in a file named `ROOT`. A session can extend another session.
+Isabelle theories are defined within [sessions](https://isabelle.in.tum.de/website-Isabelle2021-1/dist/library/Doc/System/Sessions.html) that must be defined in a file named `ROOT`. A session can extend another session.
 
 To export proofs from Isabelle so that they can be translated to Dedukti or Lambdapi afterwards, users need to use the following options in the definition of their sessions:
 
@@ -109,21 +109,29 @@ session HOL_wp = Pure +
 
 As an example, the file [`examples/ROOT`](https://github.com/Deducteam/isabelle_dedukti/blob/master/examples/ROOT) defines various sessions with proof recording.
 
-## Command to translate Isabelle proofs to Dedukti or Lambdapi
+The proofs of a session can then be built by using the following Isabelle command:
+```bash
+isabelle build -b -d$root_file_dir $session
+```
 
-To translate an already built session to Dedukti or Lambdapi, do:
+This also builds any parent session that has not been built yet.
+
+Remark: to visualize theory dependencies in HOL, you can look at the [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2025/dist/library/HOL/HOL/session_graph.pdf).
+
+## Command to translate Isabelle proofs to Dedukti
+
+To translate to Dedukti an already built session whose parent session has already been translated, do:
 
 ```bash
 isabelle dedukti_generate -d $root_dir $session`
 ```
 
+To automatically translation parent sessions as well, use the option `-r`.
+
 For the translation to work, follow these steps:
 - add the relevant components to Isabelle (for example, AFP),
-- define the session:
-  - specify the proof export options in your ROOT file
-  - make sure that the parent session also exports proofs (otherwise, Isabelle generates unfinished proofs which cannot be translated to Dedukti)
-
-Remark: to visualize theory dependencies in HOL, you can look at the [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2025/dist/library/HOL/HOL/session_graph.pdf).
+- add the proof export options in your ROOT file,
+- make sure that the parent sessions also export proofs (otherwise, Isabelle will generate incomplete proofs which cannot be translated to Dedukti).
 
 ## `examples/Makefile`
 
