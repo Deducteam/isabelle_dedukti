@@ -113,8 +113,6 @@ object Generator {
   def generator(
     options: Options,
     session: String,
-    //target_theory: String, TODO: It is not used right?
-    //                             Should I do it? it would be easily done
     recursive: Boolean,
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
@@ -143,7 +141,7 @@ object Generator {
             Name.make_graph(List(((Name("Pure",Thy_Header.PURE),()),List())))
           } else error("the session has no parent")
         case Some(anc) =>
-          generator(options, anc/*, target_theory*/, recursive, progress, dirs, outdir, to_lp, use_notations, eta_expand, verbose, translate = recursive)
+          generator(options, anc, recursive, progress, dirs, outdir, to_lp, use_notations, eta_expand, verbose, translate = recursive)
           graph(options, session, anc, progress, dirs, verbose)
         
       }
@@ -179,7 +177,7 @@ object Generator {
         var options = Options.init()
         var verbose = false
 
-        val getopts = Getopts("Usage: isabelle " + cmd_name + """ [OPTIONS] SESSION""" /* + """ [THEORY]"""*/ + """
+        val getopts = Getopts("Usage: isabelle " + cmd_name + """ [OPTIONS] SESSION
 
   Options are:
     -k           translate to Dedukti instead of Lambdapi
@@ -191,7 +189,7 @@ object Generator {
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
     -v           verbose mode
 
-Generate a dk or lp file for every theory of SESSION""" /*+ """ (up to THEORY)"""*/ + """.""",
+Generate a dk or lp file for every theory of SESSION.""",
         "d:" -> (arg => { dirs = dirs ::: List(Path.explode(arg)) }),
         "D:" -> (arg => { outdir = arg + "/" }),
         "r" -> (_ => recursive = true),
@@ -207,12 +205,6 @@ Generate a dk or lp file for every theory of SESSION""" /*+ """ (up to THEORY)""
           case List(session) => session
           case _ => getopts.usage()
         }
-        /*val (session, target_theory) =
-          more_args match {
-            case List(session) => (session, "")
-            case List(session, target_theory) => (session, target_theory)
-            case _ => getopts.usage()
-          }*/
 
         val progress = new Console_Progress(verbose = true)
 
@@ -221,7 +213,7 @@ Generate a dk or lp file for every theory of SESSION""" /*+ """ (up to THEORY)""
 
         progress.interrupt_handler {
           try {
-            generator(options, session/*, target_theory*/, recursive, progress, dirs, outdir, to_lp, use_notations, eta_expand, verbose)
+            generator(options, session, recursive, progress, dirs, outdir, to_lp, use_notations, eta_expand, verbose)
           }
           catch {case x: Exception =>
             progress.echo(x.getStackTrace.mkString("\n"))
