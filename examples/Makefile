@@ -52,6 +52,7 @@ ISADB_DIR := $(shell if test -f ISADB_DIR; then cat ISADB_DIR; fi)
 # dk does not allow . and - in module names, they are replaced
 # by _ in file names
 MOD_NAME_SESSION = session_$(subst .,_,$(subst -,_,$(SESSION)))
+SESSION_DIR = $(ROOT_DIR)/$(SESSION)
 
 .PHONY: build
 build: $(ISADB_DIR)/$(SESSION).db
