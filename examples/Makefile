@@ -151,16 +151,16 @@ rm-lpo:
 LP_FILES := $(wildcard $(OUT_DIR)/*.lp)
 
 .PHONY: v
-v: $(LP_FILES:%.lp=%.v) $(OUT_DIR)/Isabelle.v
+v: $(LP_FILES:%.lp=%.v) $(OUT_DIR)/mappings.v
 
 LAMBDAPI = lambdapi
 
-$(OUT_DIR)/Isabelle.v:
-	cp ../Isabelle.v $@
+$(OUT_DIR)/mappings.v:
+	cp ../mappings.v $@
 
 %.v: %.lp
 	@echo lambdapi export -o stt_coq $<
-	@$(LAMBDAPI) export -o stt_coq --encoding ../encoding.lp --mapping ../erasing.lp --renaming ../renaming.lp --requiring Isabelle.Isabelle.v $< > $@
+	@$(LAMBDAPI) export -o stt_coq --encoding ../encoding.lp --mapping ../mappings.lp --renaming ../renaming.lp --requiring Isabelle.mappings.v $< > $@
 	@sed -i 's/STTfa/Isabelle/g' $@
 
 .PHONY: clean-v
@@ -168,7 +168,7 @@ clean-v: rm-v clean-vo
 
 .PHONY: rm-v
 rm-v:
-	find $(OUT_DIR) -maxdepth 1 -name '*.v' -a ! -name Isabelle.v -delete
+	find $(OUT_DIR) -maxdepth 1 -name '*.v' -delete
 
 ############# verification of Rocq files ##############
 
@@ -178,7 +178,7 @@ ROCQ_MKFILES = $(subst lpcheck,rocqcheck,$(LP_MKFILES))
 include $(ROCQ_MKFILES)
 
 $(OUT_DIR)/rocqcheck_%.mk :: $(OUT_DIR)/lpcheck_%.mk
-	sed -e 's/\.lp/\.v/g' -e 's/STTfa.v/Isabelle.v/g' $< > $@
+	sed -e 's/\.lp/\.v/g' -e 's/STTfa.v/mappings.v/g' $< > $@
 
 .PHONY: vo
 vo: $(OUT_DIR)/$(SESSION_MODNAME).vo
