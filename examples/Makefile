@@ -2,32 +2,37 @@
 
 .PHONY: default help
 default help:
-	@echo usage: make [-j JOBS] [target] [VAR=VAL] ...
-	@echo targets: init, build, dk, dko, lp, lpo, v, vo, session, sessions
-	@echo user-modifiable variables: ROOT_DIR, SESSION, SESSIONS, OUT_DIR, EXTRA_ISADK_OPTIONS, EXTRA_ISABELLE_OPTIONS, EXTRA_LP_OPTIONS, EXTRA_ROCQ_OPTIONS
+	@echo usage: make [-j...] [target] SESSION=... [VAR=...] ...
+	@echo
+	@echo possible targets:
+	@echo - build: for Isabelle to generate the proofs of the given session
+	@echo - dk: to translate the Isabelle proofs to Dedukti
+	@echo - dko: to check the generated Dedukti files
+	@echo - lp: to translate the Isabelle proofs to Lambdapi
+	@echo - lpo: to check the generated Lambdapi files
+	@echo - v: to translate the Dedukti files to Rocq
+	@echo - vo: to check the generated Rocq files
+	@echo
+	@echo user-definable variables:
+	@echo - ISADK_DIR: source directory of isabelle_dedukti
+	@echo - OUT_DIR: directory where to put generated files
+	@echo - ROCQ_OPTIONS: rocq options
+	@echo - ROOT_DIR: ROOT file directory
 
-TIME = /usr/bin/time -f %e
+ISADK_DIR = ..
+ROCQ_OPTIONS = -q -no-glob
+ROOT_DIR = .
+OUT_DIR = .
 
-############# user-modifiable variables ##############
-
-# All can alternatively be set as environment variables
-EXTRA_ISADK_OPTIONS ?=
-EXTRA_ISABELLE_OPTIONS ?=
-EXTRA_LP_OPTIONS ?=
-EXTRA_ROCQ_OPTIONS ?= -q -no-glob
-ROOT_DIR ?= .
-SESSION ?=
-SESSIONS ?=
-OUT_DIR ?= .
-SESSION_DIR ?= $(ROOT_DIR)/$(SESSION)
+SESSION_DIR := $(ROOT_DIR)/$(SESSION)
+TIME := /usr/bin/time -f %e
 
 ############# generation of Isabelle proofs ##############
 
-# Store in the file ISADB_DIR the directory where Isabelle keep .db files
-.PHONY: init
-init ISADB_DIR:
-	$(eval ISADB_DIR := $(wildcard $(shell isabelle getenv -b ISABELLE_HOME_USER)/heaps/polyml-*/log))
-# test if it does indeed contain a single result
+include isadb_dir.mk
+
+isadb_dir.mk:
+	@$(eval ISADB_DIR := $(wildcard $(shell isabelle getenv -b ISABELLE_HOME_USER)/heaps/polyml-*/log))
 	@case "$(ISADB_DIR)" in\
 		*\ *)\
 			echo "error: multiple log directories found";\
@@ -35,7 +40,7 @@ init ISADB_DIR:
 			;;\
 		*log)\
 			echo ISADB_DIR found: $(ISADB_DIR);\
-			echo $(ISADB_DIR) > ISADB_DIR\
+			echo ISADB_DIR = $(ISADB_DIR) > $@\
 			;;\
 		*)\
 			echo "error: failed fetching ISADB_DIR";\
@@ -43,11 +48,9 @@ init ISADB_DIR:
 			;;\
 	esac
 
-.PHONY: clean-ISADB_DIR
-clean-ISADB_DIR:
-	rm -f ISADB_DIR
-
-ISADB_DIR := $(shell if test -f ISADB_DIR; then cat ISADB_DIR; fi)
+.PHONY: clean-isadb-dir.mk
+clean-isadb_dir.mk:
+	rm -f isadb_dir.mk
 
 # dk does not allow . and - in module names, they are replaced by _
 SESSION_MODNAME := session_$(subst .,_,$(subst -,_,$(SESSION)))
@@ -63,7 +66,7 @@ $(SESSION_DIR):
 	mkdir -p $@
 
 .PHONY: clean-build
-clean-build: ISADB_DIR
+clean-build:
 	rm -f $(ISADB_DIR)/$(SESSION).db
 endif
 
@@ -80,7 +83,7 @@ $(OUT_DIR)/$(SESSION_MODNAME).dk: $(ISADB_DIR)/$(SESSION).db $(OUT_DIR)/STTfa.dk
 	isabelle dedukti_generate -k -d$(ROOT_DIR) -D$(OUT_DIR) $(ISADK_OPT) $(SESSION)
 endif
 
-$(OUT_DIR)/STTfa.dk: ../STTfa.dk
+$(OUT_DIR)/STTfa.dk: $(ISADK_DIR)/STTfa.dk
 	cp -f $< $@
 
 .PHONY: clean-dk
@@ -88,7 +91,7 @@ clean-dk: rm-dk rm-dko clean-v rm-dko-mk
 
 .PHONY: rm-dk
 rm-dk:
-	rm -f $(wildcard $(OUT_DIR)/*.dk)
+	find $(OUT_DIR) -maxdepth 1 -name '*.dk' -delete
 
 .PHONY: rm-dko-mk
 rm-dko-mk:
@@ -100,8 +103,7 @@ rm-dko-mk:
 include $(wildcard $(OUT_DIR)/dkcheck_*.mk)
 
 .PHONY:dko
-dko: $(OUT_DIR)/$(SESSION_MODNAME).dk
-	$(MAKE) $(OUT_DIR)/$(SESSION_MODNAME).dko
+dko: $(OUT_DIR)/$(SESSION_MODNAME).dko
 
 %.dko: %.dk
 	dk check -I $(OUT_DIR) -e --eta $<
@@ -116,7 +118,13 @@ rm-dko:
 ############# generation of Lambdapi files ##############
 
 .PHONY: lp
-lp: $(OUT_DIR)/$(SESSION_MODNAME).lp
+lp: $(OUT_DIR)/lambdapi.pkg $(OUT_DIR)/STTfa.lp $(OUT_DIR)/$(SESSION_MODNAME).lp
+
+$(OUT_DIR)/lambdapi.pkg: $(ISADK_DIR)/lambdapi.pkg
+	cp -f $< $@
+
+$(OUT_DIR)/STTfa.lp: $(ISADK_DIR)/STTfa.lp
+	cp -f $< $@
 
 ifeq ($(SESSION),Pure)
 $(OUT_DIR)/$(SESSION_MODNAME).lp: $(OUT_DIR)/STTfa.lp
@@ -126,18 +134,16 @@ $(OUT_DIR)/$(SESSION_MODNAME).lp: $(ISADB_DIR)/$(SESSION).db $(OUT_DIR)/STTfa.lp
 	isabelle dedukti_generate -d$(ROOT_DIR) -D$(OUT_DIR) $(ISADK_OPT) $(SESSION)
 endif
 
-$(OUT_DIR)/STTfa.lp: ../STTfa.lp
-	cp -f $< $@
-
-$(OUT_DIR)/lambdapi.pkg: ..lambdapi.pkg
-	cp -f $< $@
-
 .PHONY: clean-lp
-clean-lp: rm-lp rm-lpo-mk clean-lpo clean-v
+clean-lp: rm-lp rm-lpo-mk rm-pkg clean-lpo clean-v
+
+.PHONY: rm-pkg
+rm-pkg:
+	rm -f $(OUT_DIR)/lambdapi.pkg
 
 .PHONY: rm-lp
 rm-lp:
-	rm -f $(OUT_DIR)/lambdapi.pkg $(wildcard $(OUT_DIR)/*.lp)
+	find $(OUT_DIR) -maxdepth 1 -name '*.lp' -delete
 
 .PHONY: rm-lpo-mk
 rm-lpo-mk:
@@ -172,16 +178,16 @@ v: $(OUT_DIR)/mappings.v $(DK_FILES:%.dk=%.v) $(LP_FILES:%.lp=%.v)
 
 LAMBDAPI = lambdapi
 
-$(OUT_DIR)/mappings.v: ../mappings.v
+$(OUT_DIR)/mappings.v: $(ISADK_DIR)/mappings.v
 	cp -f $< $@
 
 %.v: %.dk
 	@echo lambdapi export -o stt_coq $<
-	@$(LAMBDAPI) export -o stt_coq --encoding ../encoding.lp --mapping ../mappings.lp --renaming ../renaming.lp --requiring mappings $< | sed -e '/^Require STTfa\./d' > $@
+	@$(LAMBDAPI) export -o stt_coq --encoding $(ISADK_DIR)/encoding.lp --mapping $(ISADK_DIR)/mappings.lp --renaming $(ISADK_DIR)/renaming.lp --requiring mappings $< | sed -e '/^Require STTfa\./d' > $@
 
 %.v: %.lp
 	@echo lambdapi export -o stt_coq $<
-	@$(LAMBDAPI) export -o stt_coq --encoding ../encoding.lp --mapping ../mappings.lp --renaming ../renaming.lp --requiring mappings $< | sed -e '/^Require Isabelle\.STTfa\./d' > $@
+	@$(LAMBDAPI) export -o stt_coq --encoding $(ISADK_DIR)/encoding.lp --mapping $(ISADK_DIR)/mappings.lp --renaming $(ISADK_DIR)/renaming.lp --requiring mappings $< | sed -e '/^Require Isabelle\.STTfa\./d' > $@
 
 .PHONY: clean-v
 clean-v: rm-v rm-vo-mk clean-vo
@@ -198,17 +204,18 @@ rm-vo-mk:
 
 include $(subst dkcheck,rocqcheck,$(wildcard $(OUT_DIR)/dkcheck_*.mk))
 
-$(OUT_DIR)/rocqcheck_%.mk :: $(OUT_DIR)/dkcheck_%.mk
-	sed -e 's/\.dk/\.v/g' $< > $@
-	echo >> $@
-	echo '$$(OUT_DIR)/STTfa.vo: $$(OUT_DIR)/mappings.vo' >> $@
+$(OUT_DIR)/rocqcheck_%.mk : $(OUT_DIR)/dkcheck_%.mk
+	@echo generate $@
+	@sed -e 's/\.dk/\.v/g' $< > $@
+	@echo >> $@
+	@echo '$$(OUT_DIR)/STTfa.vo: $$(OUT_DIR)/mappings.vo' >> $@
 
 .PHONY: vo
 vo: $(OUT_DIR)/$(SESSION_MODNAME).vo
 
 %.vo: %.v
 	@echo rocq compile $<
-	@rocq compile $(EXTRA_ROCQ_OPTIONS) $<
+	@rocq compile $(ROCQ_OPTIONS) $<
 
 .PHONY: clean-vo
 clean-vo: rm-vo rm-aux rm-caches

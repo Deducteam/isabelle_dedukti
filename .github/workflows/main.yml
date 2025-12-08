@@ -54,18 +54,12 @@ jobs:
         run: opam install dedukti.${{ matrix.dedukti-version }}
       - name: Install lambdapi
         run: opam install lambdapi.${{ matrix.lambdapi-version }}
-      - name: Install kocheck
-        run: |
-          cd ~
-          git clone https://github.com/01mf02/kontroli-rs.git
-          cd ~/kontroli-rs
-          cargo install --path kocheck
-      - name: Set ISADB_DIR
-#         there is an empty isabelle build in the middle, just so the directory ISADB_DIR is created.
-        run: |
-          export PATH=$PATH:~/Isabelle${{ matrix.isabelle-version }}/bin
-          isabelle build
-          make -C examples ISADB_DIR
+#      - name: Install kocheck
+#        run: |
+#          cd ~
+#          git clone https://github.com/01mf02/kontroli-rs.git
+#          cd ~/kontroli-rs
+#          cargo install --path kocheck
       - name: Generate and check lp output for HOL_Groups
         run: |
           eval $(opam env)

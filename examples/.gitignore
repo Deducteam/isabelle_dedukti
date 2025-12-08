@@ -5,3 +5,6 @@
 dkcheck_*.mk
 lpcheck_*.mk
 rocqcheck_*.mk
+isadb_dir.mk
+*.dko
+*.lpo
