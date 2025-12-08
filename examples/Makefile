@@ -148,19 +148,25 @@ rm-lpo:
 
 ############# generation of Rocq files ##############
 
+DK_FILES := $(wildcard $(OUT_DIR)/*.dk)
 LP_FILES := $(wildcard $(OUT_DIR)/*.lp)
 
 .PHONY: v
-v: $(LP_FILES:%.lp=%.v) $(OUT_DIR)/mappings.v
+v: $(OUT_DIR)/mappings.v $(DK_FILES:%.dk=%.v) $(LP_FILES:%.lp=%.v)
 
 LAMBDAPI = lambdapi
 
 $(OUT_DIR)/mappings.v:
 	cp ../mappings.v $@
 
+%.v: %.dk
+	@echo lambdapi export -o stt_coq $<
+	@$(LAMBDAPI) export -o stt_coq --encoding ../encoding.lp --mapping ../mappings.lp --renaming ../renaming.lp --requiring Isabelle.mappings $< > $@
+	@sed -i 's/STTfa/Isabelle/g' $@
+
 %.v: %.lp
 	@echo lambdapi export -o stt_coq $<
-	@$(LAMBDAPI) export -o stt_coq --encoding ../encoding.lp --mapping ../mappings.lp --renaming ../renaming.lp --requiring Isabelle.mappings.v $< > $@
+	@$(LAMBDAPI) export -o stt_coq --encoding ../encoding.lp --mapping ../mappings.lp --renaming ../renaming.lp --requiring Isabelle.mappings $< > $@
 	@sed -i 's/STTfa/Isabelle/g' $@
 
 .PHONY: clean-v
