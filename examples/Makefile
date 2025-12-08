@@ -19,6 +19,7 @@ ROOT_DIR ?= .
 SESSION ?=
 SESSIONS ?=
 OUT_DIR ?= ./output
+SESSION_DIR ?= $(ROOT_DIR)/$(SESSION)
 
 ############# generation of Isabelle proofs ##############
 
@@ -54,8 +55,11 @@ SESSION_MODNAME = session_$(subst .,_,$(subst -,_,$(SESSION)))
 .PHONY: build
 build: $(ISADB_DIR)/$(SESSION).db
 
-$(ISADB_DIR)/%.db: $(ROOT_DIR)/ROOT
+$(ISADB_DIR)/%.db: $(ROOT_DIR)/ROOT $(SESSION_DIR)
 	isabelle build -b -d$(ROOT_DIR) $*
+
+$(SESSION_DIR):
+	mkdir -p $@
 
 clean-build: ISADB_DIR
 	rm -f $(ISADB_DIR)/$(SESSION).db
@@ -161,7 +165,7 @@ $(OUT_DIR)/Isabelle.v:
 	@sed -i 's/STTfa/Isabelle/g' $@
 
 .PHONY: clean-v
-clean-v: rm-v clean-vo clean-dep
+clean-v: rm-v clean-vo
 
 .PHONY: rm-v
 rm-v:
