@@ -4,8 +4,7 @@
 default help:
 	@echo usage: make [-j JOBS] [target] [VAR=VAL] ...
 	@echo targets: build, dk, dko, lp, lpo, v, vo, session, sessions, clean-[target,all]
-	@echo user-modifiable variables: EXTRA_ISADK_OPTIONS, EXTRA_ISABELLE_OPTIONS, EXTRA_LP_OPTIONS,
-	@echo 							 EXTRA_ROCQ_OPTIONS, ROOT_DIR, SESSION, SESSIONS, OUT_DIR
+	@echo user-modifiable variables: ROOT_DIR, SESSION, SESSIONS, OUT_DIR, EXTRA_ISADK_OPTIONS, EXTRA_ISABELLE_OPTIONS, EXTRA_LP_OPTIONS, EXTRA_ROCQ_OPTIONS
 
 TIME = /usr/bin/time -f %e
 

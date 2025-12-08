@@ -30,10 +30,10 @@
           + insert the absolute path of the Isabelle `bin`
             directory in `$PATH` ([how to add directories to the $PATH variable](https://gist.github.com/nex3/c395b2f8fd4b02068be37c961301caa7))
 
-          + or: install references to the Isabelle executables in
+          + or install references to the Isabelle executables in
             another directory mentioned in `$PATH`
 
-  * **isabelle_dedukti**
+  * **`isabelle_dedukti`**
 
       - Clone the repository:
         ```bash
@@ -57,25 +57,17 @@
         isabelle scala_build
         ```
 
-      - locate the directory where Isabelle databases are stored:
-        ```bash
-        cd $(path_to_isabelle_dedukti)/examples
-        make ISADB_DIR
-        ```
-
-    In the following, whenever `make` is evoked, it is considered to be done from the examples directory (or using `make -C $path_to_isabelle_dedukti/examples`)
-
   * **Patching the Isabelle/HOL library**
 
-    A few Isabelle/HOL files need to be modified so that exported proofs are of smaller size and that no oracle are used. See the modifications in [HOL.patch](https://github.com/Deducteam/isabelle_dedukti/blob/master/HOL.patch). For now, HOL and HOL-Library are patched.
-    
-    - You may want to start with changing the permission on the HOL folder:
+    A few Isabelle/HOL files need to be modified so that exported proofs are of smaller size and that no oracle are used. See the modifications in [HOL.patch](https://github.com/Deducteam/isabelle_dedukti/blob/master/HOL.patch). For now, only HOL and HOL-Library are patched.
+
+    - Change the permission on the HOL folder:
 
     ```bash
     chmod -R +w $path_to_Isabelle_dir/src/HOL/
     ```
 
-    - Patch the folder, from the isabelle_dedukti folder:
+    - Patch the HOL folder from the `isabelle_dedukti` folder:
 
     ```bash
     patch -up0 -d $path_to_Isabelle_dir/src/HOL/ < HOL.patch
@@ -93,34 +85,17 @@
     diff -urNx '*~' -x '*.orig' $path_to_unpatched_Isabelle_dir/src/HOL $path_to_patched_Isabelle_dir/src/HOL > HOL.patch
     ```
 
-  * **Deleting the Isabelle databases**
-
-    If something goes wrong, you may delete the databases (which means the proof terms will be rebuilt anew).
-    To delete the database for session $session, do:
-
-    ```bash
-    make SESSION=$session clean-build
-    ```
-
-    To delete the database for each session in $sessions along with all files that have already been generated, do:
-
-    ```bash
-    make SESSIONS=$sessions clean-sessions
-    ```
-    
-
 ## How to make Isabelle record proofs?
 
-Isabelle theories are built within sessions, and sessions to be translated by isabelle_dedukti must be defined in a file named `ROOT`.
-(By default, isabelle_dedukti looks at the examples directory for a ROOT file, so one can always add session definitions in examples/ROOT. Otherwise, if a user wishes to use their own ROOT file located in $root_dir, they should always add ROOT_DIR=$root_dir to `make` calls)
+Isabelle theories are defined within Isabelle [sessions](https://isabelle.in.tum.de/website-Isabelle2021-1/dist/library/Doc/System/Sessions.html), and sessions must be defined in a file named `ROOT`. A session can extend another session.
 
-To export proofs from Isabelle so that they can be translated to Dedukti or Lambdapi afterwards, users need to use the following options in the definition of their session:
+To export proofs from Isabelle so that they can be translated to Dedukti or Lambdapi afterwards, users need to use the following options in the definition of their sessions:
 
 ```
 export_theory,export_proofs,record_proofs=2
 ```
 
-For instance, the following session builds the session HOL with proof recording:
+For instance, the following code defines a session `HOL_wp` extending the builtin session `Pure` for exporting the proofs of the theory file `HOL/Complex_Main.thy`:
 ```
 session HOL_wp in HOL_wp = Pure +
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
@@ -131,20 +106,18 @@ session HOL_wp in HOL_wp = Pure +
   document_theories
     Tools.Code_Generator
 ```
-To build a session, Isabelle needs to have an associated directory, even if it is empty (the `in HOL_wp` above). If a user wishes to use a specific directory for that, it can be explicited through the make variable `SESSION_DIR`, otherwise it defaults to $(ROOT_DIR)/$(SESSION). If $(SESSION_DIR) does not exist, an empty directory will be created automatically. 
 
-## Commands to translate Isabelle proofs to Dedukti and Lambdapi
+Remark: each session must be associated to an existing (empty) directory specified by the `in` keyword.
 
-Here is a description of some make targets. For all of them, the target session must be specified by using `make SESSION=$session target`.
-None of these targets need another target to have been built before to be called, apart from ISADB_DIR.
+As an example, the file [`examples/ROOT`](https://github.com/Deducteam/isabelle_dedukti/blob/master/examples/ROOT) defines various sessions with proof recording.
 
- - build: makes Isabelle generate the proofs for the target session.
- - lp: translates these proof to Lambdapi files
- - lpo: checks the translated Lambdapi files
- - v: translates the Lambdapi files to Rocq
- - vo: checks the translated Rocq files
- - dk: translates the proofs to Dedukti files
- - dko: checks the translated Dedukti files
+## Commands to translate Isabelle proofs to Dedukti or Lambdapi
+
+To translate an already built session to Dedukti or Lambdapi, do:
+
+```bash
+isabelle dedukti_generate -d $root_dir $session`
+```
 
 For the translation to work, follow these steps:
 - add the relevant components to Isabelle (for example, AFP),
@@ -153,6 +126,21 @@ For the translation to work, follow these steps:
   - make sure that the parent session also exports proofs (otherwise, Isabelle generates unfinished proofs which cannot be translated to Dedukti)
 
 Remark: to visualize theory dependencies in HOL, you can look at the [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2025/dist/library/HOL/HOL/session_graph.pdf).
+
+## `examples/Makefile`
+
+The `examples` directory contains a `Makefile` that provides various targets automating the building and the translation of an Isabelle session specified by an argument of the form `SESSION=$session`:
+- build: makes Isabelle export the proofs
+- lp: translates Isabelle proofs to Lambdapi files
+- lpo: checks the obtained Lambdapi files
+- v: translates the Lambdapi files to Rocq
+- vo: checks the obtained Rocq files
+- dk: translates Isabelle proofs to Dedukti files
+- dko: checks the obtained Dedukti files
+
+By default, translated files are created in the `output` sub-directory.
+
+Find out all the possible targets and variables that can be setup by running `make` with no arguments.
 
 ## Performances
 
@@ -182,6 +170,7 @@ Performance on a machine with 32 processors i9-13950HX and 64 Go RAM
 There is room for many important improvements. Makarius Wenzel is working on improving the export of proof terms in Isabelle. The generation of dk files is not modular. No term sharing is currently used in dk and v files.
 
 ## Description of each scala file in the src directory (in dependancy order)
+
 - ast.scala: Syntax of dk/lp terms, notations and commands in scala (Only those that are needed)
 - translate.scala: Functions to translate Isabelle objects to the syntax from ast.scala
 - writers.scala: Functions to read objects in the syntax from ast.scala and write them to dk or lp files in the correct manner
