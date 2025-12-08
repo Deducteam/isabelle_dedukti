@@ -32,21 +32,7 @@ TIME := /usr/bin/time -f %e
 include isadb_dir.mk
 
 isadb_dir.mk:
-	@$(eval ISADB_DIR := $(wildcard $(shell isabelle getenv -b ISABELLE_HOME_USER)/heaps/polyml-*/log))
-	@case "$(ISADB_DIR)" in\
-		*\ *)\
-			echo "error: multiple log directories found";\
-			exit 1\
-			;;\
-		*log)\
-			echo ISADB_DIR found: $(ISADB_DIR);\
-			echo ISADB_DIR = $(ISADB_DIR) > $@\
-			;;\
-		*)\
-			echo "error: failed fetching ISADB_DIR";\
-			exit 1\
-			;;\
-	esac
+	@echo ISADB_DIR = `isabelle getenv -b ISABELLE_HOME_USER`/heaps/`isabelle getenv -b ML_SYSTEM`_`isabelle getenv -b ML_PLATFORM`/log > $@
 
 .PHONY: clean-isadb-dir.mk
 clean-isadb_dir.mk:

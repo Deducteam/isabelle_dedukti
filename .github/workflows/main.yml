@@ -68,7 +68,8 @@ jobs:
         run: |
           eval $(opam env)
           export PATH=$PATH:~/Isabelle${{ matrix.isabelle-version }}/bin
-          make -C examples SESSION=HOL_Groups_wp lpo
+          cd examples
+          make SESSION=HOL_Groups_wp lpo
       - name: Check dk output for HOL_Groups
         run: |
           eval $(opam env)
