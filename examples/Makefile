@@ -167,11 +167,11 @@ $(OUT_DIR)/_CoqProject:
 
 %.v: %.dk
 	@echo lambdapi export -o stt_coq $<
-	@$(LAMBDAPI) export -o stt_coq --encoding ../encoding.lp --mapping ../mappings.lp --renaming ../renaming.lp --requiring Isabelle.mappings $< > $@
+	@$(LAMBDAPI) export -o stt_coq --encoding ../encoding.lp --mapping ../mappings.lp --renaming ../renaming.lp --requiring mappings $< | sed -e '/^Require STTfa\./d' > $@
 
 %.v: %.lp
 	@echo lambdapi export -o stt_coq $<
-	@$(LAMBDAPI) export -o stt_coq --encoding ../encoding.lp --mapping ../mappings.lp --renaming ../renaming.lp --requiring Isabelle.mappings $< > $@
+	@$(LAMBDAPI) export -o stt_coq --encoding ../encoding.lp --mapping ../mappings.lp --renaming ../renaming.lp --requiring mappings $< | sed -e '/^Require Isabelle\.STTfa\./d' > $@
 
 .PHONY: clean-v
 clean-v: rm-v clean-vo
@@ -185,14 +185,14 @@ rm-v:
 include $(subst dkcheck,rocqcheck, $(wildcard $(OUT_DIR)/dkcheck_*.mk))
 
 $(OUT_DIR)/rocqcheck_%.mk :: $(OUT_DIR)/dkcheck_%.mk
-	sed -e 's/\.dk/\.v/g' -e 's/STTfa.v/mappings.v/g' $< > $@
+	sed -e 's/\.dk/\.v/g' $< > $@
 
 .PHONY: vo
 vo: $(OUT_DIR)/$(SESSION_MODNAME).vo
 
 %.vo: %.v
 	@echo rocq compile $<
-	@rocq compile -R $(OUT_DIR) Isabelle $(EXTRA_ROCQ_OPTIONS) $<
+	@rocq compile $(EXTRA_ROCQ_OPTIONS) $<
 
 .PHONY: clean-vo
 clean-vo: rm-vo rm-aux rm-caches
