@@ -97,7 +97,7 @@ export_theory,export_proofs,record_proofs=2
 
 For instance, the following code defines a session `HOL_wp` extending the builtin session `Pure` for exporting the proofs of the theory file `HOL/Complex_Main.thy`:
 ```
-session HOL_wp in HOL_wp = Pure +
+session HOL_wp = Pure +
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
   sessions Tools HOL
   theories
@@ -106,8 +106,6 @@ session HOL_wp in HOL_wp = Pure +
   document_theories
     Tools.Code_Generator
 ```
-
-Remark: each session must be associated to an existing (empty) directory specified by the `in` keyword.
 
 As an example, the file [`examples/ROOT`](https://github.com/Deducteam/isabelle_dedukti/blob/master/examples/ROOT) defines various sessions with proof recording.
 
