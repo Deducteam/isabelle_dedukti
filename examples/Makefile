@@ -50,7 +50,7 @@ clean-ISADB_DIR:
 ISADB_DIR := $(shell if test -f ISADB_DIR; then cat ISADB_DIR; fi)
 
 # dk does not allow . and - in module names, they are replaced by _
-SESSION_MODNAME = session_$(subst .,_,$(subst -,_,$(SESSION)))
+SESSION_MODNAME := session_$(subst .,_,$(subst -,_,$(SESSION)))
 
 .PHONY: build
 build: $(ISADB_DIR)/$(SESSION).db
@@ -73,14 +73,14 @@ $(OUT_DIR)/$(SESSION_MODNAME).dk: $(ISADB_DIR)/$(SESSION).db $(OUT_DIR)/STTfa.dk
 	isabelle dedukti_generate -k -d$(ROOT_DIR) -D$(OUT_DIR) $(ISADK_OPT) -r $(SESSION)
 
 $(OUT_DIR)/STTfa.dk:
-	cp -f STTfa.dk $(OUT_DIR)
+	cp -f ../STTfa.dk $@
 
 .PHONY: clean-dk
 clean-dk: rm-dk rm-dko clean-v rm-dkomk
 
 .PHONY: rm-dk
 rm-dk:
-	rm -f $(filter-out ./STTfa.dk,$(wildcard $(OUT_DIR)/*.dk))
+	rm -f $(wildcard $(OUT_DIR)/*.dk)
 
 .PHONY: rm-dkomk
 rm-dkomk:
@@ -114,15 +114,14 @@ $(OUT_DIR)/$(SESSION_MODNAME).lp: $(ISADB_DIR)/$(SESSION).db $(OUT_DIR)/STTfa.lp
 	isabelle dedukti_generate -d$(ROOT_DIR) -D$(OUT_DIR) $(ISADK_OPT) -r $(SESSION)
 
 $(OUT_DIR)/STTfa.lp $(OUT_DIR)/lambdapi.pkg &:
-	cp -f STTfa.lp ../lambdapi.pkg $(OUT_DIR)
+	cp -f ../STTfa.lp ../lambdapi.pkg $(OUT_DIR)
 
 .PHONY: clean-lp
-clean-lp: rm-lp rm-lpomk rm-lpo clean-v
+clean-lp: rm-lp rm-lpomk clean-lpo clean-v
 
 .PHONY: rm-lp
 rm-lp:
-	rm -f $(filter-out ./STTfa.lp,$(wildcard $(OUT_DIR)/*.lp))
-	rm -f $(OUT_DIR)/lambdapi.pkg
+	rm -f $(OUT_DIR)/lambdapi.pkg $(wildcard $(OUT_DIR)/*.lp)
 
 .PHONY: rm-lpomk
 rm-lpomk:
@@ -161,7 +160,7 @@ $(OUT_DIR)/Isabelle.v:
 
 %.v: %.lp
 	@echo lambdapi export -o stt_coq $<
-	@$(LAMBDAPI) export -o stt_coq --encoding ../encoding.lp --erasing ../erasing.lp --renaming ../renaming.lp --requiring Isabelle.Isabelle.v $< > $@
+	@$(LAMBDAPI) export -o stt_coq --encoding ../encoding.lp --mapping ../erasing.lp --renaming ../renaming.lp --requiring Isabelle.Isabelle.v $< > $@
 	@sed -i 's/STTfa/Isabelle/g' $@
 
 .PHONY: clean-v
