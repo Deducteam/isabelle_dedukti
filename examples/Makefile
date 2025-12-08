@@ -156,7 +156,7 @@ v: $(LP_FILES:%.lp=%.v) $(OUT_DIR)/Isabelle.v
 LAMBDAPI = lambdapi
 
 $(OUT_DIR)/Isabelle.v:
-	cp ./Isabelle.v $@
+	cp ../Isabelle.v $@
 
 %.v: %.lp
 	@echo lambdapi export -o stt_coq $<
