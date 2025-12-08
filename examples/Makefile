@@ -18,7 +18,7 @@ EXTRA_ROCQ_OPTIONS ?= -q -no-glob
 ROOT_DIR ?= .
 SESSION ?=
 SESSIONS ?=
-OUT_DIR ?= ./output
+OUT_DIR ?= .
 SESSION_DIR ?= $(ROOT_DIR)/$(SESSION)
 
 ############# generation of Isabelle proofs ##############
@@ -52,6 +52,7 @@ ISADB_DIR := $(shell if test -f ISADB_DIR; then cat ISADB_DIR; fi)
 # dk does not allow . and - in module names, they are replaced by _
 SESSION_MODNAME := session_$(subst .,_,$(subst -,_,$(SESSION)))
 
+ifneq ($(SESSION),"Pure")
 .PHONY: build
 build: $(ISADB_DIR)/$(SESSION).db
 
@@ -61,19 +62,26 @@ $(ISADB_DIR)/%.db: $(ROOT_DIR)/ROOT $(SESSION_DIR)
 $(SESSION_DIR):
 	mkdir -p $@
 
+.PHONY: clean-build
 clean-build: ISADB_DIR
 	rm -f $(ISADB_DIR)/$(SESSION).db
+endif
 
 ############# generation of Dedukti files ##############
 
 .PHONY: dk
 dk: $(OUT_DIR)/$(SESSION_MODNAME).dk
 
+ifeq ($(SESSION),Pure)
+$(OUT_DIR)/$(SESSION_MODNAME).dk: $(OUT_DIR)/STTfa.dk
+	isabelle dedukti_generate -k -d$(ROOT_DIR) -D$(OUT_DIR) $(ISADK_OPT) $(SESSION)
+else
 $(OUT_DIR)/$(SESSION_MODNAME).dk: $(ISADB_DIR)/$(SESSION).db $(OUT_DIR)/STTfa.dk
-	isabelle dedukti_generate -k -d$(ROOT_DIR) -D$(OUT_DIR) $(ISADK_OPT) -r $(SESSION)
+	isabelle dedukti_generate -k -d$(ROOT_DIR) -D$(OUT_DIR) $(ISADK_OPT) $(SESSION)
+endif
 
-$(OUT_DIR)/STTfa.dk:
-	cp -f ../STTfa.dk $@
+$(OUT_DIR)/STTfa.dk: ../STTfa.dk
+	cp -f $< $@
 
 .PHONY: clean-dk
 clean-dk: rm-dk rm-dko clean-v rm-dko-mk
@@ -110,14 +118,19 @@ rm-dko:
 .PHONY: lp
 lp: $(OUT_DIR)/$(SESSION_MODNAME).lp
 
+ifeq ($(SESSION),Pure)
+$(OUT_DIR)/$(SESSION_MODNAME).lp: $(OUT_DIR)/STTfa.lp
+	isabelle dedukti_generate -d$(ROOT_DIR) -D$(OUT_DIR) $(ISADK_OPT) $(SESSION)
+else
 $(OUT_DIR)/$(SESSION_MODNAME).lp: $(ISADB_DIR)/$(SESSION).db $(OUT_DIR)/STTfa.lp
-	isabelle dedukti_generate -d$(ROOT_DIR) -D$(OUT_DIR) $(ISADK_OPT) -r $(SESSION)
+	isabelle dedukti_generate -d$(ROOT_DIR) -D$(OUT_DIR) $(ISADK_OPT) $(SESSION)
+endif
 
-$(OUT_DIR)/STTfa.lp:
-	cp -f ../STTfa.lp $@
+$(OUT_DIR)/STTfa.lp: ../STTfa.lp
+	cp -f $< $@
 
-$(OUT_DIR)/lambdapi.pkg:
-	cp -f ../lambdapi.pkg $@
+$(OUT_DIR)/lambdapi.pkg: ..lambdapi.pkg
+	cp -f $< $@
 
 .PHONY: clean-lp
 clean-lp: rm-lp rm-lpo-mk clean-lpo clean-v
@@ -159,11 +172,8 @@ v: $(OUT_DIR)/mappings.v $(DK_FILES:%.dk=%.v) $(LP_FILES:%.lp=%.v)
 
 LAMBDAPI = lambdapi
 
-$(OUT_DIR)/mappings.v:
-	cp ../mappings.v $@
-
-$(OUT_DIR)/_CoqProject:
-	cp ../_CoqProject $@
+$(OUT_DIR)/mappings.v: ../mappings.v
+	cp -f $< $@
 
 %.v: %.dk
 	@echo lambdapi export -o stt_coq $<
@@ -174,18 +184,24 @@ $(OUT_DIR)/_CoqProject:
 	@$(LAMBDAPI) export -o stt_coq --encoding ../encoding.lp --mapping ../mappings.lp --renaming ../renaming.lp --requiring mappings $< | sed -e '/^Require Isabelle\.STTfa\./d' > $@
 
 .PHONY: clean-v
-clean-v: rm-v clean-vo
+clean-v: rm-v rm-vo-mk clean-vo
 
 .PHONY: rm-v
 rm-v:
 	find $(OUT_DIR) -maxdepth 1 -name '*.v' -delete
 
+.PHONY: rm-vo-mk
+rm-vo-mk:
+	find $(OUT_DIR) -maxdepth 1 -name 'rocqcheck_*.mk' -delete
+
 ############# verification of Rocq files ##############
 
-include $(subst dkcheck,rocqcheck, $(wildcard $(OUT_DIR)/dkcheck_*.mk))
+include $(subst dkcheck,rocqcheck,$(wildcard $(OUT_DIR)/dkcheck_*.mk))
 
 $(OUT_DIR)/rocqcheck_%.mk :: $(OUT_DIR)/dkcheck_%.mk
 	sed -e 's/\.dk/\.v/g' $< > $@
+	echo >> $@
+	echo '$$(OUT_DIR)/STTfa.vo: $$(OUT_DIR)/mappings.vo' >> $@
 
 .PHONY: vo
 vo: $(OUT_DIR)/$(SESSION_MODNAME).vo

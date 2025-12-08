@@ -82,10 +82,12 @@ Proof.
   - apply HAB. intros HA HB. split. exact HA. exact HB.
 Qed.
 
-(* every term is... a term *)
-Definition term (a : Type') : a -> Prop := fun _ => True.
+Definition term (a : Type') : a -> Prop := fun x : a => all Prop (fun A : Prop => A -> A).
 
-Definition sort_constraint a : (itself a) -> Prop := fun _ => True.
+Lemma term_def (_a__var : Type') (x__var : _a__var) : @eq Prop (term _a__var x__var) (all Prop (fun A__var : Prop => A__var -> A__var)).
+Proof. exact (@eq_refl Prop (term _a__var x__var)). Qed.
+
+Definition sort_constraint : forall a : Type', (itself a) -> Prop := fun a _ => term (itself a) (unit a).
 
 Lemma sort_constraint_def : forall a : Type', @eq Prop (sort_constraint a (unit a)) (term (itself a) (unit a)).
 Proof. reflexivity. Qed.
