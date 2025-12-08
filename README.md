@@ -109,7 +109,7 @@ session HOL_wp = Pure +
 
 As an example, the file [`examples/ROOT`](https://github.com/Deducteam/isabelle_dedukti/blob/master/examples/ROOT) defines various sessions with proof recording.
 
-## Commands to translate Isabelle proofs to Dedukti or Lambdapi
+## Command to translate Isabelle proofs to Dedukti or Lambdapi
 
 To translate an already built session to Dedukti or Lambdapi, do:
 
@@ -129,16 +129,16 @@ Remark: to visualize theory dependencies in HOL, you can look at the [dependency
 
 The `examples` directory contains a `Makefile` that provides various targets automating the building and the translation of an Isabelle session specified by an argument of the form `SESSION=$session`:
 - build: makes Isabelle export the proofs
+- dk: translates Isabelle proofs to Dedukti files
+- dko: checks the obtained Dedukti files
 - lp: translates Isabelle proofs to Lambdapi files
 - lpo: checks the obtained Lambdapi files
 - v: translates the Lambdapi files to Rocq
 - vo: checks the obtained Rocq files
-- dk: translates Isabelle proofs to Dedukti files
-- dko: checks the obtained Dedukti files
-
-By default, translated files are created in the `output` sub-directory.
 
 Find out all the possible targets and variables that can be setup by running `make` with no arguments.
+
+The translation to Rocq is work in progress.
 
 ## Performances
 
