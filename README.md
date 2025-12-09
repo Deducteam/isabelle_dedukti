@@ -2,7 +2,7 @@
 
 ## Dependencies
 
-* [Isabelle2024](https://isabelle.in.tum.de/website-Isabelle2024/dist/Isabelle2024_linux.tar.gz)
+* [Isabelle2025](https://isabelle.in.tum.de/website-Isabelle2025/dist/Isabelle2025_linux.tar.gz)
 
 * one dk file checker among:
 
@@ -18,24 +18,22 @@
 
   * **Isabelle**
 
-      - Download [Isabelle2024](https://isabelle.in.tum.de/website-Isabelle2024/dist/Isabelle2024_linux.tar.gz)
+      - Download [Isabelle2025](https://isabelle.in.tum.de/website-Isabelle2025/dist/Isabelle2025_linux.tar.gz)
 
-      - Unpack and run `Isabelle2024/bin/isabelle jedit` at least
+      - Unpack and run `Isabelle2025/bin/isabelle jedit` at least
         once, to ensure that everything works (e.g. see Documentation
         panel with Examples).
 
-      - The command-line executable `isabelle` is subsequently used
-        without further qualification, in practice it works like this:
+      - In the following, the command-line executable `isabelle` is used
+        instead of the full `Isabelle2025/bin/isabelle`. To be able to use the short version one can:
 
-          + explicit executable path (relative or absolute) on the command-line
+          + insert the absolute path of the Isabelle `bin`
+            directory in `$PATH` ([how to add directories to the $PATH variable](https://gist.github.com/nex3/c395b2f8fd4b02068be37c961301caa7))
 
-          + or: insert the absolute path of the Isabelle `bin`
-            directory in `$PATH`
-
-          + or: install references to the Isabelle executables in
+          + or install references to the Isabelle executables in
             another directory mentioned in `$PATH`
 
-  * **isabelle_dedukti**
+  * **`isabelle_dedukti`**
 
       - Clone the repository:
         ```bash
@@ -61,15 +59,15 @@
 
   * **Patching the Isabelle/HOL library**
 
-    A few Isabelle/HOL files need to be modified so that exported proofs are of smaller size and that no oracle are used. See the modifications in [HOL.patch](https://github.com/Deducteam/isabelle_dedukti/blob/master/HOL.patch). For now, HOL and HOL-Library are patched.
-    
-    - You may want to start with changing the permission on the HOL folder:
+    A few Isabelle/HOL files need to be modified so that exported proofs are of smaller size and that no oracle are used. See the modifications in [HOL.patch](https://github.com/Deducteam/isabelle_dedukti/blob/master/HOL.patch). For now, only HOL and HOL-Library are patched.
+
+    - Change the permission on the HOL folder:
 
     ```bash
     chmod -R +w $path_to_Isabelle_dir/src/HOL/
     ```
 
-    - Patch the folder, from the isabelle_dedukti folder:
+    - Patch the HOL folder from the `isabelle_dedukti` folder:
 
     ```bash
     patch -up0 -d $path_to_Isabelle_dir/src/HOL/ < HOL.patch
@@ -87,27 +85,19 @@
     diff -urNx '*~' -x '*.orig' $path_to_unpatched_Isabelle_dir/src/HOL $path_to_patched_Isabelle_dir/src/HOL > HOL.patch
     ```
 
-  * **Deleting the Isabelle databases**
-
-    If something goes wrong, you may delete the databases (which means the proof terms will be rebuilt anew) located somewhere like:
-
-    ```bash
-    $ISABELLE_HOME_USER/Isabelle2024/heaps/polyml-$something/log/
-    ```
-
 ## How to make Isabelle record proofs?
 
-Isabelle theories are built within sessions, and sessions are defined in files named `ROOT`. A quick way to specify a `ROOT` file to Isabelle is with the `-d` option.
+Isabelle theories are defined within [sessions](https://isabelle.in.tum.de/website-Isabelle2021-1/dist/library/Doc/System/Sessions.html) that must be defined in a file named `ROOT`. A session can extend another session.
 
-To export proofs from Isabelle so that they can be translated to Dedukti or Lambdapi afterwards, users need to use the following options in the definition of their session:
+To export proofs from Isabelle so that they can be translated to Dedukti or Lambdapi afterwards, users need to use the following options in the definition of their sessions:
 
 ```
 export_theory,export_proofs,record_proofs=2
 ```
 
-For instance, the following session builds the session HOL with proof recording:
+For instance, the following code defines a session `HOL_wp` extending the builtin session `Pure` for exporting the proofs of the theory file `HOL/Complex_Main.thy`:
 ```
-session HOL_wp in HOL_wp = Pure +
+session HOL_wp = Pure +
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
   sessions Tools HOL
   theories
@@ -117,47 +107,48 @@ session HOL_wp in HOL_wp = Pure +
     Tools.Code_Generator
 ```
 
-Isabelle requires a dedicated directory for each session, specified by the `in HOL_wp` part above. Usually, it suffices to have an empty directory with the same name as the session.
+As an example, the file [`examples/ROOT`](https://github.com/Deducteam/isabelle_dedukti/blob/master/examples/ROOT) defines various sessions with proof recording.
 
-To actually export proof terms from Isabelle, assuming the `ROOT` file containing the session info is located in `$rootdir` and that the directory `$rootdir/$session` exists, do:
-
+The proofs of a session can then be built by using the following Isabelle command:
 ```bash
-isabelle build -b -d $rootdir $session
+isabelle build -b -d$root_file_dir $session
 ```
 
-## Commands to translate Isabelle proofs to Dedukti and Lambdapi
+This also builds any parent session that has not been built yet.
 
-WARNING: the Lambdapi output is temporarily deactivated for it needs to be fixed.
+Remark: to visualize theory dependencies in HOL, you can look at the [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2025/dist/library/HOL/HOL/session_graph.pdf).
 
-To translate an already built session to Dedukti, do:
+## Command to translate Isabelle proofs to Dedukti
+
+To translate to Dedukti an already built session whose parent session has already been translated, do:
 
 ```bash
-isabelle dedukti_session -d $root_dir $session`
+isabelle dedukti_generate -d $root_dir $session`
 ```
 
-Dedukti files are generated in the current directory by default.
+To automatically translation parent sessions as well, use the option `-r`.
 
-Run `isabelle dedukti_session` with no argument to learn more about the available options.
+For the translation to work, follow these steps:
+- add the relevant components to Isabelle (for example, AFP),
+- add the proof export options in your ROOT file,
+- make sure that the parent sessions also export proofs (otherwise, Isabelle will generate incomplete proofs which cannot be translated to Dedukti).
 
-The command `isabelle dedukti_session` generates also a shell script to check the correctness of Dedukti files with `dk check`:
-```bash
-bash dkcheck_$session.sh
-```
+## `examples/Makefile`
 
-Sessions must be built and translated in the order of their dependencies (starting from builtin session Pure).
+The `examples` directory contains a `Makefile` that provides various targets automating the building and the translation of an Isabelle session specified by an argument of the form `SESSION=$session`:
+- build: makes Isabelle export the proofs
+- dk: translates Isabelle proofs to Dedukti files
+- dko: checks the obtained Dedukti files
+- lp: translates Isabelle proofs to Lambdapi files
+- lpo: checks the obtained Lambdapi files
+- v: translates the Lambdapi files to Rocq
+- vo: checks the obtained Rocq files
 
-To translate other sessions, follow these steps:
-- add the relevant components to isabelle (for example, AFP),
-- define the session:
-  - specify the proof export options in your ROOT file
-  - make sure that the parent session also exports proofs (otherwise, Isabelle generates unfinished proofs which cannot be translated to Dedukti)
-- run the above commands
+To check a translated session, make sure to translate all its parent sessions first (including Pure).
 
-Remark: to visualize theory dependencies in HOL, you can look at the [dependency graph of the HOL session](https://isabelle.in.tum.de/website-Isabelle2024/dist/library/HOL/HOL/session_graph.pdf).
+Find out all the possible targets and variables that can be setup by running `make` with no arguments.
 
-## Translation to Coq
-
-The generated Dedukti files can be translated to Coq by using the Coq export function of Lambdapi. In the directory `examples/` a `Makefile` with various targets is provided to easily build, translate and check sessions. Do `make` to learn about the available targets and variables that must or can be set.
+Remark: the translation to Lambdapi and Rocq is still work in progress.
 
 ## Performances
 
@@ -172,10 +163,8 @@ Performance on a machine with 32 processors i9-13950HX and 64 Go RAM
 | HOL_BNF_Def_wp              | 1m39s |     30M |     |         |     |    |       |
 | HOL_Int_wp                  | 1m51s |     33M |     |         |     |    |       |
 | HOL_Set_Interval_wp         | 3m37s |     44M |     |         |     |    |       |
-| HOL_Groebner_Basis_wp       |   15s |    1.3M |     |         |     |    |       |
 | HOL_Presburger_wp           | 2m14s |     41M |     |         |     |    |       |
 | HOL_List_wp                 | 8m19s |     46M |     |         |     |    |       |
-| HOL_Pre_Enum_wp             |   22s |    3.4M |     |         |     |    |       |
 | HOL_Enum_wp                 | 1m24s |    8.5M |     |         |     |    |       |
 | HOL_Quickcheck_Random_wp    |       |         |     |         |     |    |       |
 | HOL_Quickcheck_Narrowing_wp |       |         |     |         |     |    |       |
@@ -186,15 +175,14 @@ Performance on a machine with 32 processors i9-13950HX and 64 Go RAM
 
 There is room for many important improvements. Makarius Wenzel is working on improving the export of proof terms in Isabelle. The generation of dk files is not modular. No term sharing is currently used in dk and v files.
 
-## Project structure
+## Description of each scala file in the src directory (in dependancy order)
 
-- `ast.scala` provides an AST common to (a strict part of) Dedukti and Lambdapi
-- `translate.scala` provides functions to translate Isabelle to the common AST
-- `writers.scala` provides functions to generate Dedukti or Lambdapi code
-- `exporter.scala` provides the main function to export and translate a session
-- `generator.scala` provides the Isabelle command `dedukti_session`
-- `rootfile.scala` provides the Isabelle command `dedukti_root`
-- `dkcheck.scala` provides the Isabelle command `dedukti_check`
+- ast.scala: Syntax of dk/lp terms, notations and commands in scala (Only those that are needed)
+- translate.scala: Functions to translate Isabelle objects to the syntax from ast.scala
+- writers.scala: Functions to read objects in the syntax from ast.scala and write them to dk or lp files in the correct manner
+- exporter.scala: Exporter.exporter translates an Isabelle session to a dk or lp file
+- generator.scala: Generator.generator reads (and potentially translates) all parent sessions of an Isabelle session before translating that session with Exporter.exporter
+- tool.scala: exports Generator.generator as an Isabelle command for the command line (`isabelle dedukti_translate`)
 
 ## Browsing and modifying Isabelle sources
 

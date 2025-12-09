@@ -36,6 +36,9 @@ builtin "sort_constraint_def" ≔ Pure.sort_constraint_def;
 
 builtin "" ≔ Pure.prop_const; // is defined as the identity
 
+builtin "term" ≔ Pure.term;
+builtin "term_def" ≔ Pure.term_def;
+
 builtin "@eq_refl" ≔ Pure.reflexive;
 builtin "@eq_sym" ≔ Pure.symmetric;
 builtin "@eq_trans" ≔ Pure.transitive;

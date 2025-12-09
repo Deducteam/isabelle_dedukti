@@ -1,39 +1,84 @@
-/** Generator of dk or lp file for a theory **/
+/** Generator of dk or lp file for a session **/
 
 package isabelle.dedukti
 
-import isabelle._
-import isabelle.Term.{Const => Cst, Proof => Prf, _}
-import isabelle.Export_Theory._
+import isabelle.*
+import isabelle.Term.*
+import isabelle.Export_Theory.*
 
-import java.io._
+import java.io.{Writer,*}
+import scala.annotation.tailrec
 import scala.collection.mutable
-import scala.util.control.Breaks._
+import scala.util.control.Breaks.*
 
+/** <!-- Some macros for colors and common references.
+ *       Pasted at the start of every object.
+ *       Documentation:
+ *       $dklp: reference dk/lp (purple)
+ *       $dk: reference Dedukti (purple)
+ *       $lp: reference Lambdapi (purple)
+ *       $isa: reference Isabelle (yellow)
+ *       <$met>metname<$mete>: a scala method (orange,code)
+ *       <$metc>metname<$metce>: a scala method inside code (orange)
+ *       <$type>typname<$typee>: a scala type (dark orange,bold,code)
+ *       <$arg>argname<$arge>: a scala argument (pink,code)
+ *       <$argc>argname<$argce>: a scala argument inside code (pink)
+ *       <$str>string<$stre>: a scala string (dark green)
+ *       <$lpc>code<$lpce>: some Lambdapi code (light blue,code)
+ *       <$isac>code<$isace>: some isabelle code (red,code)
+ *       -->
+ * @define dklp <span style="color:#9932CC;">dk/lp</span>
+ * @define dk <span style="color:#9932CC;">Dedukti</span>
+ * @define lp <span style="color:#9932CC;">Lambdapi</span>
+ * @define isa <span style="color:#FFFF00">Isabelle</span>
+ * @define met code><span style="color:#FFA500;"
+ * @define metc span style="color:#FFA500;"
+ * @define mete /span></code
+ * @define metce /span
+ * @define type code><span style="color:#FF8C00"><b
+ * @define typee /b></span></code
+ * @define arg code><span style="color:#FFC0CB;"
+ * @define argc span style="color:#FFC0CB;"
+ * @define arge /span></code
+ * @define argce /span
+ * @define str span style="color:#006400;"
+ * @define stre /span
+ * @define lpc code><span style="color:#87CEFA"
+ * @define lpce /span></code
+ * @define isac code><span style="color:#D40606"
+ * @define isace /span></code
+ */
 object Exporter {
 
-  // compute the biggest theorem serial occurring in a theorem
-  def max_serial(thm: Entity[Thm]): Long = {
-    def aux(p:Prf) : Long = p match {
-      case PThm(serial,_,_,_) => serial
-      case Appt(p,_) => aux(p)
-      case AppP(p,q) => Math.max(aux(p), aux(q))
-      case Abst(_,_,b) => aux(b)
-      case AbsP(_,_,b) => aux(b)
-      case _ => 0
-    }
-    aux(thm.the_content.proof)
+  /** Compute the biggest theorem serial occurring in
+   *  an $isa proof */
+  def max_serial(proof: Term.Proof): Long = proof match {
+    case PThm(serial,_,_,_) => serial
+    case Appt(p,_) => max_serial(p)
+    case AppP(p,q) => Math.max(max_serial(p), max_serial(q))
+    case Abst(_,_,b) => max_serial(b)
+    case AbsP(_,_,b) => max_serial(b)
+    case _ => 0
   }
 
-  // head and arguments of a term
-  def head_args(t:Term,args:List[Term]): (Term,List[Term]) = {
+  /** Recursively splits an $isa term between its head and its arguments.
+   * 
+   * @param t the term being split
+   * @param args the list of arguments encountered so far (default: <$met>Nil<$mete>)
+   *             
+   * @return the couple of the head function and the list of arguments it is applied to
+   *         
+   * @see <$met><u>[[isabelle.dedukti.Syntax.destruct_appls]]</u><$mete> for $dklp terms
+   */
+  @tailrec
+  def head_args(t:Term, args:List[Term]=List()): (Term,List[Term]) = {
     t match {
       case App(u,v) => head_args(u,v::args)
       case _ => (t,args)
     }
   }
 
-  // tell if a term is a free variable or Pure_Thy.TYPE
+  /** True if the $isa term <$arg>t<$arge> is a free term variable or <$isac>Pure.type<$isace> */
   def is_Free_or_TYPE(t:Term): Boolean = {
     t match {
       case Free(_,_) => true
@@ -42,7 +87,7 @@ object Exporter {
     }
   }
 
-  // tell if a type is a free variable
+  /** tell if an $isa type is a free variable */
   def is_TFree(t:Typ): Boolean = {
     t match {
       case TFree(_,_) => true
@@ -50,17 +95,20 @@ object Exporter {
     }
   }
 
-  // replace free variables by De Bruijn indices
+  /** Replace all free variables in an $isa term by De Bruijn indices (therefore binding them)
+   * 
+   *  @param revargs the list of bound variables, to which those bound in the term are added
+   *         during the process. */
   def debruijn(revargs:List[Term], t:Term): Term = {
     t match {
-      case Free(n,ty) => Bound(revargs.indexOf(t))
+      case Free(_,_) => Bound(revargs.indexOf(t))
       case App(u,v) => App(debruijn(revargs,u),debruijn(revargs,v))
       case Abs(n,ty,b) => Abs(n,ty,debruijn(Free(n,ty)::revargs,b))
       case _ => t
     }
   }
 
-  // build an abstraction assuming that arg is a free variable
+  /** build an $isa abstraction assuming that <$arg>arg<$arge> is a free variable */
   def abs(b:Term, arg:Term): Term = {
     arg match {
       case Free(n,ty) => Abs(n,ty,b)
@@ -68,6 +116,17 @@ object Exporter {
     }
   }
 
+  /** Reads an $isa session and possibly translates it to $dk files
+   * 
+   * @param options $isa options to read the session
+   * @param session the $isa session to read
+   * @param parent the parent session unless it is Pure
+   * @param theory_graph the dependency graph of the theories in the session
+   * @param translate whether to translate this theory or (if it is already translated for example)
+   *                  to just read it to update name maps
+   * @param dirs directories in which to find $lp dependencies
+   * @param outdir the directory in which to translate (only useful if translate is <code>true</code>)
+   */
   def exporter(
     options: Options,
     session: String,
@@ -77,60 +136,62 @@ object Exporter {
     term_cache: Term.Cache = Term.Cache.make(),
     progress: Progress = new Progress(),
     dirs: List[Path] = Nil,
-    use_notations: Boolean = false,
+    to_lp: Boolean = true,
+    use_notations: Boolean = true,
     eta_expand: Boolean = false,
     verbose: Boolean = false,
     outdir: String = "",
   ): Unit = {
 
-    /* from an equality [Pure.eq[eqtys] lhs rhs] where [lhs = c[tys] x1
-     * .. xn] with tys and xj variables, returns (c,dfn,eqtys,lhs)
-     * where [dfn=\x1..\xn,rhs] */
-    def is_eq_axiom(a:Entity[Axiom]):Option[(String,Term,List[Typ],Term)] = {
-      if (a.name.endsWith("_def") || a.name.endsWith("_def_raw")) {
-        a.the_content.prop.term match {
-          case App(u,rhs) =>
-            u match {
-              case App(e,lhs) =>
-                e match {
-                  case Cst(id,eqtys) =>
-                    if (id != "Pure.eq") {
-                      if (verbose) progress.echo("axiom "+a.name+": cannot extract definition because it is headed by "+id+" instead of Pure.eq")
-                      None
-                    } else {
-                      val (h,args) = head_args(lhs,List())
-                      h match {
-                        case Cst(n,tys) =>
-                          if (tys.forall(is_TFree) && args.forall(is_Free_or_TYPE)) {
-                            if (verbose) progress.echo("  head: "+h.toString+"\n  args: "+args.toString+"\n  rhs: "+rhs.toString)
-                            args match {
-                              case List(Term.Const(Pure_Thy.TYPE,List(TFree(x,Nil)))) =>
-                                lhs match {
-                                  case OFCLASS(_,_) => Some(n,rhs,eqtys,lhs)
-                                  case _ => None
-                                }
-                              case _ =>
-                                val revargs = args.reverse
-                                val rhs2 = debruijn(revargs,rhs)
-                                val dfn = revargs.foldLeft(rhs2)(abs)
-                                Some(n,dfn,eqtys,lhs)
-                            }
-                          } else {
-                            if (verbose) progress.echo("axiom "+a.name+": cannot extract definition because it is not applied to free variables\n  axiom: "+a.the_content.prop.term.toString+"\n  type arguments: "+tys.toString+"\n  term arguments: "+args.toString)
-                            None
-                          }
-                        case _ => None
-                      }
-                    }
-                  case _ => None
-                }
-              case _ => None
-            }
-          case _ => None
-        }
-      } else None
-    }
+    /** depending on variable <code>to_lp</code>, opens an [[LP_Writer]] or a [[DK_Writer]] */
+    def new_Writer(writer: Writer): Abstract_Writer =
+      if (to_lp) new LP_Writer(use_notations,writer)
+      else new DK_Writer(writer)
 
+    /** .lp or .dk depending on variable <code>to_lp</code> */
+    val extension: String = if (to_lp) ".lp" else ".dk"
+    /** .lpo or .dko depending on variable <code>to_lp</code> */
+    val exto: String = extension+"o"
+
+    /** from an $isa equality axiom <$isac>Pure.eq[eqtys] lhs rhs<$isace>
+     * where <code>lhs = <$isac>c[tys] x1 .. xn<$isace></code> with tys and xj variables,
+     * returns <code>(c,dfn,eqtys,lhs)</code> where
+     * <code>dfn=<$isac>λ x1...λ xn. rhs<$isace></code>
+     *
+     * @define isa <span style="color:#FFFF00">Isabelle</span>
+     * @define isac code><span style="color:#D40606"
+     * @define isace /span></code
+     */
+    def is_eq_axiom(a:Entity[Axiom]): Option[(String,Term,List[Typ],Term)] = {
+      if (!(a.name.endsWith("_def") || a.name.endsWith("_def_raw"))) None
+      else a.the_content.prop.term match {
+        case App(App(Term.Const(id, _), _), _) if id != "Pure.eq" =>
+          if (verbose) progress.echo("axiom " + a.name + ": cannot extract definition because it is headed by " + id + " instead of Pure.eq")
+          None
+        case App(App(Term.Const(_, eqtys), lhs@OFCLASS(_, name)), rhs) =>
+          Some(name + "_class", rhs, eqtys, lhs)
+        case App(App(Term.Const(_, eqtys), lhs), rhs) =>
+          head_args(lhs) match {
+            case (Term.Const(n, tys), args) if !(tys.forall(is_TFree) && args.forall(is_Free_or_TYPE)) =>
+              if (verbose) progress.echo("axiom " + a.name + ": cannot extract definition because it is not applied to free variables\n  axiom: " + a.the_content.prop.term.toString + "\n  type arguments: " + tys.toString + "\n  term arguments: " + args.toString)
+              None
+            case (h @ Term.Const(n, tys), args @ List(Term.Const(Pure_Thy.TYPE, List(TFree(_, Nil))))) =>
+              if (verbose) progress.echo("  head: " + h.toString + "\n  args: " + args.toString + "\n  rhs: " + rhs.toString)
+              None
+            case (h @ Term.Const(n, tys), args) =>
+              if (verbose) progress.echo("  head: " + h.toString + "\n  args: " + args.toString + "\n  rhs: " + rhs.toString)
+              // TODO: Modified this method quite a bit, especially here, please tell me if it is wrong
+              //       I particularly removed a part that I believe was impossible to reach.
+              val revargs = args.reverse
+              val rhs2 = debruijn(revargs, rhs)
+              val dfn = revargs.foldLeft(rhs2)(abs)
+              Some(n, dfn, eqtys, lhs)
+            case _ => None
+          }
+        case _ => None
+      }
+    } 
+    
     val notations: mutable.Map[Syntax.Ident, Syntax.Notation] = mutable.Map()
     Translate.global_eta_expand = eta_expand
     val build_results =
@@ -143,31 +204,49 @@ object Exporter {
     val thys = theory_graph.topological_order
     val theory_names = thys.map(node_name => node_name.toString)
 
-    // file associated to a session or theory
-    def new_dk_part_writer(name: String) =
-      new Part_Writer(Path.explode(outdir+Prelude.mod_name(name)+".dk"))
+    /** Opens for writing a .dk.part or .lp.part file associated to a session or theory,
+     *  which, when closed, is copied to the corresponding .dk or .lp file
+     */
+    def new_part_writer(name: String) =
+      new Part_Writer(Path.explode(outdir+Prelude.mod_name(name)+extension))
 
-    // command for a proof
-    def decl_proof(serial: Long, theory_name: String): Syntax.Command = {
+    /** Reads the proof of a lemma and uses it
+     *
+     * @param serial the integer serial of the lemma
+     * @param f the function to apply to the proof and proposition
+     * @return the application of f to the proof numbered <$arg>serial<$arge> and to the
+     *         proposition it proves
+     * @throws isabelle.error if no proof can be found
+     * @define arg code><span style="color:#FFC0CB;"
+     * @define arge /span></code
+     */
+    def use_proof[A](theory_name: String, serial: Long)(f: (Term.Proof,Prop) => A): A = {
       read_proof(ses_cont, Thm_Id(serial,theory_name), other_cache=Some(term_cache)) match {
         case Some(proof) =>
-          Translate.stmt_decl(Prelude.ref_proof_ident(serial), proof.prop, Some(proof.proof))
+          f(proof.proof,proof.prop)
         case None =>
           error("proof "+serial+" not found!")
       }
     }
 
-    // map theory_name -> proofs in increasing order
+    /** Reads the proof of theorem <code><span style="color:#FFC0CB;">serial</span></code>
+     *  if there is one and returns a command declaring it as a lemma or axiom 
+     */
+    def decl_proof(serial: Long, theory_name: String): Syntax.Command = use_proof(theory_name,serial){
+      case (proof,prop) => Translate.stmt_decl(Prelude.ref_proof_ident(serial),prop,Some(proof))
+    }
+
+    /** map theory_name -> set of proofs in increasing order */
     val map_theory_proofs = mutable.Map[String, mutable.SortedSet[Long]]()
     // add an entry for each theory
     for (theory_name <- theory_names) {
       map_theory_proofs += (theory_name -> mutable.SortedSet[Long]())
     }
 
-    // module for orphan proofs (not in the current session theories)
+    /** the name of the module for orphan proofs (not in the current session theories) */
     val mod_name_orphans = Prelude.mod_name(session)+"_orphans"
 
-    // commands for orphan proofs
+    /** commands for orphan proofs */
     val orphan_commands = mutable.Queue[Syntax.Command]()
 
     // record proof idents and update map_theory_proofs or orphan_commands
@@ -180,7 +259,7 @@ object Exporter {
         if (verbose) progress.echo("  proof " + serial)
         if (map_theory_proofs.keySet.contains(theory_name)) {
           Prelude.add_proof_ident(serial,theory_name)
-          map_theory_proofs(theory_name) += (serial)
+          map_theory_proofs(theory_name) += serial
         } else {
           Prelude.add_proof_ident(serial,mod_name_orphans)
           orphan_commands += (decl_proof(serial,theory_name))
@@ -188,7 +267,10 @@ object Exporter {
       }
     }
 
-    if (!translate) {
+    if (!translate) { /* if translate is false, just update maps to keep in mind
+                         the translated names of the session, but do not
+                         write anything anywhere
+                      */ 
       progress.echo("Start reading session "+session)
       for (thy <- thys) {
         val theory_name = thy.toString
@@ -222,40 +304,53 @@ object Exporter {
 
     else {
       progress.echo("Start translating session "+session)
+      /** name of the module for this session */
       val mod_name_session = "session_"+Prelude.mod_name(session)
 
-      // set up generation of shell script to check dedukti files
-      val filename = "dkcheck_"+mod_name_session+".sh"
+      // set up generation of makefile script to check Dedukti or Lambdapi files
+      val checkstr : String = (if (to_lp) "lpcheck_" else "dkcheck_")
+      val filename = checkstr + session + ".mk"
       progress.echo("Start writing "+filename)
       val file = new File(outdir+filename)
-      val sh = new BufferedWriter(new FileWriter(file))
-      sh.write("#!/bin/sh\n")
-      parent match {
+      val mk = new BufferedWriter(new FileWriter(file))
+      // get the base dependencies
+      val base_deps: String = parent match {
         case Some(anc) =>
-          sh.write("bash dkcheck_session_"+Prelude.mod_name(anc)+".sh\n")
+          // Dependency of the orphan file
+          mk.write("$(OUT_DIR)/" + mod_name_orphans + exto + " : $(OUT_DIR)/session_" + Prelude.mod_name(anc) + exto)
           // write orphan proofs
-          using (new_dk_part_writer(mod_name_orphans)) { part_writer =>
-            progress.echo("Start writing "+mod_name_orphans+".dk")
-            val orphan_writer = new DK_Writer(part_writer)
-            orphan_writer.require("session_"+anc)
+          using(new_part_writer(mod_name_orphans)) { part_writer =>
+            progress.echo("Start writing " + mod_name_orphans + extension)
+            val orphan_writer = new_Writer(part_writer)
+            orphan_writer.require("session_" + anc)
             for (cmd <- orphan_commands) {
-              orphan_writer.command(cmd,notations)
+              orphan_writer.command(cmd, notations)
             }
-            progress.echo("End writing "+mod_name_orphans+".dk")
+            progress.echo("End writing " + mod_name_orphans + extension)
           }
+          " $(OUT_DIR)/session_" + Prelude.mod_name(anc) + exto + " $(OUT_DIR)/" + mod_name_orphans + exto
         case _ =>
-          sh.write("bash dkcheck_STTfa.sh\n")
+          " $(OUT_DIR)/STTfa" + exto
       }
-      sh.write("dk check -e --eta")
-      parent match {
-        case Some(anc) => sh.write(" "+mod_name_orphans+".dk")
-        case _ =>
+      /** Write makefile dependencies, either from predecessors in the dependency graph or
+       *  from base dependencies in case of no predecessor
+       *
+       *  @param filename the file for which to write dependencies
+       *  @param predecessors the list of its predecessors in the dependency graph
+       */
+      def mk_deps(filename: String, predecessors: List[Document.Node.Name]): Unit = {
+        mk.write("\n$(OUT_DIR)/" + filename + exto + " :")
+        if (predecessors.isEmpty) mk.write(base_deps)
+        else for (pred <- predecessors) mk.write(" $(OUT_DIR)/" + Prelude.mod_name(pred.toString) + exto)
       }
 
-      // generate the dedukti file importing all the theories of the session
-      using(new_dk_part_writer(mod_name_session)) { part_writer =>
-        progress.echo("Start writing "+mod_name_session+".dk")
-        val session_writer = new DK_Writer(part_writer)
+      mk_deps(mod_name_session,thys)
+      /* Open a dk file S for the session, then translate each theory of the
+       * session in a dk file T, and simply import module T in S
+       */
+      using(new_part_writer(mod_name_session)) { part_writer1 =>
+        progress.echo("Start writing "+mod_name_session+extension)
+        val session_writer = new_Writer(part_writer1)
 
         for (thy <- thys) {
           val theory_name = thy.toString
@@ -264,15 +359,15 @@ object Exporter {
           val theory = read_theory(provider)
           session_writer.require(theory_name)
           val mod_name_theory = Prelude.mod_name(theory_name)
-
-          // generate the dedukti file of the theory
-          sh.write(" "+mod_name_theory+".dk")
-          using(new_dk_part_writer(mod_name_theory)) { part_writer =>
-            val writer = new DK_Writer(part_writer)
-            progress.echo("Start writing "+mod_name_theory+".dk")
+          
+          mk_deps(mod_name_theory, theory_graph.imm_preds(thy).toList)
+          using(new_part_writer(mod_name_theory)) { part_writer2 =>
+            val writer = new_Writer(part_writer2)
+            progress.echo("Start writing "+mod_name_theory+extension)
             writer.comment("Theory "+theory_name)
             // write module dependencies
-            if (parent != None) writer.require(mod_name_orphans)
+            if (parent.isDefined) writer.require(mod_name_orphans)
+            else writer.require("STTfa")
             for (node_name <- theory_graph.imm_preds(thy)) {
               writer.require(node_name.toString)
             }
@@ -285,15 +380,15 @@ object Exporter {
               val cmd = Translate.type_decl(theory_name, a.name, a.the_content.args, a.the_content.abbrev, a.the_content.syntax)
               writer.command(cmd,notations)
             }
-            // map constant name -> definition * definitional axiom
+            /** map constant name -> definition */
             var map_cst_dfn:Map[String,Term] = Map()
-            // names of definitional axioms
+            /** map definitional axiom name -> (type variables, the term it defines) */
             var map_axm_eqtyp:Map[String,(List[Typ],Term)] = Map()
-            // check constant abbreviations
+            // check constant definitions
             for (a <- theory.consts) {
               a.the_content.abbrev match {
                 case Some(d) =>
-                  if (verbose) progress.echo(a.name+" has abbreviation")
+                  if (verbose) progress.echo(a.name+" has definition")
                   map_cst_dfn += (a.name -> d)
                 case _ =>
               }
@@ -315,12 +410,10 @@ object Exporter {
             writer.nl()
             writer.comment("Undefined classes")
             for (a <- theory.classes.sortWith(le)) {
-              map_cst_dfn.get(a.name+"_class") match {
-                case None =>
+              if (!(map_cst_dfn contains (a.name+"_class"))) {
                   if (verbose) progress.echo("  "+a.toString+" "+a.serial)
                   val cmd = Translate.class_decl(theory_name, a.name, None)
                   writer.command(cmd,notations)
-                case Some(_) =>
               }
             }
             // write declarations related to undefined constants
@@ -328,16 +421,10 @@ object Exporter {
             writer.comment("Undefined constants")
             for (c <- theory.consts.sortWith(le)) {
               // skip constants corresponding to classes
-              Class_Const.unapply(c.name) match {
-                case Some(_) =>
-                case None =>
-                  map_cst_dfn.get(c.name) match {
-                    case None =>
-                      if (verbose) progress.echo("  "+c.toString+" "+c.serial)
-                      val cmd = Translate.const_decl(theory_name, c.name, c.the_content.typargs, c.the_content.typ, None, c.the_content.syntax)
-                      writer.command(cmd,notations)
-                    case Some(_) =>
-                  }
+              if (!c.name.endsWith("_class") && !map_cst_dfn.contains(c.name)) {
+                if (verbose) progress.echo("  " + c.toString + " " + c.serial)
+                val cmd = Translate.const_decl(theory_name, c.name, c.the_content.typargs, c.the_content.typ, None, c.the_content.syntax)
+                writer.command(cmd, notations)
               }
             }
             // write declarations related to defined constants
@@ -345,16 +432,14 @@ object Exporter {
             writer.comment("Defined constants")
             for (c <- theory.consts.sortWith(le)) {
               // skip constants corresponding to classes
-              Class_Const.unapply(c.name) match {
-                case Some(_) =>
-                case None =>
-                  map_cst_dfn.get(c.name) match {
-                    case None =>
-                    case Some(dfn) =>
-                      if (verbose) progress.echo("  "+c.toString+" "+c.serial)
-                      val cmd = Translate.const_decl(theory_name, c.name, c.the_content.typargs, c.the_content.typ, Some(dfn), c.the_content.syntax)
-                      writer.command(cmd,notations)
-                  }
+              if (!c.name.endsWith("_class")) {
+                map_cst_dfn.get(c.name) match {
+                  case None =>
+                  case Some(dfn) =>
+                    if (verbose) progress.echo("  " + c.toString + " " + c.serial)
+                    val cmd = Translate.const_decl(theory_name, c.name, c.the_content.typargs, c.the_content.typ, Some(dfn), c.the_content.syntax)
+                    writer.command(cmd, notations)
+                }
               }
             }
             // write declarations related to defined classes
@@ -375,12 +460,12 @@ object Exporter {
             writer.comment("Axioms")
             for (a <- theory.axioms.sortWith(le)) {
               if (!map_axm_eqtyp.contains(a.name)) {
-                if (verbose) progress.echo("  "+a.toString+" "+a.serial)
-                val cmd = Translate.stmt_decl(Prelude.add_axiom_ident(a.name,theory_name), a.the_content.prop, None)
-                writer.command(cmd,notations)
+                if (verbose) progress.echo("  " + a.toString + " " + a.serial)
+                val cmd = Translate.stmt_decl(Prelude.add_axiom_ident(a.name, theory_name), a.the_content.prop, None)
+                writer.command(cmd, notations)
               }
             }
-            // write declarations related to definitional axioms
+            // write declarations related to definitional lemmas
             writer.nl()
             writer.comment("Definitional theorems")
             for (a <- theory.axioms.sortWith(le)) {
@@ -395,53 +480,148 @@ object Exporter {
                   writer.command(cmd,notations)
               }
             }
-            // function writing a declaration related to a theorem
-            def decl_thm(thm : Entity[Thm]): Unit = {
-              if (verbose) progress.echo("  "+thm.toString+" "+thm.serial)
-              val cmd = Translate.stmt_decl(Prelude.add_thm_ident(thm.name,theory_name), thm.the_content.prop, Some(thm.the_content.proof))
+
+            /** count the proofs that are removed */
+            var n_proofs_rm: Int = 0
+            var n_proofs_total: Int = 0
+
+            /** function writing a declaration related to a theorem
+             *
+             *  @param name the name of the theorem
+             *  @param prop the proposition proved by the theorem
+             *  @param proof the proof of the theorem */
+            def decl_thm(name: String, prop: Prop, proof: Term.Proof): Unit = {
+              n_proofs_total += 1
+              if (verbose) progress.echo("  "+ name)
+              val cmd = Translate.stmt_decl(Prelude.add_thm_ident(name,theory_name), prop, Some(proof))
               writer.command(cmd, notations)
             }
-            // function writing declarations related to theorems
-            def write_proofs(
-              prfs : List[Long], // proofs to handle
-              thm : Entity[Thm], // first theorem to handle
-              thms : List[Entity[Thm]], // remaining theorems
-              thm_prf : Long // maximal proof index in thm
-            ) : Unit = prfs match {
-              case prf::prfs2 =>
-                if (prf > thm_prf) {
-                  // all proofs <= thm_prf have been handled already
-                  decl_thm(thm)
-                  thms match {
-                    case thm2 :: thms2 =>
-                      write_proofs(prfs,thm2,thms2,max_serial(thm2))
-                    case Nil =>
-                      write_proofs(prfs,null,Nil,Long.MaxValue)
-                  }
-                } else {
-                  if (verbose) progress.echo("  proof "+prf)
-                  val cmd = decl_proof(prf,theory_name)
-                  writer.command(cmd,notations)
-                  write_proofs(prfs2,thm,thms,thm_prf)
-                }
-              case _ =>
+
+            /** map proof serial -> replacement.
+             * replacement is <code>Some(name)</code> if it is to be replaced by a theorem
+             * and <code>None</code> if it is to be erased. */
+            var replace_serial: Map[Long, Option[String]] = Map()
+
+            /** whether an Isabelle term is a free variable, possibly lambda-abstracted */
+            @tailrec
+            def is_abstract_free(term: Term):Boolean = term match {
+              case Abs(_,_,remainder) => is_abstract_free(remainder)
+              case App(remainder,Bound(_)) => is_abstract_free(remainder)
+              case Free(_,_) => true
+              case _ => false
             }
+
+            /** In $isa, Some theorem proofs are a reference to an unnamed lemma proving the exact same
+             * statement. This function recursively inspects the proof of a theorem to delete all such useless lemmas
+             * by updating the replace_serial map
+             *
+             * @param name               the name of the theorem
+             * @param proof              the proof of the theorem
+             * @param encountered_lemmas all lemmas to replace by the theorem when they are called,
+             *                           where the last encountered (at the top of the list, the first one
+             *                           in the numbering order) will have its declaration replaced by the
+             *                           theorem's one
+             * @return true if no such lemma was found, indicating that the theorem should be stated on its own
+             * @define isa <span style="color:#FFFF00">Isabelle</span>
+             * @define arg code><span style="color:#FFC0CB;"
+             * @define arge /span></code
+             */
+            @tailrec
+            def remove_useless_proofs(name: String, proof: Term.Proof,
+                                      encountered_lemmas: List[Long] = Nil): Boolean = proof match {
+              case PThm(serial, origin_theory, _, _) if origin_theory == theory_name &
+                !Translate.replace_serial.contains(serial) =>
+                  Translate.replace_serial += serial -> name
+                  // otherwise scala does not recognise tail recursiveness
+                  val next_proof = use_proof(theory_name,serial){case (prf,_) => prf}
+                  remove_useless_proofs(name,next_proof,serial::encountered_lemmas)
+              case Appt(rem, arg) if is_abstract_free(arg) => remove_useless_proofs(name,rem,encountered_lemmas)
+              case _ =>
+                encountered_lemmas match {
+                case final_lemma::remainder =>
+                  replace_serial += final_lemma -> Some(name)
+                  for (lemma <- remainder) replace_serial += lemma -> None
+                  false
+                case _ => true
+                }
+              }
+
+            /** function writing the declaration of a lemma for an intermediary proof */
+            def write_proof(prf: Long): Unit = {
+              replace_serial.get(prf) match {
+                case Some(Some(thm_name)) => n_proofs_rm += 1
+                  use_proof(theory_name,prf){
+                  case (proof,prop) => decl_thm(thm_name,prop,proof)
+                }
+                case Some(None) =>
+                  n_proofs_rm += 1
+                  n_proofs_total += 1
+                  if (verbose) progress.echo("  ignoring proof" + prf)
+                case _ =>
+                  n_proofs_total += 1
+                  if (verbose) progress.echo("  proof " + prf)
+                  val cmd = decl_proof(prf, theory_name)
+                  writer.command(cmd, notations)
+              }
+            }
+            
+            /** function writing all non-redundant proofs in prfs as intermediary lemmas,
+             *  also declaring all theorems in thms once their [[max_serial]] has been reached
+             *
+             * @param prfs proofs to handle
+             * @param thms remaining theorems
+             */
+            def write_proofs(prfs: List[Long], thms: List[Entity[Thm]]) : Unit =
+              thms match {
+                case thm :: thms =>
+                  val theorem = thm.the_content
+                  write_proofs_body(prfs,thms,max_serial(theorem.proof),thm.name,theorem.prop,theorem.proof)
+                case _ => for (prf <- prfs) {write_proof(prf)}
+              }
+
+            @tailrec
+            def write_proofs_body(prfs: List[Long], thms: List[Entity[Thm]],
+                                  thm_prf: Long, thm_name: String, thm_prop: Prop,
+                                  thm_proof: Term.Proof): Unit =
+              prfs match {
+                case prf::prfs2 =>
+                  if (prf > thm_prf) {
+                    // all proofs <= thm_prf have been handled already
+                    decl_thm(thm_name,thm_prop,thm_proof)
+                    thms match {
+                      case thm :: thms =>
+                        val theorem = thm.the_content
+                        write_proofs_body(prfs,thms,max_serial(theorem.proof),thm.name,theorem.prop,theorem.proof)
+                      case _ => for (prf <- prfs) {write_proof(prf)}
+                    }
+                  } else {
+                    write_proof(prf)
+                    write_proofs_body(prfs2,thms,thm_prf,thm_name,thm_prop,thm_proof)
+                  }
+                case _ =>
+              }
             // write declarations related to theorems
             writer.nl()
             writer.comment("Theorems")
-            // all proofs in increasing order
+            /** all proofs in increasing order */
             val prfs = map_theory_proofs(theory_name).toList
-            theory.thms match {
-              case thm :: thms => write_proofs(prfs,thm,thms,max_serial(thm))
-              case _ => write_proofs(prfs,null,Nil,Long.MaxValue)
-            }
-            progress.echo("End writing "+mod_name_theory+".dk")
+
+            /** remove all useless lemmas and keep the theorems that did not replace a lemma */
+            val thms = for (thm <- theory.thms if remove_useless_proofs(thm.name,thm.the_content.proof))
+              yield thm
+
+            write_proofs(prfs,thms)
+            progress.echo("End writing "+mod_name_theory+extension)
+
+            val rm_percentage = ((10000*n_proofs_rm.toFloat)/n_proofs_total).round.toFloat/100
+            progress.echo(n_proofs_rm.toString + " proofs removed in theory " + theory_name +
+                          " out of " + n_proofs_total.toString + " (" + rm_percentage.toString +
+                          "%)")
           }
           progress.echo("End reading theory "+theory_name)
         }
-        sh.write(" "+mod_name_session+".dk\n")
-        sh.close()
-        progress.echo("End writing "+mod_name_session+".dk")
+        mk.close()
+        progress.echo("End writing "+mod_name_session+extension)
       }
       progress.echo("End translating session "+session)
     }

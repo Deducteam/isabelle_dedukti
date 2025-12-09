@@ -1,55 +1,106 @@
 /** Translation of Isabelle (proof)terms into the lambda-Pi calculus **/
 
-
 package isabelle.dedukti
 
 import isabelle.Export_Theory.{No_Syntax, Prefix}
-import isabelle._
+import isabelle.*
 
 import scala.collection.mutable
 import scala.annotation.tailrec
 
+/** <!-- Some macros for colors and common references.
+ *       Pasted at the start of every object.
+ *       Documentation:
+ *       $dklp: reference dk/lp (purple)
+ *       $dk: reference Dedukti (purple)
+ *       $lp: reference Lambdapi (purple)
+ *       $isa: reference Isabelle (yellow)
+ *       <$met>metname<$mete>: a scala method (orange,code)
+ *       <$metc>metname<$metce>: a scala method inside code (orange)
+ *       <$type>typname<$typee>: a scala type (dark orange,bold,code)
+ *       <$arg>argname<$arge>: a scala argument (pink,code)
+ *       <$argc>argname<$argce>: a scala argument inside code (pink)
+ *       <$str>string<$stre>: a scala string (dark green)
+ *       <$lpc>code<$lpce>: some Lambdapi code (light blue,code)
+ *       -->
+ * @define dklp <span style="color:#9932CC;">dk/lp</span>
+ * @define dk <span style="color:#9932CC;">Dedukti</span>
+ * @define lp <span style="color:#9932CC;">Lambdapi</span>
+ * @define isa <span style="color:#FFFF00">Isabelle</span>
+ * @define met code><span style="color:#FFA500;"
+ * @define metc span style="color:#FFA500;"
+ * @define mete /span></code
+ * @define metce /span
+ * @define type code><span style="color:#FF8C00"><b
+ * @define typee /b></span></code
+ * @define arg code><span style="color:#FFC0CB;"
+ * @define argc span style="color:#FFC0CB;"
+ * @define arge /span></code
+ * @define argce /span
+ * @define str span style="color:#006400;"
+ * @define stre /span
+ * @define lpc code><span style="color:#87CEFA"
+ * @define lpce /span></code
+ */
 object Prelude {
 
   // Object name translation, and module dependencies management
 
-  /* An Isabelle object can be uniquely identify from its id (module
-   name dot name) and its kind (class, type, const, etc.). */
+  // An Isabelle object can be uniquely identified from its id (module
+  // name dot name) and its kind (class, type, const, etc.).
+  
+  /**
+   * Making an $isa object name unique by specifying its kind.
+   * @param id the qualified identifier of the object (modulename.name)
+   * @param kind the kind of the object (class, type, const, etc.)
+   * @return the string obtained by appending <$arg>kind<$arge>
+   *         to <$arg>id<$arge>, with a slash to separate them
+   */
   def full_name(id: String, kind: String): String = id + "/" + kind
 
   /* However, to keep the translated name as close as possible to the
    original name, we remove the module prefix and the kind if this is
    possible. */
 
-  // map Isabelle full_name -> translated name
+  /** map $isa full_name -> translated name */
   var namesMap: Map[String, String] = Map()
 
-  // set of translated names
+  /** set of translated names */
   var namesSet: Set[String] = Set()
 
-  // Dedukti or Lambdapi module names cannot contain dots
-  // Dedukti module names can contain letters, digits and "_" only
+  /** Replaces dots with underscore in a name, as $dk does not accept
+   * dots in a name.
+   * @param m the name to modify
+   * @return the name with each '.' and '-' replaced with '_' */
   def mod_name(m: String): String = m.replace(".", "_").replace("-", "_")
 
-  // module of a translated name
+  /** map translated name -> module */
   var moduleOf: Map[String, String] = Map()
 
+  /** Get the module of a translated name using map moduleOf
+   * @param id the translated name
+   * @return the module in which it is defined. <br>
+   *         Prints an error if the name cannot be found. */
   def module_of(id: String): String = {
     moduleOf get id match {
       case None => error("unknown name:" + id)
       case Some(m) => m
     }
   }
-
-  // currently translated module
+  
   var current_module: String = "STTfa"
   var map_theory_session: Map[String, String] = Map("STTfa" -> "Pure")
-  def set_current_module(m: String) = { current_module = m }
-  def set_theory_session(t: String, s: String) = {map_theory_session += t -> s}
-
+  def set_current_module(m: String): Unit = { current_module = m }
+  def set_theory_session(t: String, s: String): Unit = {map_theory_session += t -> s}
+  
+  /** The string <$str>"STTfa"<$stre> */
   val STTfa: String = "STTfa"
 
-  // add a new mapping from an Isabelle full_name to its translation
+  /** Add a new mapping from an $isa full_name to its translation.
+   * @param id the qualified identifier of the object (modulename.name)
+   * @param kind the kind of the object (class, type, const, etc.)
+   * @param module0 the current $dklp module
+   * @return a unique translated id, after updating maps to account for it */
   def add_name(id: String, kind: String, module0: String) : String = {
     val (translated_id,module) = id match {
       case Pure_Thy.FUN => ("arr",STTfa)
@@ -74,8 +125,12 @@ object Prelude {
     translated_id
   }
 
-  // translate an Isabelle full_name
-  def get_name(id: String, kind: String ): String = {
+  /** Get the translated name of an $isa object using map namesMap
+   * @param id the qualified identifier of the object (modulename.name)
+   * @param kind the kind of the object (class, type, const, etc.)
+   * @return the translated name of the object. <br>
+   *         Prints an error if the object cannot be found. */
+  def get_name(id: String, kind: String): String = {
     namesMap get (full_name(id, kind)) match {
       case None => error ("id '"+full_name(id,kind)+"' not found")
       case Some(s) => s
@@ -83,20 +138,74 @@ object Prelude {
   }
 
   /* kinds */
-
+  /** <pre><code><$metc>add_class_ident<$metce>(<$argc>a<$argce>, <$argc>module<$argce>) =
+   * <$metc><u>[[add_name]]</u><$metce>(<$argc>a<$argce>+<$str>"_class"<$stre>, <$str>"const"<$stre>, <$argc>module<$argce>)</pre></code>
+   */
   def add_class_ident(a: String, module: String): String = add_name(a+"_class", Export_Theory.Kind.CONST, module)
+  /** <pre><code><$metc>add_type_ident<$metce>(<$argc>a<$argce>, <$argc>module<$argce>) =
+   * <$metc><u>[[add_name]]</u><$metce>(<$argc>a<$argce>, <$str>"type"<$stre>, <$argc>module<$argce>)</pre></code>
+   */
   def add_type_ident(a: String, module: String): String = add_name(a, Export_Theory.Kind.TYPE, module)
+  /** <pre><code><$metc>add_const_ident<$metce>(<$argc>a<$argce>, <$argc>module<$argce>) =
+   * <$metc><u>[[add_name]]</u><$metce>(<$argc>a<$argce>, <$str>"const"<$stre>, <$argc>module<$argce>)</pre></code>
+   */
   def add_const_ident(a: String, module: String): String = add_name(a, Export_Theory.Kind.CONST, module)
+  /** <pre><code><$metc>add_axiom_ident<$metce>(<$argc>a<$argce>, <$argc>module<$argce>) =
+   * <$metc><u>[[add_name]]</u><$metce>(<$argc>a<$argce>, <$str>"axiom"<$stre>, <$argc>module<$argce>)</pre></code>
+   */
   def add_axiom_ident(a: String, module: String): String = add_name(a, Markup.AXIOM, module)
+  /** <pre><code><$metc>add_thm_ident<$metce>(<$argc>a<$argce>, <$argc>module<$argce>) =
+   * <$metc><u>[[add_name]]</u><$metce>(<$argc>a<$argce>, <$str>"thm"<$stre>, <$argc>module<$argce>)</pre></code>
+   */
   def add_thm_ident(a: String, module: String): String = add_name(a, Export_Theory.Kind.THM, module)
+  /** <pre><code><$metc>add_proof_ident<$metce>(<$argc>serial<$argce>, <$argc>module<$argce>) =
+   * <$metc><u>[[add_name]]</u><$metce>(<$str>f"proof_<$stre>$<$argc>serial<$argce><$str>"<$stre>, <$str>""<$stre>, <$argc>module<$argce>)
+   */
   def add_proof_ident(serial: Long, module: String): String = add_name(f"proof_$serial", "", module)
 
+  /** The translated name of an $isa class
+   * @param a the name of the class
+   * @return The translated name of the object <$arg>a<$arge>_class of kind const
+   */
   def ref_class_ident(a: String): String = get_name(a+"_class", Export_Theory.Kind.CONST)
+  /** The translated name of an $isa type
+   *
+   * @param a the name of the type
+   * @return The translated name of the object <$arg>a<$arge> of kind type
+   * @see <$met><u>[[get_name]]</u><$mete>
+   */
   def ref_type_ident(a: String): String = get_name(a, Export_Theory.Kind.TYPE )
+  /** The translated name of an $isa constant
+   *
+   * @param a the name of the constant
+   * @return The translated name of the object <$arg>a<$arge> of kind const
+   * @see <$met><u>[[get_name]]</u><$mete>
+   */
   def ref_const_ident(a: String): String = get_name(a, Export_Theory.Kind.CONST)
+  /** The translated name of an $isa axiom
+   *
+   * @param a the name of the axiom
+   * @return The translated name of the object <$arg>a<$arge> of kind axiom
+   * @see <$met><u>[[get_name]]</u><$mete>
+   */
   def ref_axiom_ident(a: String): String = get_name(a, Markup.AXIOM)
+  /** The translated name of an $isa theorem
+   *
+   * @param a the name of the theorem
+   * @return The translated name of the object <$arg>a<$arge> of kind thm
+   * @see <$met><u>[[get_name]]</u><$mete>
+   */
   def ref_thm_ident(a: String): String = get_name(a, Export_Theory.Kind.THM)
+  /** the name of the translation of an $isa proof step
+   * @param serial the index of the proof step
+   * @return The name that was assigned to it
+   * @see <$met><u>[[get_name]]</u><$mete>
+   */
   def ref_proof_ident(serial: Long): String = get_name(f"proof_$serial", "")
+  /** The translated name of a variable
+   * @param a the name of the variable
+   * @return The string <$arg>a<$arge>&#95_var
+   */
   def var_ident(a: String): String = a+"__var"
 
   /* prologue proper */
@@ -104,25 +213,50 @@ object Prelude {
   val  etaId: String = add_const_ident("El",STTfa)
   val  epsId: String = add_const_ident("Prf",STTfa)
 
+  /** The $dklp type <$lpc>Set<$lpce> of simple types. */
   val typeT: Syntax.Term = Syntax.Symb(typeId)
+  /** The $dklp function <$lpc>El<$lpce>
+   * that maps a simple type to the type of its elements.
+   */
   val  etaT: Syntax.Term = Syntax.Symb( etaId)
+  /** The $dklp function <$lpc>Prf<$lpce> that maps
+   * a simple type proposition to the type of its proofs.
+   */
   val  epsT: Syntax.Term = Syntax.Symb( epsId)
-
+  
+  /** The name of the $dklp simple type <$lpc>prop<$lpce> of propositions. */
   val propId: String = add_type_ident(Pure_Thy.PROP,STTfa)
+  /** The name of the $dklp simple type constructor
+   * <$lpc>arr<$lpce> representing arrow types.
+   */
   val  funId: String = add_type_ident(Pure_Thy.FUN,STTfa)
+  /** The name of the $dklp simple type connector
+   * <$lpc>imp<$lpce> representing implication.
+   */
   val  impId: String = add_const_ident(Pure_Thy.IMP,STTfa)
+  /** The name of the $dklp simple type connector
+   * <$lpc>all<$lpce> representing universal quantification.
+   */
   val  allId: String = add_const_ident(Pure_Thy.ALL,STTfa)
 
+  /** Declares the $dklp type <$lpc>Set<$lpce> of simple types. */
   val typeD: Syntax.Command  = Syntax.Declaration(typeId, Nil, Syntax.TYPE)
 
   val  etaN: Syntax.Notation = Syntax.Prefix("η", 10)
+  /** Declares the $dklp function <$lpc>El<$lpce>
+   * that maps a simple type to the type of its elements.
+   */
   val  etaD: Syntax.Command  = Syntax.DefableDecl(etaId, Syntax.arrow(typeT, Syntax.TYPE), inj = true, not = Some(etaN))
 
   val epsN: Syntax.Notation = Syntax.Prefix("ε", 10)
   val epsTy: Syntax.Term = Syntax.arrow(Syntax.Appl(etaT, Syntax.Symb(propId)), Syntax.TYPE)
+  /** Declares the $dklp function <$lpc>Prf<$lpce> that maps
+   * a simple type proposition to the type of its proofs.
+   */
   val epsD: Syntax.Command = Syntax.DefableDecl(epsId, epsTy, not = Some(epsN))
-
-  // Typing context (for implicit arguments)
+  
+  /** Typing context. <code><$metc>global_types<$metce>(<$argc>id<$argce>)</code> is used to know
+   *  the amount and types of arguments needed to eta-expand <$arg>id<$arge>. */
   var global_types: Map[Syntax.Ident, Syntax.Typ] = Map(
     typeId -> Syntax.TYPE,
     etaId -> Syntax.arrow(typeT, Syntax.TYPE),
@@ -131,55 +265,120 @@ object Prelude {
 
 }
 
+/** <!-- Some macros for colors and common references.
+ *       Pasted at the start of every object.
+ *       Documentation:
+ *       $dklp: reference dk/lp (purple)
+ *       $dk: reference Dedukti (purple)
+ *       $lp: reference Lambdapi (purple)
+ *       $isa: reference Isabelle (yellow)
+ *       <$met>metname<$mete>: a scala method (orange,code)
+ *       <$metc>metname<$metce>: a scala method inside code (orange)
+ *       <$type>typname<$typee>: a scala type (dark orange,bold,code)
+ *       <$arg>argname<$arge>: a scala argument (pink,code)
+ *       <$argc>argname<$argce>: a scala argument inside code (pink)
+ *       <$str>string<$stre>: a scala string (dark green)
+ *       <$lpc>code<$lpce>: some Lambdapi code (light blue,code)
+ *       <$isac>code<$isace>: some isabelle code (red,code)
+ *       -->
+ * @define dklp <span style="color:#9932CC;">dk/lp</span>
+ * @define dk <span style="color:#9932CC;">Dedukti</span>
+ * @define lp <span style="color:#9932CC;">Lambdapi</span>
+ * @define isa <span style="color:#FFFF00">Isabelle</span>
+ * @define met code><span style="color:#FFA500;"
+ * @define metc span style="color:#FFA500;"
+ * @define mete /span></code
+ * @define metce /span
+ * @define type code><span style="color:#FF8C00"><b
+ * @define typee /b></span></code
+ * @define arg code><span style="color:#FFC0CB;"
+ * @define argc span style="color:#FFC0CB;"
+ * @define arge /span></code
+ * @define argce /span
+ * @define str span style="color:#006400;"
+ * @define stre /span
+ * @define lpc code><span style="color:#87CEFA"
+ * @define lpce /span></code
+ * @define isac code><span style="color:#D40606"
+ * @define isace /span></code
+ */
 object Translate {
-  import Prelude._
+  import Prelude.*
   var global_eta_expand = false
 
 
   /* binders */
-
+  
   def bound_type_argument(name: String, impl: Boolean = false): Syntax.BoundArg =
     Syntax.BoundArg(Some(var_ident(name)), typeT, impl)
-
+  
   def bound_term_argument(name: String, ty: Term.Typ, impl: Boolean = false): Syntax.BoundArg =
     Syntax.BoundArg(Some(var_ident(name)), eta(typ(ty)), impl)
 
   def bound_proof_argument(name: String, tm: Term.Term, bounds: Bounds): Syntax.BoundArg =
     Syntax.BoundArg(Some(var_ident(name)), eps(term(tm, bounds)))
 
-  // Object to record de Bruijn index names
+  /** Object used as a map between variable names and de Bruijn indices. <br>
+   * Represents the context of bound variables. */
   sealed case class Bounds(
     trm: List[String] = Nil,
     prf: List[String] = Nil
   ) {
+    /** Adds a mapping between a term variable and a de Bruijn index 
+     * @param tm the name of the variable
+     * @return the context updated with the new variable */
     def add_trm(tm: String): Bounds = copy(trm = tm :: trm)
+    /** Adds a mapping between a proof variable and a de Bruijn index
+     * @param pf the name of the variable
+     * @return the context updated with the new variable */
     def add_prf(pf: String): Bounds = copy(prf = pf :: prf)
 
+    /** Get a term variable from its de Bruijn index
+     * @param idx the de Bruijn index of the variable
+     * @return the name of the bound term variable at that index, fetched from a list. */
     def get_trm(idx: Int): String = trm(idx)
+    /** Get a proof variable from its de Bruijn index
+     *
+     * @param idx the de Bruijn index of the variable
+     * @return the name of the bound proof variable at that index, fetched from a list. */
     def get_prf(idx: Int): String = prf(idx)
   }
 
 
   /* types and terms */
-
-  def typ(ty: Term.Typ): Syntax.Typ =
+  /** Translates an $isa type to a $dklp simple type 
+   * @param ty the $isa type to translate
+   * @return the corresponding $dklp simple type
+   */
+  def typ(ty: Term.Typ): Syntax.Term =
     ty match {
       case Term.TFree(a, _) =>
         Syntax.Var(var_ident(a))
       case Term.Type(c, args) =>
         val id_c = ref_type_ident(c)
-        val impl = try implArgsMap(id_c) catch { case _ : Throwable => Nil }
+        val impl = implArgsMap.getOrElse(id_c,Nil)
         Syntax.appls(Syntax.Symb(id_c), args.map(typ), impl)
       case Term.TVar(xi, _) => error("Illegal schematic type variable " + xi.toString)
     }
 
+  /** Function mapping a $dklp simple type to the type of its elements.
+   * @param ty a $dklp term, which must be of type <$lpc>Set<$lpce>
+   *           in order for the output to be typable.
+   * @return the type <$lpc>El ty<$lpce> of elements of <$arg>ty<$arge>
+   */
   def eta(ty: Syntax.Term): Syntax.Typ = Syntax.Appl(etaT, ty)
 
+  /** Translates an $isa term to a $dklp one 
+   *
+   * @param tm the $isa term to translate
+   * @param bounds the context of bound variables and their de Bruijn indices
+   * @return the corresponding $dklp term
+   */
   def term(tm: Term.Term, bounds: Bounds): Syntax.Term =
     tm match {
       case Term.Const(c, typargs) =>
         val id_c = ref_const_ident(c)
-        val impl = try implArgsMap(id_c) catch { case _ : Throwable => Nil }
+        val impl = implArgsMap.getOrElse(id_c,Nil)
         Syntax.appls(Syntax.Symb(id_c), typargs.map(typ), impl)
       case Term.Free(x, _) =>
         Syntax.Var(var_ident(x))
@@ -195,9 +394,24 @@ object Translate {
         Syntax.Appl(term(a, bounds), term(b, bounds))
     }
 
+  /** Function mapping a $dklp simple type proposition to the type of its proofs.
+   *
+   * @param tm a $dklp term, which must be of type <$lpc>prop<$lpce>
+   *           in order for the output to be typable.
+   * @return the type <$lpc>Prf tm<$lpce> of proofs of <$arg>tm<$arge>
+   */
   def eps(tm: Syntax.Term): Syntax.Term =
     Syntax.Appl(epsT, tm)
 
+  /** map to replace calls to useless unnamed proofs with theorem/lemma calls */
+  var replace_serial: Map[Long,String] = Map()
+  /** Translates an $isa proof to a $dklp term
+   *
+   * @param prf the $isa proof to translate
+   * @param bounds the context of bound variables and their de Bruijn indices
+   * @param cont an accumulator storing the result as a function (default: <code>t => t</code>) 
+   * @return the corresponding $dklp proof term
+   */
   def proof(
     prf: Term.Proof,
     bounds: Bounds,
@@ -224,20 +438,20 @@ object Translate {
         proof(b, bounds, prfb => cont(Syntax.Appl(prfa, prfb)))
       case axm: Term.PAxm =>
         val id = ref_axiom_ident(axm.name)
-        val impl = try implArgsMap(id) catch { case _ : Throwable => Nil }
+        val impl = implArgsMap.getOrElse(id,Nil)
         cont(Syntax.appls(Syntax.Symb(id), axm.types.map(typ), impl))
       case thm: Term.PThm =>
-        val head = if (thm.name.nonEmpty) ref_thm_ident(thm.name) else {
-          namesMap get (full_name("proof_"+thm.serial.toString, "")) match {
-            case None => {
-              // println("proof "+thm.serial+" is badly identified from theory "+thm.theory_name+thm.types.foldLeft(""){case (s,ty) => s+" "+ty.toString})
-              add_proof_ident(thm.serial,current_module)
+        val head = if (!thm.thm_name.is_empty) ref_thm_ident(thm.thm_name.name)
+          else replace_serial.get(thm.serial) match {
+            case Some(name) => ref_thm_ident(name)
+            case _ =>
+              if (namesMap contains full_name("proof_"+thm.serial.toString, "")) ref_proof_ident(thm.serial)
+              else {
+                // println("proof "+thm.serial+" is badly identified from theory "+thm.theory_name+thm.types.foldLeft(""){case (s,ty) => s+" "+ty.toString})
+                add_proof_ident(thm.serial, current_module)
+              }
             }
-            case Some(s) => 
-              ref_proof_ident(thm.serial)
-          }
-        }
-        val impl = try implArgsMap(head) catch { case _ : Throwable => Nil }
+        val impl = implArgsMap.getOrElse(head,Nil)
         cont(Syntax.appls(Syntax.Symb(head), thm.types.map(typ), impl))
       case _ => error("Bad proof term encountered:\n" + prf)
     }
@@ -245,7 +459,12 @@ object Translate {
 
   /* eta contraction */
 
-  // Looks if ident is used freely in term
+  /** Looks if an identifier is used freely in a $dklp term
+   * @param term the term in which to search
+   * @param ident the identifier to search for
+   * @return true if a symbol or free variable named <$arg>ident<$arge> appears in
+   *         <$arg>term<$arge> (including in the type of bound variables)
+   */
   def lambda_contains(term: Syntax.Term, ident: Syntax.Ident): Boolean =
     term match {
       case Syntax.TYPE => false
@@ -258,14 +477,18 @@ object Translate {
         !arg.contains(ident) && (lambda_contains(ty, ident) || lambda_contains(t, ident))
     }
 
-  // Replace all free uses of ident to value in tm
+  /** Replaces all free occurrences of an identifier in a $dklp term with a term
+   * @param tm the term in which to replace
+   * @param ident the identifier to search for
+   * @param value to term to replace all occurrences with
+   * @return a copy of the term <$arg>tm<$arge>
+   *         wherein any symbol or free variable named <$arg>ident<$arge> is replaced with 
+   *         <$arg>value<$arge> (including inside the type of bound variables) */
   def lambda_replace(tm: Syntax.Term, ident: Syntax.Ident, value: Syntax.Term): Syntax.Term =
     tm match {
       case Syntax.TYPE => tm
-      case Syntax.Symb(id) if id == ident => value
-      case Syntax.Symb(_) => tm
-      case Syntax.Var(id) if id == ident => value
-      case Syntax.Var(_) => tm
+      case Syntax.Symb(id) => if (id == ident) value else tm
+      case Syntax.Var(id) => if (id == ident) value else tm
       case Syntax.Appl(t1, t2, b) => Syntax.Appl(lambda_replace(t1, ident, value), lambda_replace(t2, ident, value), b)
       case Syntax.Abst(Syntax.BoundArg(arg, ty, b), t) =>
         Syntax.Abst(Syntax.BoundArg(arg, lambda_replace(ty, ident, value), b),
@@ -277,29 +500,25 @@ object Translate {
           else lambda_replace(t, ident, value))
     }
 
-  // Same as above
+  /**  applies <$met><u>[[lambda_replace]]</u><$mete> in the type of <$arg>arg<$arge>*/
   def lambda_replace_arg(arg: Syntax.BoundArg, ident: Syntax.Ident, value: Syntax.Term): Syntax.BoundArg =
     arg match {
       case Syntax.BoundArg(arg, ty, b) =>
         Syntax.BoundArg(arg, lambda_replace(ty, ident, value), b)
     }
 
-  // Contract λ(x: _), (Λ x)
+  /** Applies eta-contraction inside all subterms of a $dklp term.
+   * @param tm the $dklp term in which to do the contraction
+   * @return a copy of <$arg>tm<$arge> in which all subterms of the form
+   *         <$lpc>λ x, t x <$lpce> are replaced by t as long as x does not appear in t.*/
   def eta_contract(tm: Syntax.Term) : Syntax.Term =
     tm match {
       case Syntax.Abst(Syntax.BoundArg(Some(id), ty, false), tm2) =>
         eta_contract(tm2) match {
           case Syntax.Appl(tm1, Syntax.Var(id2), _)
             if id == id2 && !lambda_contains(tm1, id) => eta_contract(tm1)
-          case tm2 => Syntax.Abst(Syntax.BoundArg(Some(id), eta_contract(ty), implicit_arg = false), tm2)
+          case tm2 => Syntax.Abst(Syntax.BoundArg(Some(id), eta_contract(ty)), tm2)
         }
-
-//      case Syntax.Prod(Syntax.BoundArg(Some(id), ty, false), tm2) =>
-//        eta_contract(tm2) match {
-//          case Syntax.Appl(tm1, Syntax.Var(id2), _)
-//            if id == id2 && !lambda_contains(tm1, id) => eta_contract(tm1)
-//          case tm2 => Syntax.Prod(Syntax.BoundArg(Some(id), eta_contract(ty), implicit_arg = false), tm2)
-//        }
 
       case Syntax.Abst(Syntax.BoundArg(id, ty, impl), tm2) =>
         Syntax.Abst(Syntax.BoundArg(id, eta_contract(ty), impl), eta_contract(tm2))
@@ -311,8 +530,19 @@ object Translate {
       case _ => tm
     }
 
+  /** Mutable objects of type A. <br>
+  * Simply contains a variable
+  * <$arg>value<$arge> of type A. */
   case class Mut[A](var value: A) {}
 
+  /** The way it is used, for now, is the following:
+   * if ?1 is a letter, then let ?2 be the next letter in the alphabet (with z -> a),
+   * this function changes the string "€?1" into "€?2". It is used for eta-expansion,
+   * thus allowing the naming of 26 different unnamed nested arguments at once
+   * (parallel arguments receive the same names in that construction).
+   * the '€' is there to ensure that the names are fresh I imagine, even though
+   * it feels like overkill.
+   */
   def update_name(name: String): String = {
     if (!(name.length > 1 && name(0) == '€'))
       error("Broke invariant: " + name)
@@ -327,7 +557,14 @@ object Translate {
     }
   }
 
-  // Escape default arguments
+  /** Given a $dklp type and a list of bound arguments it depends on,
+   * renames all named arguments by adding a <span style="color:#006400;">'£'</span> in front
+   * @param argnames the list of bound arguments to rename, where the type of an argument might depend on the
+   *                 arguments before it in the list.
+   * @param ret_ty the return type parametrized by <$arg>argname<$arge>
+   * @return the updated list and type, where all named variables are prefixed by a
+   *         <span style="color:#006400;">'£'</span> and are replaced as such in the type of all arguments
+   *         coming after in the list as well as in <$arg>ret_ty<$arge> */
   def alpha_escape(argnames: List[Syntax.BoundArg], ret_ty: Syntax.Typ) : (List[Syntax.BoundArg], Syntax.Typ) =
     argnames match {
       case Nil => (Nil, ret_ty)
@@ -342,7 +579,36 @@ object Translate {
       }
     }
 
-  // Create and name new arguments, only if the spine does not provide them
+  /** Create and name new arguments to a $dklp function when
+   *  they do not already exist (partially applied function)
+   *  
+   * @param known_argnames the names given to the arguments in the type/proposition
+   *                       (in case of a product and not an arrow type).
+   *                       Supposed to be renamed using <$met><u>[[alpha_escape]]</u><$mete>
+   *                       before being given to the function
+   * @param spine The arguments already given to the function
+   * @param ctxt a map storing the type of all bound variable in the context
+   * @param name_ref the next fresh argument name available of the form "€(a-z)"
+   * @param ret_type the codomain of the function being expanded. Allows typing the term
+   *                 on the fly. See the example for use.
+   *                 
+   * @return A list with one variable for each argument that was not given
+   *         to the original function.
+   *                 
+   * @example let <$isac>f : N -> 'A<$isace> then the $dklp type will be
+   *          <$lpc>Π A:Set, N → el A<$lpce> so <$arg>known_argnames<$arge> would be
+   *          <code>[(A,Set),(_,N)]</code> and <$arg>ret_type<$arge>
+   *          would be <$lpc>el A<$lpce>. <br>
+   *          But then, one might want to
+   *          eta-expand <$lpc>f (N → N → N) 0 0<$lpce>. <br><br>
+   *          Upon reading the first argument, the function updates
+   *          <$arg>ret_type<$arge> to <$lpc>N → N → N<$lpce>. <br>
+   *          When it reaches the end of <$arg>known_argnames<$arge>, it start again
+   *          by having <$arg>known_argnames<$arge> be
+   *          <code>[(_,N),(_,N)]</code> and will successfuly expand the term to
+   *          <$lpc>λ €1:N, f (N → N → N) 0 0 €1<$lpce>.
+   *          
+   * @see [[eta_expand]] */
   def name_args_of_list(known_argnames: List[Syntax.BoundArg], spine: List[Syntax.Term], ctxt: Map[String, Syntax.Typ], name_ref: Mut[String], ret_type: Syntax.Typ) : List[Syntax.BoundArg] = {
     (known_argnames, spine) match {
       case (Syntax.BoundArg(id, _, _) :: tl, tm :: spine) => {
@@ -362,11 +628,15 @@ object Translate {
         val res = Syntax.BoundArg(Some(name), exp_ty, impl)
         name_ref.value = update_name(name)
         res :: name_args_of_list(tl, Nil, ctxt + (name -> exp_ty), name_ref, ret_type)
-      }
+      } 
       case (Nil, sp) => name_args(ret_type, spine, ctxt, name_ref)
     }
   }
 
+  /** splits type <$arg>ty<$arge> into arguments and domain, modifies the arguments
+   *  with <$met><u>[[alpha_escape]]</u><$mete> and then applies
+   *  <$met><u>[[name_args_of_list]]</u><$mete>
+   */
   def name_args(ty: Syntax.Typ, spine: List[Syntax.Term], ctxt: Map[String, Syntax.Typ], name_ref: Mut[String]) : List[Syntax.BoundArg] =
     fetch_head_args_type(ty) match {
       case (Nil, _) => Nil
@@ -376,12 +646,14 @@ object Translate {
       }
     }
 
+  /*
   // Apply a list of arguments, given as lambda arguments
   def appls_args(tm: Syntax.Term, args: List[Syntax.BoundArg]): Syntax.Term = {
     val pure_args = args.map { case Syntax.BoundArg(Some(name), _, _) => Syntax.Var(name) case _ => error("oops") }
     val impl_list = args.map { case Syntax.BoundArg(_, _, impl) => impl }
     Syntax.appls(tm, pure_args, impl_list)
   }
+   */
 
 
   // Drop the first abstractions when there are arguments already, also replacing the abst argname with the argument proper
@@ -397,8 +669,9 @@ object Translate {
   //     case (Nil, _ :: _) => Nil
   //   }
 
-
-  // Given an application, expand the head so that all the arguments are made clear, not just the ones present at the time
+  /** Particular case of <$met><u>[[eta_expand]]</u><$mete> when t
+   *  is an application or is a function symbol/variable.
+   */
   def eta_expand_appl(t: Syntax.Term, ctxt: Map[String, Syntax.Typ], name_ref: Mut[String]): Syntax.Term = {
     val (head, spine) = Syntax.destruct_appls(t)
     val expanded_args = spine.map { case (arg, impl) => (eta_expand(arg, ctxt, Mut(name_ref.value)), impl) }
@@ -423,7 +696,18 @@ object Translate {
     }
   }
 
-  // Expand all idents which have a function type, so that the number of arguments they accept is made clear
+  /** Expand all idents which have a function type,
+   * so that the number of arguments they accept is made clear
+   *
+   * @param tm the $dklp term to expand
+   * @param ctxt a map storing the type of all bound variable in the context
+   * @param name_ref the next fresh argument name available of the form "€(a-z)"
+   *
+   * @return a copy of <$arg>tm<$arge> where every function is expanded to
+   * a lambda abstraction if it is only partially applied.
+   * 
+   * @see [[name_args_of_list]]
+   */
   def eta_expand(tm: Syntax.Term, ctxt: Map[String, Syntax.Typ], name_ref: Mut[String]): Syntax.Term = {
     tm match {
       case Syntax.TYPE =>
@@ -445,23 +729,27 @@ object Translate {
         Syntax.Prod(Syntax.BoundArg(None, eta_expand(ty, ctxt, Mut(name_ref.value)), impl), eta_expand(t, ctxt, name_ref))
     }
   }
+  
+  /** <pre><code><$metc>eta_expand<$metce>(<$argc>tm<$argce>) = if (global_eta_expand)
+   *  <$metc><u>[[eta_expand]]</u><$metce>(<$argc>tm<$argce>, <$metc>Map<$metce>(), <$metc>Mut<$metce>(<$str>"€a"<$stre>))
+   *  else <$argc>tm<$argce></code></pre>
+   *  Where global_eta_expand is a variable
+   */
   def eta_expand(tm: Syntax.Term) : Syntax.Term = {
     if (global_eta_expand) eta_expand(tm, Map(), Mut("€a")) else tm
   }
 
-  // Return if the abstraction argument and the product argument can be unified as a declaration argument
-  def compatible_bound_args(ba1: Syntax.BoundArg, ba2: Syntax.BoundArg): Boolean =
-    (ba1, ba2) match {
-      case (Syntax.BoundArg(id1, ty1, impl1), Syntax.BoundArg(id2, ty2, impl2)) =>
-        val id = (id1, id2) match {
-          case (Some(a), Some(b)) => a == b
-          case (None, Some(_)) => false
-          case _ => true
-        }
-        id && ty1 == ty2 && impl1 == impl2
-    }
-
-  // Pop all compatible {abstraction, product} arguments and return their list and the remaining terms
+  /** Pop all compatible {abstraction, product} arguments and return their list and the remaining terms 
+   *
+   * @param tm the $dklp term to search into
+   * @param ty the type of <$arg>tm<$arge>
+   * @return a triplet consisting of a list <$arg>[x1,...,xn]<$arge> of bound arguments, a term <$arg>tm0<$arge>
+   *           and a type <$arg>ty0<$arge> such that:<br>
+   *           <code><$argc>tm<$argce> = <$lpc>λ (x1 : A1) ... (xn : An), tm0<$lpce></code> and<br>
+   *           <code><$argc>ty<$argce> = <$lpc>f1(...(fn(ty0))...)<$lpce></code> where f<sub>i</sub>(T)
+   *           is either <$lpc>Ai -> T<$lpce> (in a simply typed functional or propositional way)
+   *           or <$lpc>Π xi, T<$lpce>
+   */
   def fetch_head_args(tm: Syntax.Term, ty: Syntax.Term) : (List[Syntax.BoundArg], Syntax.Term, Syntax.Term) =
     (tm, ty) match {
       case (Syntax.Abst(arg @ Syntax.BoundArg(_, arg_ty, false), tm0),
@@ -477,7 +765,7 @@ object Translate {
         (arg :: lst, tm1, ty1)
       }
       case (Syntax.Abst(arg, tm0), Syntax.Prod(arg2, ty0))
-        if compatible_bound_args(arg, arg2) => {
+        if arg==arg2 => {
         val (lst, tm1, ty1) = fetch_head_args(tm0, ty0)
         (arg :: lst, tm1, ty1)
       }
@@ -485,7 +773,13 @@ object Translate {
       case _ => (Nil, tm, ty)
   }
 
-  // Pop all product arguments and return their list and the remaining term
+  /** Pop all product arguments and return their list and the remaining term 
+   * 
+   * @param ty the $dklp type to split
+   * @return <code><$metc>fetch_head_args_type<$metce>(<$lpc>Π x1 ... xn, T<$lpce>) =
+   *         ([x1, ..., xn],T)</code> including the consideration that <code>xi=None</code> (that is,
+   *         <code>_</code>) for simple type arrow and implication
+   */
   def fetch_head_args_type(ty: Syntax.Typ) : (List[Syntax.BoundArg], Syntax.Typ) =
     ty match {
       case Syntax.Appl(Syntax.Symb("eta"), Syntax.Appl(Syntax.Appl(Syntax.Symb("fun"), arg_ty, false), ret_ty, false), false) => {
@@ -510,6 +804,17 @@ object Translate {
 
   // Make sure that there are no two notations with the same op string
   // You can edit them here (eg. replace ≡ with ⩵ or _ with __ to avoid their escaping)
+  /** Get the $isa symbol for a notation, then change it if needed (to avoid conflicts with $dkpl)
+   * and make sure it is unique.<br><br>
+   * <b>Note: not so sure, is what I can guess from the isabelle code. My best guess is that it's just
+   * decoding the notation string so the object name does not appear here, just two encodings of
+   * the notation</b>
+   * 
+   * @param op the string for which there might be a notation defined<br>
+   *           <b>Note: This could actually just be the XML encoding of the notation,
+   *           whatever that means (if it makes sense).</b>
+   * @return the modified notation, after adding it to the variable notationsSet.
+   */
   def notations_get(op: String) : String = {
     var op1 = Symbol.decode(op)
     if (op1 == "≡") op1 = "⩵"
@@ -520,7 +825,8 @@ object Translate {
     op1
   }
 
-  def notation_decl: Export_Theory.Syntax => Option[Syntax.Notation] = { // TODO: Ugly
+  /** Translates $isa notation data into $dklp notation data */
+  def notation_decl (nota: Export_Theory.Syntax): Option[Syntax.Notation] = nota match { // TODO: Ugly (... but in what sense?)
     case No_Syntax => None
     case Prefix(op) => Some(Syntax.Prefix(notations_get(op), Syntax.defaultPrefixPriority))
     case Export_Theory.Infix(Export_Theory.Assoc.NO_ASSOC,    op, priority) => Some(Syntax.Infix (notations_get(op), priority))
@@ -533,6 +839,16 @@ object Translate {
 
   /* type classes */
 
+  /** Declaration of an $isa typeclass in $dklp
+   * 
+   * @param module the module where the typeclass is defined
+   * @param c the name of the typeclass
+   * @param d the optional definition of the class (its axioms), can be
+   *          <code>None</code>, for example for simply overloading a notation without
+   *          giving any axiom.
+   * 
+   * @return A $dklp command declaring the typeclass as a predicate on types.
+   */
   def class_decl(module: String, c: String, d: Option[Term.Term]): Syntax.Command = {
     val out_type = eta(Syntax.Symb(propId))
     val class_type = Syntax.arrow(typeT,out_type)
@@ -549,6 +865,17 @@ object Translate {
 
   /* types */
 
+  /** Declaration of an $isa type in $dklp
+   *
+   * @param module the module where the type is defined
+   * @param c      the name of the type
+   * @param args   the list of names of the type variables appearing in the type's definition
+   * @param rhs      the optional definition of the type, can be
+   *               <code>None</code>, in case of an axiomatic type (bool, for example)
+   * @param not the $isa notation for this type
+   * 
+   * @return A $dklp command declaring the type.
+   */
   def type_decl(module: String, c: String, args: List[String], rhs: Option[Term.Typ], not: Export_Theory.Syntax): Syntax.Command = {
     val full_ty = Syntax.arrows(List.fill(args.length)(typeT), typeT)
     val id_c = add_type_ident(c,module)
@@ -567,33 +894,46 @@ object Translate {
     }
   }
 
-
   /* consts */
-
+  /** true if the $isa type <$arg>ty<$arge> contains the variable named <$arg>arg<$arge> */
   def type_contains_arg(ty: Term.Typ, arg: String): Boolean =
     ty match {
       case Term.TFree(name, _) => name == arg
       case Term.Type(_, args) => args.exists(type_contains_arg(_, arg))
       case Term.TVar(_, _) => error("False assertion")
     }
-
+  
+  /** checks if a type variable appears in an $isa type as a domain type
+   * 
+   * @param ty the type to search into
+   * @param arg the name of the variable
+   * @return true if <code><$argc>ty<$argce> = <$isac>"x1 ⇒ ... ⇒ arg ⇒ ..."<$isace></code>
+   */
   @tailrec
   def type_contains_arg_as_arg(ty: Term.Typ, arg: String): Boolean =
     ty match {
-      case Term.Type(Pure_Thy.FUN, List(arg1, arg2)) => type_contains_arg(arg1, arg) || type_contains_arg_as_arg(arg2, arg)
-      case Term.Type(_, _) => false  // Can maybe be more intelligent
-      case Term.TFree(_, _) => false
       case Term.TVar(_, _) => error("False assertion")
+      case Term.Type(Pure_Thy.FUN, List(arg1, arg2)) => type_contains_arg(arg1, arg) || type_contains_arg_as_arg(arg2, arg)
+      case _ => false
     }
 
+  /** Which type arguments of a constant can be implicit.
+   * 
+   * @param typargs the name of the type variables
+   *                appearing in the type of the constant
+   * @param ty the $isa type of the constant
+   * @return a list of booleans, true for implicit type constants and false otherwise
+   */
   def const_implicit_args(typargs: List[String], ty: Term.Typ): List[Boolean] = {
-    var canStillBeImplicit = true  // No implicit arg after a non-implicit one
+    var canStillBeImplicit = true // No implicit arg after a non-implicit one
     typargs.map(arg => {
       canStillBeImplicit &&= type_contains_arg_as_arg(ty, arg)
       canStillBeImplicit
     })
   }
-
+  
+  /** list of bound type arguments, names given by <$arg>args<$arge>
+   *  and implicitness given by <$arg>impl<$arge> */
   def bound_type_arguments(args: List[String], impl: List[Boolean]): List[Syntax.BoundArg] =
     (args, impl) match {
       case (Nil, Nil) => Nil
@@ -602,6 +942,16 @@ object Translate {
       case (_, Nil) => isabelle.error("Implicit list too short.")
     }
 
+  /** Declaration of an $isa constant in $dklp
+   *
+   * @param module the module where the constant is defined
+   * @param c      the name of the constant
+   * @param typargs   the list of names of the type variables appearing in the constant's type
+   * @param rhs    the optional definition of the constant, can be
+   *               <code>None</code>, in case of an axiomatic constant (equality, for example)
+   * @param not    the $isa notation for this constant
+   * @return A $dklp command declaring the constant.
+   */
   def const_decl(module: String, c: String, typargs: List[String], ty: Term.Typ, rhs: Option[Term.Term], not: Export_Theory.Syntax): Syntax.Command = {
     val id_c = add_const_ident(c,module)
     val impl = const_implicit_args(typargs, ty)
@@ -625,6 +975,14 @@ object Translate {
 
   /* theorems and proof terms */
 
+  /** Declaration of an $isa theorem/axiom in $dklp
+   * 
+   * @param s the name of the theorem/axiom
+   * @param prop the $isa theorem/axiom
+   * @param prf_opt the optionnal $isa proof of the theorem/axiom
+   * @return a $dklp command declaring the symbol <$arg>s<$arge>, possibly with a translation of
+   *         <$arg>prf_opt<$arge> as definitional body.
+   */
   def stmt_decl(s: String, prop: Export_Theory.Prop, prf_opt: Option[Term.Proof]): Syntax.Command = {
     val args =
       prop.typargs.map(_._1).map(bound_type_argument(_)) :::
@@ -649,7 +1007,7 @@ object Translate {
         Syntax.Theorem(s, new_args, final_ty, contracted)
       }
     }
-    catch { case e : Throwable => e.printStackTrace
+    catch { case e : Throwable => e.printStackTrace()
       error("oops in " + quote(s)) }
 //    catch { case ERROR(msg) => error(msg + "\nin " + quote(s)) }
   }
