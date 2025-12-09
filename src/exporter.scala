@@ -279,23 +279,23 @@ object Exporter {
         val theory = read_theory(provider)
         for (a <- theory.types) {
           if (verbose) progress.echo("  "+a.toString+" "+a.serial)
-          Prelude.add_type_ident(a.name,theory_name)
+          Translate.type_decl(theory_name, a.name, a.the_content.args, None, No_Syntax)
         }
         for (a <- theory.classes) {
           if (verbose) progress.echo("  "+a.toString+" "+a.serial)
-          Prelude.add_class_ident(a.name,theory_name)
+          Translate.class_decl(theory_name, a.name, None)
         }
         for (a <- theory.consts) {
           if (verbose) progress.echo("  "+a.toString+" "+a.serial)
-          Prelude.add_const_ident(a.name,theory_name)
+          Translate.const_decl(theory_name, a.name, a.the_content.typargs, a.the_content.typ, None, No_Syntax)
         }
         for (a <- theory.axioms) {
           if (verbose) progress.echo("  "+a.toString+" "+a.serial)
-          Prelude.add_axiom_ident(a.name,theory_name)
+          Translate.stmt_decl(Prelude.add_axiom_ident(a.name, theory_name), a.the_content.prop, None)
         }
         for (a <- theory.thms) {
-          if (verbose) progress.echo("  "+a.toString+" "+a.serial)
-          Prelude.add_thm_ident(a.name,theory_name)
+          if (verbose) progress.echo("  " + a.toString + " " + a.serial)
+          Translate.stmt_decl(Prelude.add_thm_ident(a.name, theory_name), a.the_content.prop, None)
         }
         progress.echo("End reading theory "+theory_name)
       }
