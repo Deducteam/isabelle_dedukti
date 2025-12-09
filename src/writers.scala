@@ -160,7 +160,8 @@ abstract class Abstract_Writer(root: String, writer: Writer) extends Ident_Write
   }
 
   def term(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation],
-           prevNot: Notation = justHadPars, no_impl: Boolean = false, right: Boolean = false): Unit
+           prevNot: Notation = justHadPars, no_impl: Boolean = false,
+           right: Boolean = false, needs_explicit: Boolean = false): Unit
 
   /** Write on <code>this</code> an argument and its type
    *
@@ -327,6 +328,9 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
   def lambda()      : Unit = write("λ ")
   def pi()          : Unit = write("Π ")
   def turnstile()   : Unit = write(" ⊢ ")
+
+  /** if <$arg>needs_explicit<$arge> is <code>true</code>, write an @ */
+  def explicit(needs_explicit: Boolean): Unit = if (needs_explicit) write("@")
   /** prints <$str>";"<$stre> and goes to next line */
   def end_command() : Unit = { semicolon(); nl() }
 
@@ -339,10 +343,11 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
    * @param right whether the term to write is on the right of an infix operator
    */
   def appl(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation],
-           prevNot: Notation, no_impl: Boolean = false, right: Boolean): Unit = {
+           prevNot: Notation, no_impl: Boolean = false, right: Boolean, needs_explicit: Boolean = false): Unit = {
     val (head, pre_spine) = Syntax.destruct_appls(t)
     val spine = pre_spine.filter(!_._2).map(_._1)
     val contains_impl_arg = pre_spine.exists(_._2)
+    val new_explicit = needs_explicit || contains_impl_arg
     head match {
       case Syntax.Symb(id) if notations contains id =>
         val not = notations(id)
@@ -367,13 +372,10 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
             val not = Syntax.appNotation
             val force_no = pre_spine.isEmpty
             block_if(not, prevNot, right, force_no) {
+              explicit(new_explicit)
               block(sym_qident(op))
-              for ((arg, impl) <- pre_spine) {
-                if (impl) {
-                  if (no_impl || spine.isEmpty) { space(); write("["); term(arg, notations, Syntax.justHadPars, no_impl, right = true); write("]") }
-                } else {
+              for ((arg, _) <- pre_spine) {
                 space(); term(arg, notations, not, no_impl, right = true)
-                }
               }
             }
           }
@@ -381,14 +383,10 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
         val not = appNotation
         val force_no = pre_spine.isEmpty
         block_if(not, prevNot, right, force_no){
-          term(head, notations, not, right)
-          for ((arg, impl) <- pre_spine) {
-            if (impl) {
-              if (no_impl || spine.isEmpty) { space(); write("["); term(arg, notations, Syntax.justHadPars, right = true); write("]") }
-            } else {
-              space()
-              term(arg, notations, not, right = true)
-            }
+          term(head, notations, not, right, needs_explicit = new_explicit)
+          for ((arg, _) <- pre_spine) {
+            space()
+            term(arg, notations, not, right = true)
           }
         }
     }
@@ -396,22 +394,23 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
 
   /** Particular case of <$met><u>[[term]]</u><$mete>. */
   def term_notation(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation],
-           prevNot: Notation, no_impl: Boolean, right: Boolean): Unit =
+           prevNot: Notation, no_impl: Boolean, right: Boolean, needs_explicit: Boolean): Unit =
     t match {
       case Syntax.TYPE =>
         write("TYPE")
       case Syntax.Symb(id) if notations contains id =>
-        appl(t, notations, prevNot, no_impl, right)
+        appl(t, notations, prevNot, no_impl, right, needs_explicit)
       case Syntax.Symb(id) =>
+        explicit(needs_explicit)
         sym_qident(id)
       case Syntax.Var(id) =>
         var_ident(id)
       case Syntax.Appl(_, _, _) =>
-        appl(t, notations, prevNot, no_impl, right)
+        appl(t, notations, prevNot, no_impl, right, needs_explicit)
       case Syntax.Abst(a, t) =>
         val not = absNotation
         block_if(not, prevNot, right) {
-          lambda(); arg(a, block = false, notations); comma(); term(t, notations, not, no_impl = no_impl)
+          lambda(); arg(a, block = false, notations); comma(); term(t, notations, not, no_impl = no_impl, needs_explicit = needs_explicit)
         }
       case Syntax.Prod(Syntax.BoundArg(None, ty1, false), ty2) =>
         val not = arrNotation
@@ -429,29 +428,27 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
 
   /** Particular case of <$met><u>[[term]]</u><$mete>. */
   def term_no_notation(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation],
-                       prevNot: Notation, no_impl: Boolean, right: Boolean): Unit =
+                       prevNot: Notation, no_impl: Boolean, right: Boolean, needs_explicit: Boolean): Unit =
     t match {
       case Syntax.TYPE =>
         write("TYPE")
       case Syntax.Symb(id) if notations contains id =>
         error("There should be no notations in this mode")
       case Syntax.Symb(id) =>
+        explicit(needs_explicit)
         sym_qident(id)
       case Syntax.Var(id) =>
         var_ident(id)
       case Syntax.Appl(t1, t2, isImplicit) =>
         val not = appNotation
         block_if(not, prevNot, right) {
-          term(t1, notations, not)
+          term(t1, notations, not, needs_explicit = isImplicit || needs_explicit)
           space()
-          val newNot = if (isImplicit) justHadPars else appNotation
-          if (isImplicit) write("[")
-          term(t2, notations, newNot, right = true)
-          if (isImplicit) write("]")
+          term(t2, notations, not, right = true)
         }
       case Syntax.Abst(a, t) =>
         block_if(Syntax.absNotation, prevNot, right) {
-          lambda(); arg(a, block = false, notations); comma(); term(t, notations)
+          lambda(); arg(a, block = false, notations); comma(); term(t, notations, needs_explicit = needs_explicit)
         }
       case Syntax.Prod(Syntax.BoundArg(None, ty1, false), ty2) =>
         val not = arrNotation
@@ -475,11 +472,12 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
    * @param right     whether the term to write is on the right of an infix operator
    */
   def term(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation],
-           prevNot: Notation = justHadPars, no_impl: Boolean = false, right: Boolean = false): Unit =
+           prevNot: Notation = justHadPars, no_impl: Boolean = false,
+           right: Boolean = false, needs_explicit: Boolean = false): Unit =
     if (use_notations)
-      term_notation(t, notations, prevNot, no_impl, right)
+      term_notation(t, notations, prevNot, no_impl, right, needs_explicit)
     else
-      term_no_notation(t, notations, prevNot, no_impl, right)
+      term_no_notation(t, notations, prevNot, no_impl, right, needs_explicit)
 
   
   def arg(a: Syntax.BoundArg, block: Boolean, notations: MutableMap[Syntax.Ident, Syntax.Notation]): Unit = {
@@ -629,7 +627,8 @@ class DK_Writer(writer: Writer) extends Abstract_Writer("", writer) {
   def ar_rew() : Unit = write(" --> ")
 
   def term(t: Syntax.Term, notations: MutableMap[Syntax.Ident, Syntax.Notation] = MutableMap(),
-           prevNot: Notation = justHadPars, no_impl: Boolean = false, right: Boolean = false): Unit =
+           prevNot: Notation = justHadPars, no_impl: Boolean = false,
+           right: Boolean = false, needs_explicit: Boolean = false): Unit =
     t match {
       case Syntax.TYPE =>
         write("Type")
