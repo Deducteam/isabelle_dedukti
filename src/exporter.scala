@@ -168,6 +168,8 @@ object Exporter {
         case App(App(Term.Const(id, _), _), _) if id != "Pure.eq" =>
           if (verbose) progress.echo("axiom " + a.name + ": cannot extract definition because it is headed by " + id + " instead of Pure.eq")
           None
+        case App(App(Term.Const(_, eqtys), lhs@OFCLASS(_, name)), rhs) =>
+          Some(name + "_class", rhs, eqtys, lhs)
         case App(App(Term.Const(_, eqtys), lhs), rhs) =>
           head_args(lhs) match {
             case (Term.Const(n, tys), args) if !(tys.forall(is_TFree) && args.forall(is_Free_or_TYPE)) =>
