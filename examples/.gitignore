@@ -1,10 +1,7 @@
 .*.aux
-*.dk
+*.dk*
 *.v
 *.vo*
-dkcheck_*.mk
-lpcheck_*.mk
-rocqcheck_*.mk
-isadb_dir.mk
-*.dko
-*.lpo
+*.mk
+*.lp*
+*.pkg
