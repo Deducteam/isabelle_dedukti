@@ -62,6 +62,7 @@ jobs:
           export PATH=$PATH:~/Isabelle${{ matrix.isabelle-version }}/bin
           cd examples
           make SESSION=Pure dk
+          make SESSION=Pure dko
           make SESSION=HOL_Groups_wp dk
           make SESSION=HOL_Groups_wp dko
 #          mkdir -p kocheck
@@ -84,5 +85,6 @@ jobs:
           export PATH=$PATH:~/Isabelle${{ matrix.isabelle-version }}/bin
           cd examples
           make SESSION=Pure lp
+          make SESSION=Pure lpo
           make SESSION=HOL_Groups_wp lp
           make SESSION=HOL_Groups_wp lpo
