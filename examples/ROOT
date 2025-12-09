@@ -28,13 +28,7 @@ session HOL_Set_Interval_wp in HOL_Set_Interval_wp = HOL_Int_wp +
   theories
     HOL.Set_Interval
 
-session HOL_Groebner_Basis_wp in HOL_Groebner_Basis_wp = HOL_Set_Interval_wp +
-  options [strict_facts,export_theory,export_proofs,record_proofs=2]
-  sessions HOL
-  theories
-    HOL.Groebner_Basis
-
-session HOL_Presburger_wp in HOL_Presburger_wp = HOL_Groebner_Basis_wp +
+session HOL_Presburger_wp in HOL_Presburger_wp = HOL_Set_Interval_wp +
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
   sessions HOL
   theories
@@ -46,13 +40,7 @@ session HOL_List_wp in HOL_List_wp = HOL_Presburger_wp +
   theories
     HOL.List
 
-session HOL_Pre_Enum_wp in HOL_Pre_Enum_wp = HOL_List_wp +
-  options [strict_facts,export_theory,export_proofs,record_proofs=2]
-  sessions HOL
-  theories
-    HOL.Map HOL.Groups_List
-
-session HOL_Enum_wp in HOL_Enum_wp = HOL_Pre_Enum_wp +
+session HOL_Enum_wp in HOL_Enum_wp = HOL_List_wp +
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
   sessions HOL
   theories

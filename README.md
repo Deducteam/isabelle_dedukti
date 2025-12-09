@@ -144,9 +144,11 @@ The `examples` directory contains a `Makefile` that provides various targets aut
 - v: translates the Lambdapi files to Rocq
 - vo: checks the obtained Rocq files
 
+To check a translated session, make sure to translate all its parent sessions first (including Pure).
+
 Find out all the possible targets and variables that can be setup by running `make` with no arguments.
 
-The translation to Rocq is work in progress.
+Remark: the translation to Lambdapi and Rocq is still work in progress.
 
 ## Performances
 
@@ -161,10 +163,8 @@ Performance on a machine with 32 processors i9-13950HX and 64 Go RAM
 | HOL_BNF_Def_wp              | 1m39s |     30M |     |         |     |    |       |
 | HOL_Int_wp                  | 1m51s |     33M |     |         |     |    |       |
 | HOL_Set_Interval_wp         | 3m37s |     44M |     |         |     |    |       |
-| HOL_Groebner_Basis_wp       |   15s |    1.3M |     |         |     |    |       |
 | HOL_Presburger_wp           | 2m14s |     41M |     |         |     |    |       |
 | HOL_List_wp                 | 8m19s |     46M |     |         |     |    |       |
-| HOL_Pre_Enum_wp             |   22s |    3.4M |     |         |     |    |       |
 | HOL_Enum_wp                 | 1m24s |    8.5M |     |         |     |    |       |
 | HOL_Quickcheck_Random_wp    |       |         |     |         |     |    |       |
 | HOL_Quickcheck_Narrowing_wp |       |         |     |         |     |    |       |
