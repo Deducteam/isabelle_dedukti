@@ -281,10 +281,6 @@ object Exporter {
           if (verbose) progress.echo("  "+a.toString+" "+a.serial)
           Translate.type_decl(theory_name, a.name, a.the_content.args, None, No_Syntax)
         }
-        for (a <- theory.classes) {
-          if (verbose) progress.echo("  "+a.toString+" "+a.serial)
-          Translate.class_decl(theory_name, a.name, None)
-        }
         for (a <- theory.consts) {
           if (verbose) progress.echo("  "+a.toString+" "+a.serial)
           Translate.const_decl(theory_name, a.name, a.the_content.typargs, a.the_content.typ, None, No_Syntax)
