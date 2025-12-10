@@ -155,23 +155,23 @@ Remark: the translation to Lambdapi and Rocq is still work in progress.
 Performance on a machine with 32 processors i9-13950HX and 64 Go RAM
 (but multiprocessing is used in v and vo only for the moment):
 
-| SESSION                     | build | db size |  dk | dk size | dko |  v |    vo |
-|:----------------------------|------:|--------:|----:|--------:|----:|---:|------:|
-| Pure                        |    2s |       0 |  3s |     52K |  0s | 0s |    1s |
-| HOL_Groups_wp               |   16s |      7M |  8s |     14M |  1s | 0s |   17s |
-| HOL_Nat_wp                  |   53s |     19M | 33s |    111M | 11s | 2s | 2m29s |
-| HOL_BNF_Def_wp              | 1m39s |     30M |     |         |     |    |       |
-| HOL_Int_wp                  | 1m51s |     33M |     |         |     |    |       |
-| HOL_Set_Interval_wp         | 3m37s |     44M |     |         |     |    |       |
-| HOL_Presburger_wp           | 2m14s |     41M |     |         |     |    |       |
-| HOL_List_wp                 | 8m19s |     46M |     |         |     |    |       |
-| HOL_Enum_wp                 | 1m24s |    8.5M |     |         |     |    |       |
-| HOL_Quickcheck_Random_wp    |       |         |     |         |     |    |       |
-| HOL_Quickcheck_Narrowing_wp |       |         |     |         |     |    |       |
-| HOL_Main                    |       |         |     |         |     |    |       |
-| HOL_Pre_Transcendental_wp   |       |         |     |         |     |    |       |
-| HOL_Transcendental_wp       |       |         |     |         |     |    |       |
-| HOL_Complex_Main_wp         |       |         |     |         |     |    |       |
+| SESSION              | build | db size |    dk | dk size | dko |  v |    vo |
+|:---------------------|------:|--------:|------:|--------:|----:|---:|------:|
+| Pure                 |    2s |       0 |    2s |     60K |  0s | 0s |    1s |
+| Groups               |   15s |      7M |   12s |     11M |  1s | 0s |   13s |
+| Nat                  |   53s |     19M |  1m4s |    107M | 12s | 2s | 3m30s |
+| BNF_Def              | 1m41s |     29M | 2m36s |    328M | 40s | 7s |       |
+| Int                  |       |         |       |         |     |    |       |
+| Set_Interval         |       |         |       |         |     |    |       |
+| Presburger           |       |         |       |         |     |    |       |
+| List                 |       |         |       |         |     |    |       |
+| Enum                 |       |         |       |         |     |    |       |
+| Quickcheck_Random    |       |         |       |         |     |    |       |
+| Quickcheck_Narrowing |       |         |       |         |     |    |       |
+| Main                 |       |         |       |         |     |    |       |
+| Pre_Transcendental   |       |         |       |         |     |    |       |
+| Transcendental       |       |         |       |         |     |    |       |
+| Complex_Main         |       |         |       |         |     |    |       |
 
 There is room for many important improvements. Makarius Wenzel is working on improving the export of proof terms in Isabelle. The generation of dk files is not modular. No term sharing is currently used in dk and v files.
 

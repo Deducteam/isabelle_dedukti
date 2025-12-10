@@ -217,37 +217,3 @@ rm-aux:
 .PHONY: rm-caches
 rm-caches:
 	rm -f $(OUT_DIR)/.lia.cache $(OUT_DIR)/.nia.cache
-
-############# testing ##############
-
-.PHONY: allgroupslp
-allgroupslp: clean-build clean-lp
-	$(MAKE) SESSION=Groups lpo
-
-.PHONY: allnatlp
-allnatlp: clean-build clean-lp
-	$(MAKE) SESSION=Nat lpo
-
-.PHONY: session
-session:
-	@echo $(MAKE) build SESSION=$(SESSION)
-	$(TIME) $(MAKE) build
-	@echo $(MAKE) dk SESSION=$(SESSION)
-	$(TIME) $(MAKE) dk
-	@echo $(MAKE) dko SESSION=$(SESSION)
-	$(TIME) $(MAKE) dko
-	@echo $(MAKE) v SESSION=$(SESSION)
-	$(TIME) $(MAKE) v
-	@echo $(MAKE) vo SESSION=$(SESSION)
-	$(TIME) $(MAKE) vo
-
-.PHONY: clean-session
-clean-session: clean-dk clean-lp clean-v clean-build
-
-.PHONY: sessions
-sessions:
-	for SESSION in $(SESSIONS); do $(MAKE) SESSION=$$SESSION; done
-
-.PHONY: clean-sessions
-clean-sessions:
-	for SESSION in $(SESSIONS); do $(MAKE) SESSION=$$SESSION clean-session; done
