@@ -63,8 +63,8 @@ jobs:
           cd examples
           make SESSION=Pure dk
           make SESSION=Pure dko
-          make SESSION=HOL_Groups_wp dk
-          make SESSION=HOL_Groups_wp dko
+          make SESSION=HOL_Groups dk
+          make SESSION=HOL_Groups dko
 #          mkdir -p kocheck
 #          ../../remove-requires.sh *.dk
 #          cd kocheck
@@ -86,5 +86,5 @@ jobs:
           cd examples
           make SESSION=Pure lp
           make SESSION=Pure lpo
-          make SESSION=HOL_Groups_wp lp
-          make SESSION=HOL_Groups_wp lpo
+          make SESSION=HOL_Groups lp
+          make SESSION=HOL_Groups lpo
