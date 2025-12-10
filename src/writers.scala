@@ -356,7 +356,7 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
           case (Syntax.Quantifier(_), _) => isabelle.error("NotImplemented")
           case (Syntax.Prefix(op, _), List(arg)) if !(no_impl && contains_impl_arg) =>
             block_if(not, prevNot, right){
-              sym_qident(op)
+              sym_ident(op)
               space()
               term(arg, notations, not, no_impl)
             }
@@ -364,7 +364,7 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
             block_if(not, prevNot, right){
               term(arg1, notations, not, no_impl)
               space()
-              sym_qident(op)
+              sym_ident(op)
               space()
               term(arg2, notations, not, no_impl, right = true)
             }
@@ -373,7 +373,7 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
             val force_no = pre_spine.isEmpty
             block_if(not, prevNot, right, force_no) {
               explicit(new_explicit)
-              block(sym_qident(op))
+              block(sym_ident(op))
               for ((arg, _) <- pre_spine) {
                 space(); term(arg, notations, not, no_impl, right = true)
               }
@@ -402,7 +402,7 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
         appl(t, notations, prevNot, no_impl, right, needs_explicit)
       case Syntax.Symb(id) =>
         explicit(needs_explicit)
-        sym_qident(id)
+        sym_ident(id)
       case Syntax.Var(id) =>
         var_ident(id)
       case Syntax.Appl(_, _, _) =>
@@ -436,7 +436,7 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
         error("There should be no notations in this mode")
       case Syntax.Symb(id) =>
         explicit(needs_explicit)
-        sym_qident(id)
+        sym_ident(id)
       case Syntax.Var(id) =>
         var_ident(id)
       case Syntax.Appl(t1, t2, isImplicit) =>
@@ -527,11 +527,11 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
   def notation(notation: Notation): Unit = {
     write ("notation ")
     notation match {
-      case Prefix(op, priority) => sym_qident(op); space(); write("prefix");      space(); write(priority.toString)
-      case Infix (op, priority) => sym_qident(op); space(); write("infix");       space(); write(priority.toString)
-      case InfixL(op, priority) => sym_qident(op); space(); write("infix left");  space(); write(priority.toString)
-      case InfixR(op, priority) => sym_qident(op); space(); write("infix right"); space(); write(priority.toString)
-      case Quantifier(op) => sym_qident(op); space(); write("quantifier")
+      case Prefix(op, priority) => sym_ident(op); space(); write("prefix");      space(); write(priority.toString)
+      case Infix (op, priority) => sym_ident(op); space(); write("infix");       space(); write(priority.toString)
+      case InfixL(op, priority) => sym_ident(op); space(); write("infix left");  space(); write(priority.toString)
+      case InfixR(op, priority) => sym_ident(op); space(); write("infix right"); space(); write(priority.toString)
+      case Quantifier(op) => sym_ident(op); space(); write("quantifier")
     }
   }
 
@@ -546,11 +546,11 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
    * @param notations a map between identifiers and their $lp notation
    */
   def symbol_and_notation(id: Ident, args: List[BoundArg], ty_opt: Option[Typ], body_opt: Option[Term],
-                          nota_opt: Option[Notation], notations: MutableMap[Ident, Notation]): Unit = {
+                          nota_opt: Option[Notation], notations: MutableMap[Ident, Notation], prefix: String = ""): Unit = {
     val (new_id, new_nota_opt) =
       if (use_notations) (nota_opt.fold(id)(getOperator), nota_opt)
       else (id, None)
-    write("symbol ");
+    write(prefix + "symbol ");
     sym_ident(new_id)
     for (a <- args) {
       space(); arg(a, block = true, notations)
