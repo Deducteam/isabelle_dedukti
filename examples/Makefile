@@ -46,7 +46,7 @@ ifneq ($(SESSION),"Pure")
 build: $(ISADB_DIR)/$(SESSION).db
 
 $(ISADB_DIR)/%.db: $(ROOT_DIR)/ROOT $(SESSION_DIR)
-	isabelle build -b -d$(ROOT_DIR) $*
+	isabelle build -c -b -d$(ROOT_DIR) $*
 
 $(SESSION_DIR):
 	mkdir -p $@
