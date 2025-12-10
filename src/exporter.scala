@@ -283,12 +283,12 @@ object Exporter {
       progress.echo("Start reading session "+session)
       for (thy <- thys) {
         val theory_name = thy.toString
-        
+
         /** Same as remove_useless_proofs (below) but only update the Translate.replace_serial map */
         @tailrec
         def update_useless_proofs(name: String, proof: Term.Proof): Unit = proof match {
-          case PThm(serial, origin_theory, _, _) if origin_theory == theory_name &
-            !Translate.replace_serial.contains(serial) =>
+          case PThm(serial, origin_theory, thm_name, _) if thm_name.is_empty &&
+            origin_theory == theory_name & !Translate.replace_serial.contains(serial) =>
             Translate.replace_serial += serial -> name
             // otherwise scala does not recognise tail recursiveness
             val next_proof = use_proof(theory_name, serial) { case (prf, _) => prf }
@@ -296,7 +296,7 @@ object Exporter {
           case Appt(rem, arg) if is_abstract_free(arg) => update_useless_proofs(name, rem)
           case _ =>
         }
-        
+
         progress.echo("Start reading theory "+theory_name)
         val provider = ses_cont.theory(theory_name, other_cache=Some(term_cache))
         val theory = read_theory(provider)
@@ -540,8 +540,8 @@ object Exporter {
             @tailrec
             def remove_useless_proofs(name: String, proof: Term.Proof,
                                       encountered_lemmas: List[Long] = Nil): Boolean = proof match {
-              case PThm(serial, origin_theory, _, _) if origin_theory == theory_name &
-                !Translate.replace_serial.contains(serial) =>
+              case PThm(serial, origin_theory, thm_name, _) if thm_name.is_empty &&
+                origin_theory == theory_name && !Translate.replace_serial.contains(serial) =>
                 Translate.replace_serial += serial -> name
                 // otherwise scala does not recognise tail recursiveness
                 val next_proof = use_proof(theory_name, serial) { case (prf, _) => prf }
