@@ -592,7 +592,7 @@ class LP_Writer(use_notations: Boolean, writer: Writer)
   }
 
   def require(module: String): Unit = {
-    write("require ")
+    write("require open ")
     mod_ident(module)
     end_command()
   }
