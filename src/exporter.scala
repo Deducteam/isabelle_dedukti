@@ -116,6 +116,15 @@ object Exporter {
     }
   }
 
+  /** whether an $isa term is a free variable, possibly lambda-abstracted */
+  @tailrec
+  def is_abstract_free(term: Term): Boolean = term match {
+    case Abs(_, _, remainder) => is_abstract_free(remainder)
+    case App(remainder, Bound(_)) => is_abstract_free(remainder)
+    case Free(_, _) => true
+    case _ => false
+  }
+
   /** Reads an $isa session and possibly translates it to $dk files
    * 
    * @param options $isa options to read the session
@@ -270,20 +279,30 @@ object Exporter {
     if (!translate) { /* if translate is false, just update maps to keep in mind
                          the translated names of the session, but do not
                          write anything anywhere
-                      */ 
+                      */
       progress.echo("Start reading session "+session)
       for (thy <- thys) {
         val theory_name = thy.toString
+
+        /** Same as remove_useless_proofs (below) but only update the Translate.replace_serial map */
+        @tailrec
+        def update_useless_proofs(name: String, proof: Term.Proof): Unit = proof match {
+          case PThm(serial, origin_theory, thm_name, _) if thm_name.is_empty &&
+            origin_theory == theory_name & !Translate.replace_serial.contains(serial) =>
+            Translate.replace_serial += serial -> name
+            // otherwise scala does not recognise tail recursiveness
+            val next_proof = use_proof(theory_name, serial) { case (prf, _) => prf }
+            update_useless_proofs(name, next_proof)
+          case Appt(rem, arg) if is_abstract_free(arg) => update_useless_proofs(name, rem)
+          case _ =>
+        }
+
         progress.echo("Start reading theory "+theory_name)
         val provider = ses_cont.theory(theory_name, other_cache=Some(term_cache))
         val theory = read_theory(provider)
         for (a <- theory.types) {
           if (verbose) progress.echo("  "+a.toString+" "+a.serial)
           Translate.type_decl(theory_name, a.name, a.the_content.args, None, No_Syntax)
-        }
-        for (a <- theory.classes) {
-          if (verbose) progress.echo("  "+a.toString+" "+a.serial)
-          Translate.class_decl(theory_name, a.name, None)
         }
         for (a <- theory.consts) {
           if (verbose) progress.echo("  "+a.toString+" "+a.serial)
@@ -296,6 +315,7 @@ object Exporter {
         for (a <- theory.thms) {
           if (verbose) progress.echo("  " + a.toString + " " + a.serial)
           Translate.stmt_decl(Prelude.add_thm_ident(a.name, theory_name), a.the_content.prop, None)
+          update_useless_proofs(a.name, a.the_content.proof)
         }
         progress.echo("End reading theory "+theory_name)
       }
@@ -502,15 +522,6 @@ object Exporter {
              * and <code>None</code> if it is to be erased. */
             var replace_serial: Map[Long, Option[String]] = Map()
 
-            /** whether an Isabelle term is a free variable, possibly lambda-abstracted */
-            @tailrec
-            def is_abstract_free(term: Term):Boolean = term match {
-              case Abs(_,_,remainder) => is_abstract_free(remainder)
-              case App(remainder,Bound(_)) => is_abstract_free(remainder)
-              case Free(_,_) => true
-              case _ => false
-            }
-
             /** In $isa, Some theorem proofs are a reference to an unnamed lemma proving the exact same
              * statement. This function recursively inspects the proof of a theorem to delete all such useless lemmas
              * by updating the replace_serial map
@@ -522,29 +533,29 @@ object Exporter {
              *                           in the numbering order) will have its declaration replaced by the
              *                           theorem's one
              * @return true if no such lemma was found, indicating that the theorem should be stated on its own
-             * @define isa <span style="color:#FFFF00">Isabelle</span>
-             * @define arg code><span style="color:#FFC0CB;"
+             * @define isa  <span style="color:#FFFF00">Isabelle</span>
+             * @define arg  code><span style="color:#FFC0CB;"
              * @define arge /span></code
              */
             @tailrec
             def remove_useless_proofs(name: String, proof: Term.Proof,
                                       encountered_lemmas: List[Long] = Nil): Boolean = proof match {
-              case PThm(serial, origin_theory, _, _) if origin_theory == theory_name &
-                !Translate.replace_serial.contains(serial) =>
-                  Translate.replace_serial += serial -> name
-                  // otherwise scala does not recognise tail recursiveness
-                  val next_proof = use_proof(theory_name,serial){case (prf,_) => prf}
-                  remove_useless_proofs(name,next_proof,serial::encountered_lemmas)
-              case Appt(rem, arg) if is_abstract_free(arg) => remove_useless_proofs(name,rem,encountered_lemmas)
+              case PThm(serial, origin_theory, thm_name, _) if thm_name.is_empty &&
+                origin_theory == theory_name && !Translate.replace_serial.contains(serial) =>
+                Translate.replace_serial += serial -> name
+                // otherwise scala does not recognise tail recursiveness
+                val next_proof = use_proof(theory_name, serial) { case (prf, _) => prf }
+                remove_useless_proofs(name, next_proof, serial :: encountered_lemmas)
+              case Appt(rem, arg) if is_abstract_free(arg) => remove_useless_proofs(name, rem, encountered_lemmas)
               case _ =>
                 encountered_lemmas match {
-                case final_lemma::remainder =>
-                  replace_serial += final_lemma -> Some(name)
-                  for (lemma <- remainder) replace_serial += lemma -> None
-                  false
-                case _ => true
+                  case final_lemma :: remainder =>
+                    replace_serial += final_lemma -> Some(name)
+                    for (lemma <- remainder) replace_serial += lemma -> None
+                    false
+                  case _ => true
                 }
-              }
+            }
 
             /** function writing the declaration of a lemma for an intermediary proof */
             def write_proof(prf: Long): Unit = {
