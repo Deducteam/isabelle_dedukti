@@ -113,7 +113,7 @@ object Prelude {
         // because Dedukti does not accept names with dots
         var translated_id = radical.replace(".","_")
         if (kind == "var") translated_id += "_"
-        if (namesSet(translated_id)) translated_id += "_" + kind
+        if (kind == "type") translated_id += "_type"
         if (namesSet(translated_id)) translated_id = prefix + "_" + translated_id
         if (namesSet(translated_id)) error("duplicated name: " + translated_id)
         (translated_id,module0)
