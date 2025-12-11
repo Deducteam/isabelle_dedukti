@@ -115,7 +115,7 @@ object Exporter {
       case _ => error("exporter.abs: not a free variable "+arg.toString)
     }
   }
-
+  
   /** whether an $isa term is a specific (possibly eta_expanded) free variable
    * 
    * @param term the $isa term to test
