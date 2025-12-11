@@ -109,13 +109,13 @@ object Prelude {
       case Pure_Thy.ALL => ("all",STTfa)
       case id =>
         val cut = id.split("[.]", 2)
-        val radical = if (cut.length == 1) cut(0) else cut(1)
+        val (prefix,radical) = if (cut.length == 1) ("",cut(0)) else (cut(0),cut(1))
         // because Dedukti does not accept names with dots
         var translated_id = radical.replace(".","_")
         if (kind == "var") translated_id += "_"
         if (kind == "type") translated_id += "_type"
         if (namesSet(translated_id) && moduleOf(translated_id) != module) {
-          translated_id = module + "_" + translated_id
+          translated_id = prefix + "_" + translated_id
         }
         if (namesSet(translated_id)) translated_id += "_" + kind
         if (namesSet(translated_id)) error("duplicated name: " + translated_id)
