@@ -155,23 +155,23 @@ Remark: the translation to Lambdapi and Rocq is still work in progress.
 Performance on a machine with 32 processors i9-13950HX and 64 Go RAM
 (but multiprocessing is used in v and vo only for the moment):
 
-| SESSION              | build | db size |    dk | dk size | dko |  v |    vo |
-|:---------------------|------:|--------:|------:|--------:|----:|---:|------:|
-| Pure                 |    2s |       0 |    2s |     60K |  0s | 0s |    1s |
-| Groups               |   15s |      7M |   12s |     11M |  1s | 0s |   13s |
-| Nat                  |   53s |     19M |  1m4s |    107M | 12s | 2s | 3m30s |
-| BNF_Def              | 1m41s |     29M | 2m36s |    328M | 40s | 7s |       |
-| Int                  |       |         |       |         |     |    |       |
-| Set_Interval         |       |         |       |         |     |    |       |
-| Presburger           |       |         |       |         |     |    |       |
-| List                 |       |         |       |         |     |    |       |
-| Enum                 |       |         |       |         |     |    |       |
-| Quickcheck_Random    |       |         |       |         |     |    |       |
-| Quickcheck_Narrowing |       |         |       |         |     |    |       |
-| Main                 |       |         |       |         |     |    |       |
-| Pre_Transcendental   |       |         |       |         |     |    |       |
-| Transcendental       |       |         |       |         |     |    |       |
-| Complex_Main         |       |         |       |         |     |    |       |
+| SESSION               | build | db size |    dk | dk size | dko |  v |    vo |   lpo |
+|:----------------------|------:|--------:|------:|--------:|----:|---:|------:|------:|
+| Pure                  |    2s |       0 |    2s |     60K |  0s | 0s |    1s |    3s |
+| Groups                |   15s |      7M |   12s |     11M |  1s | 0s |   15s |    3s |
+| Nat                   |   53s |     19M |  1m4s |    107M | 12s | 2s | 3m26s |   28s |
+| BNF\_Def              | 1m41s |     29M | 2m36s |    328M | 40s | 7s | 13m4s | 1m37s |
+| Int                   | 1m53s |     33M | 2m15s |    239M |     |    |       |       |
+| Set\_Interval         |       |         |       |         |     |    |       |       |
+| Presburger            |       |         |       |         |     |    |       |       |
+| List                  |       |         |       |         |     |    |       |       |
+| Enum                  |       |         |       |         |     |    |       |       |
+| Quickcheck\_Random    |       |         |       |         |     |    |       |       |
+| Quickcheck\_Narrowing |       |         |       |         |     |    |       |       |
+| Main                  |       |         |       |         |     |    |       |       |
+| Pre\_Transcendental   |       |         |       |         |     |    |       |       |
+| Transcendental        |       |         |       |         |     |    |       |       |
+| Complex\_Main         |       |         |       |         |     |    |       |       |
 
 There is room for many important improvements. Makarius Wenzel is working on improving the export of proof terms in Isabelle. The generation of dk files is not modular. No term sharing is currently used in dk and v files.
 
