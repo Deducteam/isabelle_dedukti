@@ -82,7 +82,7 @@
     - To update the patch:
     
     ```bash
-    diff -urNx '*~' -x '*.orig' $path_to_unpatched_Isabelle_dir/src/HOL $path_to_patched_Isabelle_dir/src/HOL | sed -e "s|$path_to_unpatched_Isabelle_dir/src/HOL||" -e "s|$path_to_patched_Isabelle_dir/src/HOL||" > HOL.patch
+    diff -urNx '*~' -x '*.orig' $path_to_unpatched_Isabelle_dir/src/HOL $path_to_patched_Isabelle_dir/src/HOL > HOL.patch
     ```
 
 ## How to make Isabelle record proofs?
