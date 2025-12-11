@@ -1,80 +1,80 @@
-session HOL_Groups in HOL_Groups = Pure +
+session HOL_Groups_wp in HOL_Groups_wp = Pure +
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
   sessions HOL
   theories
     HOL.Groups
 
-session HOL_Nat in HOL_Nat = HOL_Groups +
+session HOL_Nat_wp in HOL_Nat_wp = HOL_Groups +
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
   sessions HOL
   theories
     HOL.Nat
 
-session HOL_BNF_Def in HOL_BNF_Def = HOL_Nat +
+session HOL_BNF_Def_wp in HOL_BNF_Def_wp = HOL_Nat +
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
   sessions HOL
   theories
     HOL.BNF_Def
 
-session HOL_Int in HOL_Int = HOL_BNF_Def +
+session HOL_Int_wp in HOL_Int_wp = HOL_BNF_Def +
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
   sessions HOL
   theories
     HOL.Int
 
-session HOL_Set_Interval in HOL_Set_Interval = HOL_Int +
+session HOL_Set_Interval_wp in HOL_Set_Interval_wp = HOL_Int +
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
   sessions HOL
   theories
     HOL.Set_Interval
 
-session HOL_Presburger in HOL_Presburger = HOL_Set_Interval +
+session HOL_Presburger_wp in HOL_Presburger_wp = HOL_Set_Interval +
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
   sessions HOL
   theories
     HOL.Presburger
 
-session HOL_List in HOL_List = HOL_Presburger +
+session HOL_List_wp in HOL_List_wp = HOL_Presburger +
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
   sessions HOL
   theories
     HOL.List
 
-session HOL_Enum in HOL_Enum = HOL_List +
+session HOL_Enum_wp in HOL_Enum_wp = HOL_List +
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
   sessions HOL
   theories
     HOL.Enum
 
-session HOL_Quickcheck_Random in HOL_Quickcheck_Random = HOL_Enum +
+session HOL_Quickcheck_Random_wp in HOL_Quickcheck_Random_wp = HOL_Enum +
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
   sessions HOL
   theories
 	HOL.Quickcheck_Random
 
-session HOL_Quickcheck_Narrowing in HOL_Quickcheck_Narrowing = HOL_Quickcheck_Random +
+session HOL_Quickcheck_Narrowing_wp in HOL_Quickcheck_Narrowing_wp = HOL_Quickcheck_Random +
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
   sessions HOL
   theories
 	HOL.Quickcheck_Narrowing
 
-session HOL_Main in HOL_Main = HOL_Quickcheck_Narrowing +
+session HOL_Main_wp in HOL_Main_wp = HOL_Quickcheck_Narrowing +
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
   sessions HOL
   theories
     Main
 
-session HOL_Pre_Transcendental in HOL_Pre_Transcendental = HOL_Main +
+session HOL_Pre_Transcendental_wp in HOL_Pre_Transcendental_wp = HOL_Main +
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
   sessions HOL
   theories HOL.Series HOL.Deriv HOL.NthRoot
 
-session HOL_Transcendental in HOL_Transcendental = HOL_Pre_Transcendental +
+session HOL_Transcendental_wp in HOL_Transcendental_wp = HOL_Pre_Transcendental +
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
   sessions HOL
   theories HOL.Transcendental
 
-session HOL_Complex_Main in HOL = HOL_Main +
+session HOL_Complex_Main_wp in HOL_wp = HOL_Main +
   options [strict_facts,export_theory,export_proofs,record_proofs=2]
   sessions HOL
   theories
