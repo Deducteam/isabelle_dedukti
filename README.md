@@ -164,7 +164,7 @@ Performance on a machine with 32 processors i9-13950HX and 64 Go RAM
 | Int                   | 1m53s |     33M | 2m15s |    239M |     |    |       |       |
 | Set\_Interval         |       |         |       |         |     |    |       |       |
 | Presburger            |       |         |       |         |     |    |       |       |
-| List                  |       |         |       |         |     |    |       |       |
+| List                  | 6m53s |     46M |       |         |     |    |       |       |
 | Enum                  |       |         |       |         |     |    |       |       |
 | Quickcheck\_Random    |       |         |       |         |     |    |       |       |
 | Quickcheck\_Narrowing |       |         |       |         |     |    |       |       |
