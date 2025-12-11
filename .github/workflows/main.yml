@@ -56,15 +56,15 @@ jobs:
           ocaml-compiler: ${{ matrix.ocaml-version }}
       - name: Install dkcheck
         run: opam install dedukti.${{ matrix.dedukti-version }}
-      - name: Check dk output for HOL_Groups
+      - name: Check dk output for HOL_Groups_wp
         run: |
           eval $(opam env)
           export PATH=$PATH:~/Isabelle${{ matrix.isabelle-version }}/bin
           cd examples
           make SESSION=Pure dk
           make SESSION=Pure dko
-          make SESSION=HOL_Groups dk
-          make SESSION=HOL_Groups dko
+          make SESSION=HOL_Groups_wp dk
+          make SESSION=HOL_Groups_wp dko
 #          mkdir -p kocheck
 #          ../../remove-requires.sh *.dk
 #          cd kocheck
@@ -79,12 +79,12 @@ jobs:
 #          git clone https://github.com/01mf02/kontroli-rs.git
 #          cd ~/kontroli-rs
 #          cargo install --path kocheck
-      - name: Generate and check lp output for HOL_Groups
+      - name: Generate and check lp output for HOL_Groups_wp
         run: |
           eval $(opam env)
           export PATH=$PATH:~/Isabelle${{ matrix.isabelle-version }}/bin
           cd examples
           make SESSION=Pure lp
           make SESSION=Pure lpo
-          make SESSION=HOL_Groups lp
-          make SESSION=HOL_Groups lpo
+          make SESSION=HOL_Groups_wp lp
+          make SESSION=HOL_Groups_wp lpo
