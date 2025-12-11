@@ -1,6 +1,6 @@
-diff -urNx '*~' -x '*.orig' Enum.thy Enum.thy
---- Enum.thy	2025-03-12 19:39:00.000000000 +0900
-+++ Enum.thy	2025-12-11 13:22:51.037338559 +0900
+diff -urNx *~ -x *.orig ./Enum.thy ../../src/HOL/Enum.thy
+--- ./Enum.thy	2024-12-18 15:58:48
++++ ../../src/HOL/Enum.thy	2024-12-18 15:55:54
 @@ -929,15 +929,47 @@
  definition "x mod y = (case y of a\<^sub>1 \<Rightarrow> x | _ \<Rightarrow> a\<^sub>1)"
  definition "abs = (\<lambda>x. case x of a\<^sub>3 \<Rightarrow> a\<^sub>2 | _ \<Rightarrow> x)"
@@ -189,23 +189,9 @@ diff -urNx '*~' -x '*.orig' Enum.thy Enum.thy
  end
  
  
-diff -urNx '*~' -x '*.orig' List.thy List.thy
---- List.thy	2025-03-12 19:39:00.000000000 +0900
-+++ List.thy	2025-12-11 13:23:56.747319353 +0900
-@@ -3790,7 +3790,9 @@
- 
- lemma distinct_swap[simp]: "\<lbrakk> i < size xs; j < size xs\<rbrakk> \<Longrightarrow>
-   distinct(xs[i := xs!j, j := xs!i]) = distinct xs"
--  by (smt (verit, del_insts) distinct_conv_nth length_list_update nth_list_update)
-+  apply (simp add: distinct_conv_nth nth_list_update)
-+  apply (safe; metis)
-+  done
- 
- lemma set_swap[simp]:
-   "\<lbrakk> i < size xs; j < size xs \<rbrakk> \<Longrightarrow> set(xs[i := xs!j, j := xs!i]) = set xs"
-diff -urNx '*~' -x '*.orig' MacLaurin.thy MacLaurin.thy
---- MacLaurin.thy	2025-03-12 19:39:00.000000000 +0900
-+++ MacLaurin.thy	2025-12-11 13:22:51.037338559 +0900
+diff -urNx *~ -x *.orig ./MacLaurin.thy ../../src/HOL/MacLaurin.thy
+--- ./MacLaurin.thy	2024-12-18 15:58:48
++++ ../../src/HOL/MacLaurin.thy	2024-12-18 15:55:54
 @@ -22,7 +22,7 @@
  
  lemma eq_diff_eq': "x = y - z \<longleftrightarrow> y = x + z"
@@ -246,7 +232,7 @@ diff -urNx '*~' -x '*.orig' MacLaurin.thy MacLaurin.thy
  qed auto
  
  lemma Maclaurin_sin_expansion:
-@@ -346,8 +348,7 @@
+@@ -348,8 +350,7 @@
    then show ?thesis
      apply (rule ex_forward, simp)
      apply (rule sum.cong[OF refl])
@@ -256,7 +242,7 @@ diff -urNx '*~' -x '*.orig' MacLaurin.thy MacLaurin.thy
  qed
  
  lemma Maclaurin_sin_expansion4:
-@@ -365,8 +366,7 @@
+@@ -369,8 +370,7 @@
    then show ?thesis
      apply (rule ex_forward, simp)
      apply (rule sum.cong[OF refl])
@@ -266,7 +252,7 @@ diff -urNx '*~' -x '*.orig' MacLaurin.thy MacLaurin.thy
  qed
  
  
-@@ -378,6 +378,16 @@
+@@ -382,6 +382,16 @@
  lemma cos_expansion_lemma: "cos (x + real (Suc m) * pi / 2) = - sin (x + real m * pi / 2)"
    by (auto simp: cos_add sin_add distrib_right add_divide_distrib)
  
@@ -283,7 +269,7 @@ diff -urNx '*~' -x '*.orig' MacLaurin.thy MacLaurin.thy
  lemma Maclaurin_cos_expansion:
    "\<exists>t::real. \<bar>t\<bar> \<le> \<bar>x\<bar> \<and>
      cos x = (\<Sum>m<n. cos_coeff m * x ^ m) + (cos(t + 1/2 * real n * pi) / fact n) * x ^ n"
-@@ -395,8 +405,7 @@
+@@ -399,8 +409,7 @@
    then show ?thesis
      apply (rule ex_forward, simp)
      apply (rule sum.cong[OF refl])
@@ -293,7 +279,7 @@ diff -urNx '*~' -x '*.orig' MacLaurin.thy MacLaurin.thy
  qed auto
  
  lemma Maclaurin_cos_expansion2:
-@@ -415,8 +424,7 @@
+@@ -419,8 +428,7 @@
    then show ?thesis
      apply (rule ex_forward, simp)
      apply (rule sum.cong[OF refl])
@@ -303,7 +289,7 @@ diff -urNx '*~' -x '*.orig' MacLaurin.thy MacLaurin.thy
  qed
  
  lemma Maclaurin_minus_cos_expansion:
-@@ -435,8 +443,7 @@
+@@ -439,8 +447,7 @@
    then show ?thesis
      apply (rule ex_forward, simp)
      apply (rule sum.cong[OF refl])
@@ -313,10 +299,10 @@ diff -urNx '*~' -x '*.orig' MacLaurin.thy MacLaurin.thy
  qed
  
  
-diff -urNx '*~' -x '*.orig' Quickcheck_Narrowing.thy Quickcheck_Narrowing.thy
---- Quickcheck_Narrowing.thy	2025-03-12 19:39:00.000000000 +0900
-+++ Quickcheck_Narrowing.thy	2025-12-11 13:22:51.038338543 +0900
-@@ -197,8 +197,10 @@
+diff -urNx *~ -x *.orig ./Quickcheck_Narrowing.thy ../../src/HOL/Quickcheck_Narrowing.thy
+--- ./Quickcheck_Narrowing.thy	2024-12-18 15:58:48
++++ ../../src/HOL/Quickcheck_Narrowing.thy	2024-12-18 15:55:55
+@@ -196,8 +196,10 @@
  
  external_file \<open>~~/src/HOL/Tools/Quickcheck/Narrowing_Engine.hs\<close>
  external_file \<open>~~/src/HOL/Tools/Quickcheck/PNF_Narrowing_Engine.hs\<close>
@@ -327,7 +313,7 @@ diff -urNx '*~' -x '*.orig' Quickcheck_Narrowing.thy Quickcheck_Narrowing.thy
  definition narrowing_dummy_partial_term_of :: "('a :: partial_term_of) itself => narrowing_term => term"
  where
    "narrowing_dummy_partial_term_of = partial_term_of"
-@@ -207,6 +209,7 @@
+@@ -206,6 +208,7 @@
  where
    "narrowing_dummy_narrowing = narrowing"
  
@@ -335,7 +321,7 @@ diff -urNx '*~' -x '*.orig' Quickcheck_Narrowing.thy Quickcheck_Narrowing.thy
  lemma [code]:
    "ensure_testable f =
      (let
-@@ -214,9 +217,11 @@
+@@ -213,9 +216,11 @@
        y = narrowing_dummy_partial_term_of :: bool itself => narrowing_term => term;
        z = (conv :: _ => _ => unit)  in f)"
  unfolding Let_def ensure_testable_def ..
@@ -347,7 +333,7 @@ diff -urNx '*~' -x '*.orig' Quickcheck_Narrowing.thy Quickcheck_Narrowing.thy
  instantiation set :: (narrowing) narrowing
  begin
  
-@@ -226,6 +231,7 @@
+@@ -225,6 +230,7 @@
  
  end
    
@@ -355,7 +341,7 @@ diff -urNx '*~' -x '*.orig' Quickcheck_Narrowing.thy Quickcheck_Narrowing.thy
  subsection \<open>Narrowing for integers\<close>
  
  
-@@ -265,6 +271,7 @@
+@@ -264,6 +270,7 @@
  
  end
  
@@ -363,7 +349,7 @@ diff -urNx '*~' -x '*.orig' Quickcheck_Narrowing.thy Quickcheck_Narrowing.thy
  declare [[code drop: "partial_term_of :: int itself \<Rightarrow> _"]]
  
  lemma [code]:
-@@ -275,6 +282,7 @@
+@@ -274,6 +281,7 @@
       then Code_Evaluation.term_of (- (int_of_integer i) div 2)
       else Code_Evaluation.term_of ((int_of_integer i + 1) div 2))"
    by (rule partial_term_of_anything)+
@@ -371,7 +357,7 @@ diff -urNx '*~' -x '*.orig' Quickcheck_Narrowing.thy Quickcheck_Narrowing.thy
  
  instantiation integer :: narrowing
  begin
-@@ -287,6 +295,7 @@
+@@ -286,6 +294,7 @@
  
  end
  
@@ -379,7 +365,7 @@ diff -urNx '*~' -x '*.orig' Quickcheck_Narrowing.thy Quickcheck_Narrowing.thy
  declare [[code drop: "partial_term_of :: integer itself \<Rightarrow> _"]]  
  
  lemma [code]:
-@@ -297,6 +306,7 @@
+@@ -296,6 +305,7 @@
       then Code_Evaluation.term_of (- i div 2)
       else Code_Evaluation.term_of ((i + 1) div 2))"
    by (rule partial_term_of_anything)+
@@ -387,10 +373,10 @@ diff -urNx '*~' -x '*.orig' Quickcheck_Narrowing.thy Quickcheck_Narrowing.thy
  
  code_printing constant "Code_Evaluation.term_of :: integer \<Rightarrow> term" \<rightharpoonup> (Haskell_Quickcheck) 
    "(let { t = Typerep.Typerep \"Code'_Numeral.integer\" [];
-diff -urNx '*~' -x '*.orig' Quickcheck_Random.thy Quickcheck_Random.thy
---- Quickcheck_Random.thy	2025-03-12 19:39:00.000000000 +0900
-+++ Quickcheck_Random.thy	2025-12-11 13:22:51.038338543 +0900
-@@ -230,7 +230,7 @@
+diff -urNx *~ -x *.orig ./Quickcheck_Random.thy ../../src/HOL/Quickcheck_Random.thy
+--- ./Quickcheck_Random.thy	2024-12-18 15:58:48
++++ ../../src/HOL/Quickcheck_Random.thy	2024-12-18 15:55:54
+@@ -229,7 +229,7 @@
         (Code_Numeral.Suc i,
          random j \<circ>\<rightarrow> (%x. random_aux_set i j \<circ>\<rightarrow> (%s. Pair (valtermify_insert x s))))])"
  
@@ -399,9 +385,9 @@ diff -urNx '*~' -x '*.orig' Quickcheck_Random.thy Quickcheck_Random.thy
    "random_aux_set i j =
      collapse (Random.select_weight [(1, Pair valterm_emptyset),
        (i, random j \<circ>\<rightarrow> (%x. random_aux_set (i - 1) j \<circ>\<rightarrow> (%s. Pair (valtermify_insert x s))))])"
-diff -urNx '*~' -x '*.orig' String.thy String.thy
---- String.thy	2025-03-12 19:39:00.000000000 +0900
-+++ String.thy	2025-12-11 13:22:51.038338543 +0900
+diff -urNx *~ -x *.orig ./String.thy ../../src/HOL/String.thy
+--- ./String.thy	2024-12-18 15:58:48
++++ ../../src/HOL/String.thy	2024-12-18 15:55:55
 @@ -40,11 +40,21 @@
  
  lemma (in comm_semiring_1) of_nat_of_char:
@@ -426,7 +412,7 @@ diff -urNx '*~' -x '*.orig' String.thy String.thy
  
  lemma nat_of_char [simp]:
    \<open>nat (of_char c) = of_char c\<close>
-@@ -714,9 +724,9 @@
+@@ -698,9 +708,9 @@
  
  lemma [code]:
    \<open>Literal' b0 b1 b2 b3 b4 b5 b6 s = String.literal_of_asciis
@@ -438,10 +424,10 @@ diff -urNx '*~' -x '*.orig' String.thy String.thy
      by simp
    moreover have \<open>Literal' b0 b1 b2 b3 b4 b5 b6 s = String.literal_of_asciis
      [of_char (Char b0 b1 b2 b3 b4 b5 b6 False)] + s\<close>
-diff -urNx '*~' -x '*.orig' Tools/Quickcheck/exhaustive_generators.ML Tools/Quickcheck/exhaustive_generators.ML
---- Tools/Quickcheck/exhaustive_generators.ML	2025-03-12 19:39:00.000000000 +0900
-+++ Tools/Quickcheck/exhaustive_generators.ML	2025-12-11 13:22:51.039338527 +0900
-@@ -544,7 +544,7 @@
+diff -urNx *~ -x *.orig ./Tools/Quickcheck/exhaustive_generators.ML ../../src/HOL/Tools/Quickcheck/exhaustive_generators.ML
+--- ./Tools/Quickcheck/exhaustive_generators.ML	2024-12-18 15:58:48
++++ ../../src/HOL/Tools/Quickcheck/exhaustive_generators.ML	2024-12-18 15:55:54
+@@ -546,7 +546,7 @@
          instantiate_bounded_forall_datatype)))
  
  val active = Attrib.setup_config_bool \<^binding>\<open>quickcheck_exhaustive_active\<close> (K true)
@@ -450,16 +436,16 @@ diff -urNx '*~' -x '*.orig' Tools/Quickcheck/exhaustive_generators.ML Tools/Quic
  val _ =
    Theory.setup
     (Quickcheck_Common.datatype_interpretation \<^plugin>\<open>quickcheck_full_exhaustive\<close>
-@@ -552,5 +552,5 @@
+@@ -554,5 +554,5 @@
      #> Context.theory_map (Quickcheck.add_tester ("exhaustive", (active, test_goals)))
      #> Context.theory_map (Quickcheck.add_batch_generator ("exhaustive", compile_generator_exprs))
      #> Context.theory_map (Quickcheck.add_batch_validator ("exhaustive", compile_validator_exprs)))
 -
 +*)
  end
-diff -urNx '*~' -x '*.orig' Tools/Quickcheck/narrowing_generators.ML Tools/Quickcheck/narrowing_generators.ML
---- Tools/Quickcheck/narrowing_generators.ML	2025-03-12 19:39:00.000000000 +0900
-+++ Tools/Quickcheck/narrowing_generators.ML	2025-12-11 13:22:51.039338527 +0900
+diff -urNx *~ -x *.orig ./Tools/Quickcheck/narrowing_generators.ML ../../src/HOL/Tools/Quickcheck/narrowing_generators.ML
+--- ./Tools/Quickcheck/narrowing_generators.ML	2024-12-18 15:58:48
++++ ../../src/HOL/Tools/Quickcheck/narrowing_generators.ML	2024-12-18 15:55:54
 @@ -542,8 +542,10 @@
    Theory.setup
     (Code.datatype_interpretation ensure_partial_term_of
@@ -471,9 +457,9 @@ diff -urNx '*~' -x '*.orig' Tools/Quickcheck/narrowing_generators.ML Tools/Quick
      #> Context.theory_map (Quickcheck.add_tester ("narrowing", (active, test_goals))))
  
  end
-diff -urNx '*~' -x '*.orig' Tools/Quickcheck/random_generators.ML Tools/Quickcheck/random_generators.ML
---- Tools/Quickcheck/random_generators.ML	2025-03-12 19:39:00.000000000 +0900
-+++ Tools/Quickcheck/random_generators.ML	2025-12-11 13:22:51.039338527 +0900
+diff -urNx *~ -x *.orig ./Tools/Quickcheck/random_generators.ML ../../src/HOL/Tools/Quickcheck/random_generators.ML
+--- ./Tools/Quickcheck/random_generators.ML	2024-12-18 15:58:48
++++ ../../src/HOL/Tools/Quickcheck/random_generators.ML	2024-12-18 15:55:54
 @@ -481,10 +481,12 @@
  
  val active = Attrib.setup_config_bool \<^binding>\<open>quickcheck_random_active\<close> (K false);
@@ -487,10 +473,10 @@ diff -urNx '*~' -x '*.orig' Tools/Quickcheck/random_generators.ML Tools/Quickche
 +*)
  
  end;
-diff -urNx '*~' -x '*.orig' Transcendental.thy Transcendental.thy
---- Transcendental.thy	2025-03-12 19:39:00.000000000 +0900
-+++ Transcendental.thy	2025-12-11 13:22:51.041338495 +0900
-@@ -3526,8 +3526,9 @@
+diff -urNx *~ -x *.orig ./Transcendental.thy ../../src/HOL/Transcendental.thy
+--- ./Transcendental.thy	2024-12-18 15:58:48
++++ ../../src/HOL/Transcendental.thy	2024-12-18 15:55:54
+@@ -3572,8 +3572,9 @@
          using \<open>n \<le> p\<close> neq0_conv that(1) by blast
        then have \<section>: "(- 1::real) ^ (p div 2 - Suc 0) = - ((- 1) ^ (p div 2))"
          using \<open>even p\<close> by (auto simp add: dvd_def power_eq_if)
