@@ -236,11 +236,4 @@ object Syntax {
    * @param ty   the type of the symbol, which is the statement of the theorem
    * @param prf  the body of the symbol, which is the proof of the theorem */
   case class Theorem(id: Ident, args: List[BoundArg], ty: Typ, prf: Term) extends Command
-  /** <$lpc>rule lhs($x, $y, ...) ↪ rhs($x, $y, ...);<$lpce>
-   *  $dklp command declaring a rewrite rule.
-   *  @param vars the list of pattern variables to be instantiated, declared
-   *              before the rule in $dk and used with a dollar sign in $lp
-   *  @param lhs the left-hand side of the rewrite rule, to be matched in order to be rewritten
-   *  @param rhs the right-hand side of the rewrite rule, to be rewritten to */
-  case class Rewrite(vars: List[Ident], lhs: Term, rhs: Term) extends Command
 }
