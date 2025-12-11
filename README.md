@@ -164,7 +164,7 @@ Performance on a machine with 32 processors i9-13950HX and 64 Go RAM
 | HOL\_Int\_wp                   | 1m53s |     33M | 2m15s |    239M |     |    |       |       |
 | HOL\_Set\_Interval\_wp         | 2m40s |     45M | 8m35s |      1G |     |    |       |       |
 | HOL\_Presburger\_wp            | 2m25s |     42M | 7m26s |      1G |     |    |       |       |
-| HOL\_List\_wp                  | 6m53s |     46M |       |         |     |    |       |       |
+| HOL\_List\_wp                  |       |         |       |         |     |    |       |       |
 | HOL\_Enum\_wp                  |       |         |       |         |     |    |       |       |
 | HOL\_Quickcheck\_Random\_wp    |       |         |       |         |     |    |       |       |
 | HOL\_Quickcheck\_Narrowing\_wp |       |         |       |         |     |    |       |       |
