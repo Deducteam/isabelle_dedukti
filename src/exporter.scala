@@ -154,7 +154,11 @@ object Exporter {
 
     /** depending on variable <code>to_lp</code>, opens an [[LP_Writer]] or a [[DK_Writer]] */
     def new_Writer(writer: Writer): Abstract_Writer =
-      if (to_lp) new LP_Writer(use_notations,writer)
+      if (to_lp) {
+        writer.write("""flag "eta_equality" on;""")
+        writer.write('\n')
+        new LP_Writer(use_notations,writer)
+      }
       else new DK_Writer(writer)
 
     /** .lp or .dk depending on variable <code>to_lp</code> */
@@ -189,8 +193,6 @@ object Exporter {
               None
             case (h @ Term.Const(n, tys), args) =>
               if (verbose) progress.echo("  head: " + h.toString + "\n  args: " + args.toString + "\n  rhs: " + rhs.toString)
-              // TODO: Modified this method quite a bit, especially here, please tell me if it is wrong
-              //       I particularly removed a part that I believe was impossible to reach.
               val revargs = args.reverse
               val rhs2 = debruijn(revargs, rhs)
               val dfn = revargs.foldLeft(rhs2)(abs)
