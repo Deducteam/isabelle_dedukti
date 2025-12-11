@@ -116,14 +116,21 @@ object Exporter {
     }
   }
 
-  /** whether an $isa term is a free variable, possibly lambda-abstracted */
+  /** whether an $isa term is the (possibly eta_expanded) is a specific free variable
+   * 
+   * @param term the $isa term to test
+   * @param name the free variable name to search for
+   * @param n_Abs the amount of Abs cases encountered so far
+   * @param n_App the amount of App cases encountered so far
+   * @return true if <code><$argc>term<$argce>=λx1...xn, Free(<$argc>name<$argce>) x1 ... xn</code>
+   */
   @tailrec
-  def is_abstract_free(term: Term): Boolean = term match {
-    case Abs(_, _, remainder) => is_abstract_free(remainder)
-    case App(remainder, Bound(_)) => is_abstract_free(remainder)
-    case Free(_, _) => true
-    case _ => false
-  }
+  def is_abstract_free(term: Term, name: String, n_Abs: Int = 0, n_App: Int = 0): Boolean = term match {
+      case Abs(_, _, remainder) => is_abstract_free(remainder, name, n_Abs+1, n_App)
+      case App(remainder, Bound(m)) => n_Abs > n_App && m == n_App && is_abstract_free(remainder, name, n_Abs, n_App+1)
+      case Free(othername, _) => n_Abs == n_App && name == othername
+      case _ => false
+    }
 
   /** Reads an $isa session and possibly translates it to $dk files
    * 
@@ -288,14 +295,16 @@ object Exporter {
 
         /** Same as remove_useless_proofs (below) but only update the Translate.replace_serial map */
         @tailrec
-        def update_useless_proofs(name: String, proof: Term.Proof): Unit = proof match {
-          case PThm(serial, origin_theory, thm_name, _) if thm_name.is_empty &&
+        def update_useless_proofs(name: String, proof: Term.Proof, args: List[String]): Unit = (proof,args) match {
+          case (PThm(serial, origin_theory, thm_name, _),Nil) if thm_name.is_empty &&
             origin_theory == theory_name & !Translate.replace_serial.contains(serial) =>
             Translate.replace_serial += serial -> name
-            // otherwise scala does not recognise tail recursiveness
-            val next_proof = use_proof(theory_name, serial) { case (prf, _) => prf }
-            update_useless_proofs(name, next_proof)
-          case Appt(rem, arg) if is_abstract_free(arg) => update_useless_proofs(name, rem)
+            val (next_proof,next_args) = use_proof(theory_name, serial) {
+              case (prf, prop) => (prf, prop.args.map(_._1).reverse)
+            }
+            update_useless_proofs(name, next_proof, next_args)
+          case (Appt(proofrem, arg),argname::argsrem) if is_abstract_free(arg,argname) =>
+            update_useless_proofs(name, proofrem, argsrem)
           case _ =>
         }
 
@@ -316,8 +325,9 @@ object Exporter {
         }
         for (a <- theory.thms) {
           if (verbose) progress.echo("  " + a.toString + " " + a.serial)
-          Translate.stmt_decl(Prelude.add_thm_ident(a.name, theory_name), a.the_content.prop, None)
-          update_useless_proofs(a.name, a.the_content.proof)
+          val thm = a.the_content
+          Translate.stmt_decl(Prelude.add_thm_ident(a.name, theory_name), thm.prop, None)
+          update_useless_proofs(a.name, thm.proof, thm.prop.args.map(_._1).reverse)
         }
         progress.echo("End reading theory "+theory_name)
       }
@@ -540,15 +550,18 @@ object Exporter {
              * @define arge /span></code
              */
             @tailrec
-            def remove_useless_proofs(name: String, proof: Term.Proof,
-                                      encountered_lemmas: List[Long] = Nil): Boolean = proof match {
-              case PThm(serial, origin_theory, thm_name, _) if thm_name.is_empty &&
+            def remove_useless_proofs(name: String, proof: Term.Proof, args: List[String],
+                                      encountered_lemmas: List[Long] = Nil): Boolean = (proof,args) match {
+              case (PThm(serial, origin_theory, thm_name, _),Nil) if thm_name.is_empty &&
                 origin_theory == theory_name && !Translate.replace_serial.contains(serial) =>
                 Translate.replace_serial += serial -> name
                 // otherwise scala does not recognise tail recursiveness
-                val next_proof = use_proof(theory_name, serial) { case (prf, _) => prf }
-                remove_useless_proofs(name, next_proof, serial :: encountered_lemmas)
-              case Appt(rem, arg) if is_abstract_free(arg) => remove_useless_proofs(name, rem, encountered_lemmas)
+                val (next_proof,next_args) = use_proof(theory_name, serial) {
+                  case (prf, prop) => (prf, prop.args.map(_._1).reverse)
+                }
+                remove_useless_proofs(name, next_proof, next_args, serial :: encountered_lemmas)
+              case (Appt(proofrem, arg), argname::argsrem) if is_abstract_free(arg,argname) =>
+                remove_useless_proofs(name, proofrem, argsrem, encountered_lemmas)
               case _ =>
                 encountered_lemmas match {
                   case final_lemma :: remainder =>
@@ -620,7 +633,8 @@ object Exporter {
             val prfs = map_theory_proofs(theory_name).toList
 
             /** remove all useless lemmas and keep the theorems that did not replace a lemma */
-            val thms = for (thm <- theory.thms if remove_useless_proofs(thm.name,thm.the_content.proof))
+            val thms = for ( thm <- theory.thms if remove_useless_proofs(thm.name,
+                               thm.the_content.proof, thm.the_content.prop.args.map(_._1).reverse) )
               yield thm
 
             write_proofs(prfs,thms)
