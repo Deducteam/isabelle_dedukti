@@ -163,7 +163,7 @@ object Exporter {
     /** depending on variable <code>to_lp</code>, opens an [[LP_Writer]] or a [[DK_Writer]] */
     def new_Writer(writer: Writer): Abstract_Writer =
       if (to_lp) {
-        writer.write("""flag "eta_equality" on;""")
+        if(!eta_expand) writer.write("""flag "eta_equality" on;""")
         writer.write('\n')
         new LP_Writer(use_notations,writer)
       }
