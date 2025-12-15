@@ -739,7 +739,7 @@ object Translate {
    *  Where global_eta_expand is a variable
    */
   def eta_expand(tm: Syntax.Term) : Syntax.Term = {
-    if (global_eta_expand) eta_expand((eta_contract(tm), Map(), Mut("€a")) else tm
+    if (global_eta_expand) eta_expand(eta_contract(tm), Map(), Mut("€a")) else tm
   }
 
   /** Pop all compatible {abstraction, product} arguments and return their list and the remaining terms 
@@ -891,7 +891,7 @@ object Translate {
       case Some(rhs) => {
         val translated_rhs = typ(rhs)
         val full_tm : Syntax.Term = args.map(bound_type_argument(_)).foldRight(translated_rhs)(Syntax.Abst.apply)
-        val (new_args, contracted, ty) = fetch_head_args(eta_expand(full_tm)), full_ty)
+        val (new_args, contracted, ty) = fetch_head_args(eta_expand(full_tm), full_ty)
         Syntax.Definition(id_c, new_args, Some(ty), contracted, notation_decl(not))
       }
     }
