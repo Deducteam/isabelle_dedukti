@@ -45,8 +45,7 @@ ifneq ($(SESSION),"Pure")
 build: $(ISADB_DIR)/$(SESSION).db
 
 $(ISADB_DIR)/%.db: $(ROOT_DIR)/ROOT $(SESSION_DIR)
-	isabelle build -b -d$(ROOT_DIR) $*
-	@touch $@
+	@if test -f $@; then touch $@; else isabelle build -b -d$(ROOT_DIR) $*; fi
 
 $(SESSION_DIR):
 	mkdir -p $@
@@ -172,9 +171,9 @@ $(OUT_DIR)/mappings.v: $(ISADK_DIR)/mappings.v
 	@echo lambdapi export -o stt_coq $<
 	@$(LAMBDAPI) export -o stt_coq --encoding $(ISADK_DIR)/encoding.lp --mapping $(ISADK_DIR)/mappings.lp --renaming $(ISADK_DIR)/renaming.lp --requiring mappings $< | sed -e '/^Require STTfa\./d' > $@
 
-%.v: %.lp
-	@echo lambdapi export -o stt_coq $<
-	@$(LAMBDAPI) export -o stt_coq --encoding $(ISADK_DIR)/encoding.lp --mapping $(ISADK_DIR)/mappings.lp --renaming $(ISADK_DIR)/renaming.lp --requiring mappings $< | sed -e '/^Require Isabelle\.STTfa\./d' > $@
+#%.v: %.lp
+#	@echo lambdapi export -o stt_coq $<
+#	@$(LAMBDAPI) export -o stt_coq --encoding $(ISADK_DIR)/encoding.lp --mapping $(ISADK_DIR)/mappings.lp --renaming $(ISADK_DIR)/renaming.lp --requiring mappings $< | sed -e '/^Require Isabelle\.STTfa\./d' > $@
 
 .PHONY: clean-v
 clean-v: rm-v rm-vo-mk clean-vo
