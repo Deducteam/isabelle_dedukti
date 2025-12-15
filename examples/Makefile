@@ -47,8 +47,8 @@ build: $(ISADB_DIR)/$(SESSION).db
 $(ISADB_DIR)/%.db: $(ROOT_DIR)/ROOT $(SESSION_DIR)
 	@if test -f $@; then touch $@; else isabelle build -b -d$(ROOT_DIR) $*; fi
 
-$(SESSION_DIR):
-	mkdir -p $@
+$(SESSION_DIR): $(ROOT_DIR)/ROOT
+	@if grep -q "session $(SESSION) " $<; then echo mkdir $@; mkdir -p $@; touch $@; else echo "there is no session $(SESSION) in $<"; exit 1; fi
 
 .PHONY: clean-build
 clean-build:
@@ -157,10 +157,10 @@ rm-lpo:
 ############# generation of Rocq files ##############
 
 DK_FILES := $(wildcard $(OUT_DIR)/*.dk)
-LP_FILES := $(wildcard $(OUT_DIR)/*.lp)
+#LP_FILES := $(wildcard $(OUT_DIR)/*.lp)
 
 .PHONY: v
-v: $(OUT_DIR)/mappings.v $(DK_FILES:%.dk=%.v) $(LP_FILES:%.lp=%.v)
+v: $(OUT_DIR)/mappings.v $(DK_FILES:%.dk=%.v)
 
 LAMBDAPI = lambdapi
 

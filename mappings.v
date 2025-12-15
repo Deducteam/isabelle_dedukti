@@ -7,6 +7,8 @@ Record Type' := { type :> Type; el : type }.
 Definition Prop' : Type' := {| type := Prop; el := True |}.
 Canonical Prop'.
 
+Definition dummy := Prop'.
+
 Definition arr a (b : Type') := {| type := a -> b; el := fun _ => el b |}.
 Canonical arr.
 
