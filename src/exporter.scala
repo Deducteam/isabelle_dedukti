@@ -116,13 +116,14 @@ object Exporter {
     }
   }
 
-  /** whether an $isa term is the (possibly eta_expanded) is a specific free variable
+  /** whether an $isa term is a specific (possibly eta_expanded) free variable
    * 
    * @param term the $isa term to test
    * @param name the free variable name to search for
    * @param n_Abs the amount of Abs cases encountered so far
    * @param n_App the amount of App cases encountered so far
-   * @return true if <code><$argc>term<$argce>=λx1...xn, Free(<$argc>name<$argce>) x1 ... xn</code>
+   * @return true if <code><$argc>term<$argce>=eta_k1(...(eta_kn(<$metc>Free<$metce>(<$argc>name<$argce>)))...)</code>
+   *         where <code>eta_i(f)=λx1 ... xi, f x1 ... xi</code>
    */
   @tailrec
   def is_abstract_free(term: Term, name: String, n_Abs: Int = 0, n_App: Int = 0): Boolean = term match {
