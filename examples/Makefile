@@ -48,8 +48,7 @@ $(ISADB_DIR)/%.db: $(ROOT_DIR)/ROOT $(SESSION_DIR)
 	@if test -f $@; then touch $@; else isabelle build -b -d$(ROOT_DIR) $*; fi
 
 $(SESSION_DIR): $(ROOT_DIR)/ROOT
-	@if grep -q "session $(SESSION) " $<; then mkdir -p $@; else echo "there is no session $(SESSION) in $<"; exit 1; fi
-	@echo mkdir -p $@
+	@if grep -q "session $(SESSION) " $<; then echo mkdir $@; mkdir -p $@; touch $@; else echo "there is no session $(SESSION) in $<"; exit 1; fi
 
 .PHONY: clean-build
 clean-build:
