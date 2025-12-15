@@ -176,7 +176,7 @@ object Generator {
         var eta_expand = false
         var options = Options.init()
         var verbose = false
-
+        
         val getopts = Getopts("Usage: isabelle " + cmd_name + """ [OPTIONS] SESSION
 
   Options are:
@@ -185,7 +185,7 @@ object Generator {
     -D DIR       proof output directory
     -r           recursively translate ancestor sessions
     -e           remove need for eta flag
-    -n           do not use Lambdapi notations (only without option -k)
+    -n           use Lambdapi notations (without option -k only)
     -o OPTION    override Isabelle system OPTION (via NAME=VAL or NAME)
     -v           verbose mode
 
@@ -194,7 +194,7 @@ Generate a dk or lp file for every theory of SESSION.""",
         "D:" -> (arg => { outdir = arg + "/" }),
         "r" -> (_ => recursive = true),
         "e" -> (_ => eta_expand = true),
-        "n" -> (_ => use_notations = false),
+        "n" -> (_ => use_notations = true),
         "o:" -> (arg => { options += arg }),
         "v" -> (_ => verbose = true),
         "k" -> (_ => to_lp = false))
