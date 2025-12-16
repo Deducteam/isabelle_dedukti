@@ -101,29 +101,26 @@ object Prelude {
    * @param kind the kind of the object (class, type, const, etc.)
    * @param module0 the current $dklp module
    * @return a unique translated id, after updating maps to account for it */
-  def add_name(id: String, kind: String, module: String) : String = {
-    val (translated_id,translated_module) = id match {
+  def add_name(id: String, kind: String, module0: String) : String = {
+    val (translated_id,module) = id match {
       case Pure_Thy.FUN => ("arr",STTfa)
       case Pure_Thy.PROP => ("prop",STTfa)
       case Pure_Thy.IMP => ("imp",STTfa)
       case Pure_Thy.ALL => ("all",STTfa)
       case id =>
         val cut = id.split("[.]", 2)
-        val (prefix,radical) = if (cut.length == 1) ("",cut(0)) else (cut(0),cut(1))
+        val (prefix, radical) = if (cut.length == 1) ("", cut(0)) else (cut(0), cut(1))
         // because Dedukti does not accept names with dots
         var translated_id = radical.replace(".","_")
         if (kind == "var") translated_id += "_"
-        if (kind == "type") translated_id += "_type"
-        if (namesSet(translated_id) && moduleOf(translated_id) != module) {
-          translated_id = prefix + "_" + translated_id
-        }
         if (namesSet(translated_id)) translated_id += "_" + kind
+        if (namesSet(translated_id)) translated_id = prefix + "_" + translated_id
         if (namesSet(translated_id)) error("duplicated name: " + translated_id)
-        (translated_id,module)
+        (translated_id,module0)
     }
     namesMap += full_name(id, kind) -> translated_id
     namesSet += translated_id
-    moduleOf += translated_id -> translated_module
+    moduleOf += translated_id -> module
     //println("add_name "+full_name(id,kind)+" -> "+translated_id)
     translated_id
   }
