@@ -163,8 +163,10 @@ object Exporter {
     /** depending on variable <code>to_lp</code>, opens an [[LP_Writer]] or a [[DK_Writer]] */
     def new_Writer(writer: Writer): Abstract_Writer =
       if (to_lp) {
-        if(!eta_expand) writer.write("""flag "eta_equality" on;""")
-        writer.write('\n')
+        if(!eta_expand) {
+          writer.write("""flag "eta_equality" on;""")
+          writer.write('\n')
+        }
         new LP_Writer(use_notations,writer)
       }
       else new DK_Writer(writer)
@@ -329,6 +331,12 @@ object Exporter {
           val thm = a.the_content
           Translate.stmt_decl(Prelude.add_thm_ident(a.name, theory_name), thm.prop, None)
           update_useless_proofs(a.name, thm.proof, thm.prop.args.map(_._1).reverse)
+        }
+        /* eta_expansion reads the type of terms from the Translate.global_types map,
+        *  which means that we must also read (useful) proofs to update this map */
+        if (eta_expand) for (a <- map_theory_proofs(theory_name) if !Translate.replace_serial.contains(a)) {
+          if (verbose) progress.echo("  proof " + a.toString)
+          decl_proof(a, theory_name)
         }
         progress.echo("End reading theory "+theory_name)
       }
