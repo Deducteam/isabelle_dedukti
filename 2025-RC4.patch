@@ -189,39 +189,6 @@ diff -r f274b63c5b44 src/HOL/Enum.thy
  end
  
  
-diff -r f274b63c5b44 src/HOL/Groups_Big.thy
---- a/src/HOL/Groups_Big.thy	Sat Dec 06 23:51:17 2025 +0100
-+++ b/src/HOL/Groups_Big.thy	Thu Dec 11 15:18:16 2025 +0900
-@@ -1132,7 +1132,7 @@
- 
- lemma sum_of_bool_eq [simp]:
-   \<open>(\<Sum>x \<in> A. of_bool (P x)) = of_nat (card (A \<inter> {x. P x}))\<close> if \<open>finite A\<close>
--  using \<open>finite A\<close> by induction simp_all
-+  using \<open>finite A\<close> by induction (simp_all split: split_of_bool)
- 
- lemma sum_mult_of_bool_eq [simp]:
-   \<open>(\<Sum>x \<in> A. f x * of_bool (P x)) = (\<Sum>x \<in> (A \<inter> {x. P x}). f x)\<close>
-diff -r f274b63c5b44 src/HOL/Int.thy
---- a/src/HOL/Int.thy	Sat Dec 06 23:51:17 2025 +0100
-+++ b/src/HOL/Int.thy	Thu Dec 11 15:18:16 2025 +0900
-@@ -281,7 +281,7 @@
- 
- lemma of_int_of_bool [simp]:
-   "of_int (of_bool P) = of_bool P"
--  by auto
-+  by (cases P) simp_all
- 
- end
- 
-@@ -674,7 +674,7 @@
- 
- lemma nat_of_bool [simp]:
-   "nat (of_bool P) = of_bool P"
--  by auto
-+  by (cases P) auto
- 
- lemma split_nat [linarith_split]: "P (nat i) \<longleftrightarrow> ((\<forall>n. i = int n \<longrightarrow> P n) \<and> (i < 0 \<longrightarrow> P 0))"
-   (is "?P = (?L \<and> ?R)")
 diff -r f274b63c5b44 src/HOL/List.thy
 --- a/src/HOL/List.thy	Sat Dec 06 23:51:17 2025 +0100
 +++ b/src/HOL/List.thy	Thu Dec 11 15:18:16 2025 +0900
