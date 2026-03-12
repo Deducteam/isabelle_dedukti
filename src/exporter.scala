@@ -184,7 +184,7 @@ object Exporter {
      * @define isace /span></code
      */
     def is_eq_axiom(a:Entity[Axiom]): Option[(String,Term,List[Typ],Term)] = {
-      if (!(a.name.endsWith("_def") || a.name.endsWith("_def_raw"))) None
+      if (!(a.name.endsWith("_def") || a.name.endsWith("_def_raw") || a.name.endsWith("_dict"))) None
       else a.the_content.prop.term match {
         case App(App(Term.Const(id, _), _), _) if id != "Pure.eq" =>
           if (verbose) progress.echo("axiom " + a.name + ": cannot extract definition because it is headed by " + id + " instead of Pure.eq")
